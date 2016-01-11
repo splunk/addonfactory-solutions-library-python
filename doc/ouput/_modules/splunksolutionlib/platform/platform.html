@@ -1,0 +1,201 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>splunksolutionlib.platform.platform &mdash; Solutions Python Library 0.0.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <link rel="top" title="Solutions Python Library 0.0.1 documentation" href="../../../index.html" />
+    <link rel="up" title="Module code" href="../../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for splunksolutionlib.platform.platform</h1><div class="highlight"><pre>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">os.path</span> <span class="kn">as</span> <span class="nn">op</span>
+<span class="kn">import</span> <span class="nn">subprocess</span>
+<span class="kn">from</span> <span class="nn">ConfigParser</span> <span class="kn">import</span> <span class="n">ConfigParser</span>
+<span class="kn">from</span> <span class="nn">cStringIO</span> <span class="kn">import</span> <span class="n">StringIO</span>
+
+<span class="kn">import</span> <span class="nn">splunksolutionlib.common.utils</span> <span class="kn">as</span> <span class="nn">utils</span>
+
+
+<div class="viewcode-block" id="make_splunkhome_path"><a class="viewcode-back" href="../../../splunksolutionlib.platform.html#splunksolutionlib.platform.platform.make_splunkhome_path">[docs]</a><span class="k">def</span> <span class="nf">make_splunkhome_path</span><span class="p">(</span><span class="n">parts</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    create a path string by the several parts of the path. For example,</span>
+<span class="sd">    `parts` is [&quot;etc&quot;, &quot;apps&quot;, &quot;Splunk_TA_aws&quot;], the return path will be</span>
+<span class="sd">    $SPLUNK_HOME/etc/apps/Splunk_TA_aws.</span>
+<span class="sd">    Note this function assumed SPLUNK_HOME is in environment varialbes</span>
+<span class="sd">    :parts: list or tuple which consists of the path part</span>
+<span class="sd">    :return: full path if succeful, otherwise throw ValueError exception</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">relpath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">normpath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="o">*</span><span class="n">parts</span><span class="p">))</span>
+
+    <span class="n">basepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s">&quot;SPLUNK_HOME&quot;</span><span class="p">]</span>  <span class="c"># Assume SPLUNK_HOME env has been set</span>
+
+    <span class="n">fullpath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">normpath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">basepath</span><span class="p">,</span> <span class="n">relpath</span><span class="p">))</span>
+
+    <span class="c"># Check that we haven&#39;t escaped from intended parent directories.</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">relpath</span><span class="p">(</span><span class="n">fullpath</span><span class="p">,</span> <span class="n">basepath</span><span class="p">)[</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="s">&quot;..&quot;</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&#39;Illegal escape from parent directory &quot;</span><span class="si">%s</span><span class="s">&quot;: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span>
+                         <span class="p">(</span><span class="n">basepath</span><span class="p">,</span> <span class="n">fullpath</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">fullpath</span>
+
+</div>
+<div class="viewcode-block" id="get_splunk_bin"><a class="viewcode-back" href="../../../splunksolutionlib.platform.html#splunksolutionlib.platform.platform.get_splunk_bin">[docs]</a><span class="k">def</span> <span class="nf">get_splunk_bin</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return full path of splunk CLI</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s">&quot;nt&quot;</span><span class="p">:</span>
+        <span class="n">splunk_bin</span> <span class="o">=</span> <span class="s">&quot;splunk.exe&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">splunk_bin</span> <span class="o">=</span> <span class="s">&quot;splunk&quot;</span>
+    <span class="k">return</span> <span class="n">make_splunkhome_path</span><span class="p">((</span><span class="s">&quot;bin&quot;</span><span class="p">,</span> <span class="n">splunk_bin</span><span class="p">))</span>
+
+</div>
+<span class="k">def</span> <span class="nf">_get_merged_conf_raw</span><span class="p">(</span><span class="n">conf_name</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    :conf_name: configure file name</span>
+<span class="sd">    :return: raw output of all contents for the same conf file</span>
+<span class="sd">    Note: it depends on SPLUNK_HOME env variable</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">assert</span> <span class="n">conf_name</span>
+
+    <span class="k">if</span> <span class="n">conf_name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s">&quot;.conf&quot;</span><span class="p">):</span>
+        <span class="n">conf_name</span> <span class="o">=</span> <span class="n">conf_name</span><span class="p">[:</span><span class="o">-</span><span class="mi">5</span><span class="p">]</span>
+
+    <span class="c"># FIXME dynamically caculate SPLUNK_HOME</span>
+    <span class="n">btool_cli</span> <span class="o">=</span> <span class="p">[</span><span class="n">op</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s">&quot;SPLUNK_HOME&quot;</span><span class="p">],</span> <span class="s">&quot;bin&quot;</span><span class="p">,</span> <span class="s">&quot;btool&quot;</span><span class="p">),</span> <span class="n">conf_name</span><span class="p">,</span>
+                 <span class="s">&quot;list&quot;</span><span class="p">]</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">(</span><span class="n">btool_cli</span><span class="p">,</span>
+                             <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span>
+                             <span class="n">stderr</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">)</span>
+        <span class="n">out</span><span class="p">,</span> <span class="n">err</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">communicate</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+        <span class="k">raise</span>
+
+    <span class="k">return</span> <span class="n">out</span>
+
+
+<span class="k">def</span> <span class="nf">_get_conf_stanzas</span><span class="p">(</span><span class="n">conf_name</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    :return: {stanza_name: stanza_configs}, dict of dict</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">res</span> <span class="o">=</span> <span class="n">_get_merged_conf_raw</span><span class="p">(</span><span class="n">conf_name</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">StringIO</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">ConfigParser</span><span class="p">()</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">optionxform</span> <span class="o">=</span> <span class="nb">str</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">readfp</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">section</span> <span class="ow">in</span> <span class="n">parser</span><span class="o">.</span><span class="n">sections</span><span class="p">():</span>
+        <span class="n">res</span><span class="p">[</span><span class="n">section</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">item</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="n">item</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">parser</span><span class="o">.</span><span class="n">items</span><span class="p">(</span><span class="n">section</span><span class="p">)}</span>
+    <span class="k">return</span> <span class="n">res</span>
+
+
+<div class="viewcode-block" id="get_splunkd_uri"><a class="viewcode-back" href="../../../splunksolutionlib.platform.html#splunksolutionlib.platform.platform.get_splunkd_uri">[docs]</a><span class="k">def</span> <span class="nf">get_splunkd_uri</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    :return: splunkd URI by parsing the web.conf and server.conf</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;SPLUNKD_URI&quot;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s">&quot;SPLUNKD_URI&quot;</span><span class="p">]</span>
+
+    <span class="n">server_conf</span> <span class="o">=</span> <span class="n">_get_conf_stanzas</span><span class="p">(</span><span class="s">&quot;server&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">utils</span><span class="o">.</span><span class="n">is_true</span><span class="p">(</span><span class="n">server_conf</span><span class="p">[</span><span class="s">&quot;sslConfig&quot;</span><span class="p">][</span><span class="s">&quot;enableSplunkdSSL&quot;</span><span class="p">]):</span>
+        <span class="n">http</span> <span class="o">=</span> <span class="s">&quot;https://&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">http</span> <span class="o">=</span> <span class="s">&quot;http://&quot;</span>
+
+    <span class="n">web_conf</span> <span class="o">=</span> <span class="n">_get_conf_stanzas</span><span class="p">(</span><span class="s">&quot;web&quot;</span><span class="p">)</span>
+    <span class="n">host_port</span> <span class="o">=</span> <span class="n">web_conf</span><span class="p">[</span><span class="s">&quot;settings&quot;</span><span class="p">][</span><span class="s">&quot;mgmtHostPort&quot;</span><span class="p">]</span>
+    <span class="n">splunkd_uri</span> <span class="o">=</span> <span class="s">&quot;{http}{host_port}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">http</span><span class="o">=</span><span class="n">http</span><span class="p">,</span> <span class="n">host_port</span><span class="o">=</span><span class="n">host_port</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;SPLUNK_BINDIP&quot;</span><span class="p">):</span>
+        <span class="n">bindip</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s">&quot;SPLUNK_BINDIP&quot;</span><span class="p">]</span>
+        <span class="n">port_idx</span> <span class="o">=</span> <span class="n">bindip</span><span class="o">.</span><span class="n">rfind</span><span class="p">(</span><span class="s">&quot;:&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">port_idx</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">bindip</span> <span class="o">=</span> <span class="n">bindip</span><span class="p">[:</span><span class="n">port_idx</span><span class="p">]</span>
+        <span class="n">port</span> <span class="o">=</span> <span class="n">host_port</span><span class="p">[</span><span class="n">host_port</span><span class="o">.</span><span class="n">rfind</span><span class="p">(</span><span class="s">&quot;:&quot;</span><span class="p">):]</span>
+        <span class="n">splunkd_uri</span> <span class="o">=</span> <span class="s">&quot;{http}{bindip}{port}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">http</span><span class="o">=</span><span class="n">http</span><span class="p">,</span> <span class="n">bindip</span><span class="o">=</span><span class="n">bindip</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="n">port</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">splunkd_uri</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, Gang Tao.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.6</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
