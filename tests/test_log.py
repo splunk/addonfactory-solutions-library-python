@@ -1,5 +1,4 @@
 import unittest
-import os
 
 import threading
 import multiprocessing
@@ -11,10 +10,11 @@ from splunksolutionlib.common import log
 class TestLog(unittest.TestCase):
 
     def setUp(self):
-        curdir = os.path.dirname(os.path.abspath(__file__))
-        os.environ["SPLUNK_HOME"] = curdir
-        namespace = "unittest"
-        self.logger = log.Logs(namespace=namespace).get_logger("unitest")
+        # import os
+        # curdir = os.path.dirname(os.path.abspath(__file__))
+        # os.environ["SPLUNK_HOME"] = curdir
+        # namespace = "unittest"
+        self.logger = log.Logs().get_logger("unitest")
 
     def tearDown(self):
         pass
