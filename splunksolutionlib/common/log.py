@@ -1,7 +1,7 @@
-"""
-Copyright (C) 2005-2015 Splunk Inc. All Rights Reserved.
+# Copyright (C) 2005-2016 Splunk Inc. All Rights Reserved.
 
-log utility for Splunk AddOn/Apps
+"""
+log utility for Splunk solutions
 """
 
 import logging
@@ -15,7 +15,13 @@ import splunksolutionlib.common.utils as cutils
 
 def log_enter_exit(logger):
     """
-    Log decorator to log function enter and exit
+    Log decorator to log function enter and exit,
+    Example::
+        @log_enter_exit
+        def myfunc():
+            doSomething()
+
+    This will print a debug log at entering and exiting myfunc.
     """
 
     def log_decorator(func):
@@ -32,6 +38,10 @@ def log_enter_exit(logger):
 
 @singleton
 class Logs(object):
+    """This class is a singleton that manage all the loggers
+
+    """
+
     def __init__(self, namespace=None, default_level=logging.INFO):
         self._loggers = {}
         self._default_level = default_level

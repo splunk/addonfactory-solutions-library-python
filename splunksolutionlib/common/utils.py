@@ -1,5 +1,7 @@
+# Copyright (C) 2005-2016 Splunk Inc. All Rights Reserved.
+
 """
-Copyright (C) 2005-2015 Splunk Inc. All Rights Reserved.
+Common utilit functions
 """
 
 import os

@@ -21,9 +21,11 @@ splunksolutionlib.common.log module
 -----------------------------------
 
 .. automodule:: splunksolutionlib.common.log
+    :members: log_enter_exit
+
+.. autoclass:: splunksolutionlib.common.log.Logs
     :members:
-    :undoc-members:
-    :show-inheritance:
+
 
 splunksolutionlib.common.orphan_process_monitor module
 ------------------------------------------------------
