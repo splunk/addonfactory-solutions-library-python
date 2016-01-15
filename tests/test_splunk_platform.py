@@ -4,7 +4,7 @@ import unittest as ut
 
 sys.path.append("../")
 
-from splunktalib import splunk_platform as sp
+from splunksolutionlib.platform import platform as sp
 
 
 class TestGetSplunkdUri(ut.TestCase):

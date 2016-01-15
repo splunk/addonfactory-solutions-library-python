@@ -4,6 +4,9 @@ import os
 import threading
 import multiprocessing
 import time
+import sys
+
+sys.path.append("../")
 
 from splunksolutionlib.common import log
 
@@ -12,7 +15,7 @@ class TestLog(unittest.TestCase):
 
     def setUp(self):
         curdir = os.path.dirname(os.path.abspath(__file__))
-        os.environ["SPLUNK_HOME"] = curdir
+        ##os.environ["SPLUNK_HOME"] = curdir
         namespace = "unittest"
         self.logger = log.Logs(namespace=namespace).get_logger("unitest")
 
