@@ -1,3 +1,5 @@
+# Copyright (C) 2005-2016 Splunk Inc. All Rights Reserved.
+
 import os
 import threading
 import time

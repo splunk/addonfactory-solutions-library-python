@@ -1,0 +1,30 @@
+[BASIC]
+# Regular expression which should only match correct module names
+module-rgx=([a-z][a-z0-9_]*)$
+
+attr-rgx=[a-z_][a-z0-9_]{,30}
+
+# Regular expression which should only match correct method names
+method-rgx=(([a-z_]|__)[a-z0-9_]*(__)?)$
+
+# Regular expression which should only match correct variable names
+variable-rgx=([a-z_]+[a-z0-9]*_*[a-z0-9]*_*[a-z0-9]*_?||(__[a-zA-Z0-9_]*__))$||[A-Z]+
+
+# Regular expression which should only match correct module level names
+# Default: (([A-Z_][A-Z1-9_]*)|(__.*__))$
+const-rgx=([a-z_]+[a-z0-9]*_*[a-z0-9]*_*[a-z0-9]*_?|__[a-zA-Z0-9_]*__)$||[A-Z]+
+
+[DESIGN]
+# We are capable to follow that many, yes!
+max-branchs = 20
+
+# some base class constructors have quite a few arguments
+max-args = 14
+
+[MASTER]
+ignore=defusedxml,httplib2,sortedcontainers
+
+[REPORTS]
+# set the output format. Available formats are text, parseable, colorized and
+# html
+output-format=parseable
