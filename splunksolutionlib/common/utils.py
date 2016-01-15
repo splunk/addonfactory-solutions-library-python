@@ -3,6 +3,7 @@ Copyright (C) 2005-2015 Splunk Inc. All Rights Reserved.
 """
 
 import os
+import os.path as op
 import datetime
 import signal
 
@@ -76,19 +77,22 @@ def get_appname_from_path(absolute_path):
     :return: appname if successful otherwise return None
     """
 
+    absolute_path = op.normpath(absolute_path)
     parts = absolute_path.split(os.path.sep)
     parts.reverse()
-    try:
-        idx = parts.index("apps")
-    except ValueError:
-        return None
-    else:
+    for key in ("apps", "slave-apps", "master-apps"):
         try:
-            if parts[idx + 1] == "etc":
-                return parts[idx - 1]
-            return None
-        except IndexError:
-            return None
+            idx = parts.index(key)
+        except ValueError:
+            continue
+        else:
+            try:
+                if parts[idx + 1] == "etc":
+                    return parts[idx - 1]
+            except IndexError:
+                pass
+            continue
+    return None
 
 
 def escape_json_control_chars(json_str):

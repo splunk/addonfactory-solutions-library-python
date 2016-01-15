@@ -11,7 +11,7 @@ class OrphanProcessChecker(object):
     def __init__(self, callback=None):
         """
         Only work for Linux platform. On Windows platform, is_orphan is always
-        False
+        False and there is no need to do this monitoring on Windows
         """
 
         if os.name == "nt":
@@ -42,7 +42,7 @@ class OrphanProcessMonitor(object):
     call callback when it is
     """
 
-    def __init__(self, callback):
+    def __init__(self, callback, interval=1):
         """
         :callback: callable
         """
@@ -51,6 +51,7 @@ class OrphanProcessMonitor(object):
         self._thr = threading.Thread(target=self._do_monitor)
         self._thr.daemon = True
         self._started = False
+        self._interval = interval
 
     def start(self):
         if self._started:
