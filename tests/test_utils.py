@@ -1,5 +1,8 @@
 import os
 import unittest as ut
+import sys
+
+sys.path.append("../")
 
 
 from splunksolutionlib.common import utils as utils

@@ -3,6 +3,11 @@ import os.path as op
 import unittest as ut
 import time
 
+import sys
+
+sys.path.append("../")
+
+
 from splunksolutionlib.common import file_monitor as fm
 
 

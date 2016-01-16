@@ -4,6 +4,11 @@ import unittest as ut
 import multiprocessing
 import time
 
+import sys
+
+sys.path.append("../")
+
+
 from splunksolutionlib.common import orphan_process_monitor as opm
 
 
