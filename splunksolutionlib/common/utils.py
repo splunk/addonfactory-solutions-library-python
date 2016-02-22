@@ -22,7 +22,7 @@ def handle_tear_down_signals(callback):
     signal.signal(signal.SIGINT, callback)
 
     if os.name == "nt":
-        signal.signal(signal.SIGBREAK, callback)
+        signal.signal(signal.SIGBREAK, callback)  #pylint: disable=E1101
 
 
 def datetime_to_seconds(dt):
