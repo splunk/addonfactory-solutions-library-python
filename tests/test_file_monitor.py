@@ -1,13 +1,10 @@
+import sys
 import os
 import os.path as op
 import unittest as ut
 import time
 
-import sys
-
-sys.path.append("../")
-
-
+sys.path.insert(0, op.dirname(op.dirname(__file__)))
 from splunksolutionlib.common import file_monitor as fm
 
 

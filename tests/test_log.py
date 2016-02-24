@@ -1,13 +1,12 @@
+import sys
+import os
+import os.path as op
 import unittest
-
 import threading
 import multiprocessing
 import time
-import sys
-import os
 
-sys.path.append("../")
-
+sys.path.insert(0, op.dirname(op.dirname(__file__)))
 from splunksolutionlib.common import log
 
 

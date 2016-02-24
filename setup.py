@@ -1,26 +1,45 @@
-try:
-    from setuptools import setup
-except ImportError:
-    from distutils.core import setup
-import sys
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
-VERSION = '0.1.0'
+import re
+from codecs import open
 
-setup(name='splunksolutionlib',
-        version=VERSION,
-        author='Splunk, Inc.',
-        author_email='Shanghai-TA-dev@splunk.com',
-        url='https://git.splunk.com/scm/solnsc/lib-solutions-python.git',
-        description='The Splunk Software Development Kit for Solutions',
-        packages=['splunksolutionlib', 'splunksolutionlib.common', 'splunksolutionlib.platform'],
+from setuptools import setup
 
-        classifiers = [
-            "Programming Language :: Python",
-            "Development Status :: 1 - Alpha",
-            "Environment :: Other Environment",
-            "Intended Audience :: Developers",
-            "Operating System :: OS Independent",
-            "Topic :: Software Development :: Libraries :: Python Modules",
-            "Topic :: Software Development :: Libraries :: Application Frameworks",
-        ],
+with open('splunksolutionlib/__init__.py', 'r') as fd:
+    version = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]',
+                        fd.read(), re.MULTILINE).group(1)
+
+if not version:
+    raise RuntimeError("Cannot find version information")
+
+packages = [
+    'splunksolutionlib',
+    'splunksolutionlib.common',
+    'splunksolutionlib.platform'
+]
+
+install_requires = []
+
+classifiers = (
+    'Programming Language :: Python',
+    'Development Status :: 1 - Alpha',
+    'Environment :: Other Environment',
+    'Intended Audience :: Developers',
+    'Operating System :: OS Independent',
+    'Topic :: Software Development :: Libraries :: Python Modules',
+    'Topic :: Software Development :: Libraries :: Application Frameworks'
+)
+
+setup(
+    name='splunksolutionlib',
+    version=version,
+    description='The Splunk Software Development Kit for Solutions',
+    author='Splunk, Inc.',
+    author_email='Shanghai-TA-dev@splunk.com',
+    url='https://git.splunk.com/scm/solnsc/lib-solutions-python.git',
+    packages=packages,
+    install_requires=install_requires,
+    zip_safe=False,
+    classifiers=classifiers
 )

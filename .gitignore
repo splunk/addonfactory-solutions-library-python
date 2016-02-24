@@ -1,3 +1,9 @@
+.cache
+.eggs
+.coverage*
+.DS_Store
 build
 dist
 splunksolutionlib.egg-info
+tests/__pycache__
+*.pyc

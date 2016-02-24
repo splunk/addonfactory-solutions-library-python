@@ -1,10 +1,9 @@
-import os
-import unittest as ut
 import sys
+import os
+import os.path as op
+import unittest as ut
 
-sys.path.append("../")
-
-
+sys.path.insert(0, op.dirname(op.dirname(__file__)))
 from splunksolutionlib.common import utils as utils
 
 

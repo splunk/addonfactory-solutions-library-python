@@ -1,14 +1,12 @@
+import sys
 import os
+import os.path as op
 import signal
 import unittest as ut
 import multiprocessing
 import time
 
-import sys
-
-sys.path.append("../")
-
-
+sys.path.insert(0, op.dirname(op.dirname(__file__)))
 from splunksolutionlib.common import orphan_process_monitor as opm
 
 
