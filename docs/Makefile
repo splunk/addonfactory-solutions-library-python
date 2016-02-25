@@ -2,7 +2,7 @@
 all:
 	rm -rf build
 	sphinx-apidoc -F -o build ../splunksolutionlib/
-	cp sphinx_conf.py build/conf.py
+	cp templates/conf.py build/
 	make -C build html
 
 .PHONY: clean

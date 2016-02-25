@@ -1,4 +1,10 @@
-# Copyright (C) 2005-2016 Splunk Inc. All Rights Reserved.
+# -*- coding: utf-8 -*-
+
+"""
+Splunk platform related utilities.
+
+:copyright: (c) 2016 by Splunk, Inc.
+"""
 
 import os
 import os.path as op
@@ -10,19 +16,29 @@ import splunksolutionlib.common.utils as utils
 
 
 def make_splunkhome_path(parts):
+    """Construct absolute path by $SPLUNK_HOME and `parts`.
+
+    Concatenate $SPLUNK_HOME and `parts` to an absolute path.
+    For example, `parts` is ["etc", "apps", "Splunk_TA_test"],
+    the return path will be $SPLUNK_HOME/etc/apps/Splunk_TA_test.
+    Note: this function assumed SPLUNK_HOME is in environment varialbes.
+
+    :param parts: Path parts
+    :type parts: list, tuple
+    :returns: Absolute path
+    :rtype: str
+
+    :raises KeyError: If $SPLUNK_HOME has not been set
+    :raises ValueError: Escape from intended parent directories
     """
-    create a path string by the several parts of the path. For example,
-    `parts` is ["etc", "apps", "Splunk_TA_aws"], the return path will be
-    $SPLUNK_HOME/etc/apps/Splunk_TA_aws.
-    Note this function assumed SPLUNK_HOME is in environment varialbes
-    :parts: list or tuple which consists of the path part
-    :return: full path if succeful, otherwise throw ValueError exception
-    """
+
+    assert parts is not None and isinstance(parts, (list, tuple)), \
+        ValueError('Invalid path parts: %s' % parts)
+
+    # Assume SPLUNK_HOME env has been set
+    basepath = os.environ["SPLUNK_HOME"]
 
     relpath = os.path.normpath(os.path.join(*parts))
-
-    basepath = os.environ["SPLUNK_HOME"]  # Assume SPLUNK_HOME env has been set
-
     fullpath = os.path.normpath(os.path.join(basepath, relpath))
 
     # Check that we haven't escaped from intended parent directories.
@@ -34,8 +50,10 @@ def make_splunkhome_path(parts):
 
 
 def get_splunk_bin():
-    """
-    Return full path of splunk CLI
+    """Get absolute path of splunk CLI.
+
+    :returns: absolute path of splunk CLI
+    :rtype: str
     """
 
     if os.name == "nt":
@@ -46,18 +64,21 @@ def get_splunk_bin():
 
 
 def _get_merged_conf_raw(conf_name):
-    """
-    :conf_name: configure file name
-    :return: raw output of all contents for the same conf file
-    Note: it depends on SPLUNK_HOME env variable
+    """Get merged raw content of `conf_name`
+
+    :param conf_name: Configure file name
+    :returns: Merged raw content of `conf_name`
+    :rtype: str
+
+    :raises ValueError: If fail to get merged raw content
     """
 
-    assert conf_name
+    assert conf_name, ValueError('conf_name is None')
 
     if conf_name.endswith(".conf"):
         conf_name = conf_name[:-5]
 
-    # FIXME dynamically caculate SPLUNK_HOME
+    # TODO: dynamically caculate SPLUNK_HOME
     btool_cli = [op.join(os.environ["SPLUNK_HOME"], "bin", "btool"), conf_name,
                  "list"]
 
@@ -73,8 +94,13 @@ def _get_merged_conf_raw(conf_name):
 
 
 def _get_conf_stanzas(conf_name):
-    """
-    :return: {stanza_name: stanza_configs}, dict of dict
+    """Get stanzas of `conf_name`
+
+    :param conf_name: Configure file name
+    :returns: Config stanzas like: {stanza_name: stanza_configs}
+    :rtype: dict
+
+    :raises ValueError: If fail to get merged raw content
     """
 
     res = _get_merged_conf_raw(conf_name)
@@ -89,8 +115,12 @@ def _get_conf_stanzas(conf_name):
 
 
 def get_splunkd_uri():
-    """
-    :return: splunkd URI by parsing the web.conf and server.conf
+    """Get splunkd uri.
+
+    Construct splunkd uri by parsing web.conf and server.conf.
+
+    :returns: Splunkd uri
+    :rtype: str
     """
 
     if os.environ.get("SPLUNKD_URI"):

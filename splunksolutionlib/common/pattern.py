@@ -1,26 +1,11 @@
-# Copyright (C) 2005-2016 Splunk Inc. All Rights Reserved.
+# -*- coding: utf-8 -*-
 
 """
 Commonly used design partten for python user, includes:
   - singleton (Decorator function used to build singleton)
+
+:copyright: (c) 2016 by Splunk, Inc.
 """
-
-from functools import wraps
-
-
-def singleton(class_):
-    """
-    Singleton decoorator function.
-    """
-    instances = {}
-
-    @wraps(class_)
-    def getinstance(*args, **kwargs):
-        if class_ not in instances:
-            instances[class_] = class_(*args, **kwargs)
-        return instances[class_]
-
-    return getinstance
 
 
 class Singleton(type):
@@ -28,11 +13,11 @@ class Singleton(type):
     Singleton meta class
     """
 
-    _instances = {}
+    def __init__(cls, name, bases, attrs):
+        super(Singleton, cls).__init__(name, bases, attrs)
+        cls._instance = None
 
     def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton, cls).__call__(
-                *args, **kwargs)
-            print cls
-        return cls._instances[cls]
+        if cls._instance is None:
+            cls._instance = super(Singleton, cls).__call__(*args, **kwargs)
+        return cls._instance

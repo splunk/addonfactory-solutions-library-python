@@ -1,7 +1,9 @@
-# Copyright (C) 2005-2016 Splunk Inc. All Rights Reserved.
+# -*- coding: utf-8 -*-
 
 """
-Common utilit functions
+Common utilities.
+
+:copyright: (c) 2016 by Splunk, Inc.
 """
 
 import os
@@ -11,24 +13,29 @@ import signal
 
 
 def handle_tear_down_signals(callback):
-    """
+    """Register handler for SIGTERM/SIGINT/SIGBREAK signal.
+
     Catch SIGTERM/SIGINT/SIGBREAK signals, and invoke callback
     Note: this should be called in main thread since Python only catches
     signals in main thread
-    :callback: callable
+
+    :param callback: Callback for tear down signals
     """
 
     signal.signal(signal.SIGTERM, callback)
     signal.signal(signal.SIGINT, callback)
 
     if os.name == "nt":
-        signal.signal(signal.SIGBREAK, callback)  #pylint: disable=E1101
+        signal.signal(signal.SIGBREAK, callback)
 
 
 def datetime_to_seconds(dt):
-    """
-    Convert UTC datatime dt to seconds since epoch
-    :dt: datetime object
+    """Convert UTC datatime to seconds since epoch.
+
+    :param dt: Date time
+    :type dt: datatime
+    :returns: Seconds since epoch
+    :rtype: float
     """
 
     epoch_time = datetime.datetime.utcfromtimestamp(0)
@@ -36,8 +43,11 @@ def datetime_to_seconds(dt):
 
 
 def is_true(val):
-    """
-    Decide if `val` is true
+    """Decide if `val` is true.
+
+    :param val: Value to check
+    :returns: True or False
+    :rtype: bool
     """
 
     value = str(val).strip().upper()
@@ -47,8 +57,11 @@ def is_true(val):
 
 
 def is_false(val):
-    """
-    Decide if `val` is false
+    """Decide if `val` is false.
+
+    :param val: Value to check
+    :returns: True or False
+    :rtype: bool
     """
 
     value = str(val).strip().upper()
@@ -58,8 +71,8 @@ def is_false(val):
 
 
 def remove_http_proxy_env_vars():
-    """
-    Remove http_proxy/https_proxy from environ variables.
+    """Remove http_proxy/https_proxy Env.
+
     These environment variables impacts some 3rd party libs like httplib2
     """
 
@@ -71,12 +84,15 @@ def remove_http_proxy_env_vars():
 
 
 def get_appname_from_path(absolute_path):
-    """
-    Deduce appname from `absolute_path`
-    For example: the appname for /splunk/etc/apps/Splunk_TA_aws/bin/aws_s3.py
-    will be Splunk_TA_aws
-    :absolute_path: absolute file system path, like os.path.abspath(__file__)
-    :return: appname if successful otherwise return None
+    """Deduce appname from `absolute_path`
+
+    For example: the appname for /splunk/etc/apps/Splunk_TA_test/bin/test.py
+    will be Splunk_TA_test
+
+    :param absolute_path: Absolute file system path, like
+        os.path.abspath(__file__)
+    :returns: App name if successful otherwise return None
+    :rtype: str
     """
 
     absolute_path = op.normpath(absolute_path)
@@ -86,24 +102,26 @@ def get_appname_from_path(absolute_path):
         try:
             idx = parts.index(key)
         except ValueError:
-            continue
+            pass
         else:
             try:
                 if parts[idx + 1] == "etc":
                     return parts[idx - 1]
             except IndexError:
                 pass
-            continue
     return None
 
 
 def escape_json_control_chars(json_str):
-    """
-    :json_str: string
-    :return: esapced string
+    """Escape josn control chars in `json_str`.
+
+    :param json_str: Json string to escape
+    :returns: Escaped string
+    :rtype: string
     """
 
-    control_chars = ((r"\n", "\\\\n"), (r"\r", "\\\\r"),
+    control_chars = ((r"\n", "\\\\n"),
+                     (r"\r", "\\\\r"),
                      (r"\r\n", "\\\\r\\\\n"))
     for ch, replace in control_chars:
         json_str = json_str.replace(ch, replace)

@@ -1,21 +1,28 @@
-# Copyright (C) 2005-2016 Splunk Inc. All Rights Reserved.
+# -*- coding: utf-8 -*-
+
+"""
+Orphan process monitor.
+
+:copyright: (c) 2016 by Splunk, Inc.
+"""
 
 import os
 import threading
 import time
-
-from splunksolutionlib.common import log
-
-logger = log.Logs().get_logger("solutionlib")
+import logging
 
 
 class OrphanProcessChecker(object):
-    def __init__(self, callback=None):
-        """
-        Only work for Linux platform. On Windows platform, is_orphan is always
-        False and there is no need to do this monitoring on Windows
-        """
+    """Orphan process checker.
 
+    Only work for Linux platform. On Windows platform, is_orphan
+    is always False and there is no need to do this monitoring on
+    Windows.
+
+    :param callback: (optional) Callback for orphan process
+    """
+
+    def __init__(self, callback=None):
         if os.name == "nt":
             self._ppid = 0
         else:
@@ -23,13 +30,26 @@ class OrphanProcessChecker(object):
         self._callback = callback
 
     def is_orphan(self):
+        """Check process is orphan.
+
+        For windows platform just return False.
+
+        :returns: True for orphan process else False
+        :rtype: bool
+        """
+
         if os.name == "nt":
             return False
         return self._ppid != os.getppid()
 
     def check_orphan(self):
-        """
-        Check if the process becomes orphan, if it is, call callback
+        """Check if the process becomes orphan.
+
+        If the process becomes orphan then call callback function
+        to handle properly.
+
+        :returns: True for orphan process else False
+        :rtype: bool
         """
 
         res = self.is_orphan()
@@ -39,16 +59,16 @@ class OrphanProcessChecker(object):
 
 
 class OrphanProcessMonitor(object):
-    """
-    Check if process become orphan in a seperate thread every second and
-    call callback when it is
+    """Orpan process monitor.
+
+    Check if process become orphan in background thread per
+    iterval and call callback if process become orphan.
+
+    :param callback: Callback for orphan process monitor
+    :param interval: (optional) Interval to monitor
     """
 
     def __init__(self, callback, interval=1):
-        """
-        :callback: callable
-        """
-
         self._checker = OrphanProcessChecker(callback)
         self._thr = threading.Thread(target=self._do_monitor)
         self._thr.daemon = True
@@ -56,6 +76,10 @@ class OrphanProcessMonitor(object):
         self._interval = interval
 
     def start(self):
+        """
+        Start orphan process monitor.
+        """
+
         if self._started:
             return
         self._started = True
@@ -63,11 +87,14 @@ class OrphanProcessMonitor(object):
         self._thr.start()
 
     def stop(self):
+        """
+        Stop orphan process monitor.
+        """
         self._started = False
 
     def _do_monitor(self):
         while self._started:
             if self._checker.check_orphan():
-                logger.warn("Process=%s has become orphan", os.getpid())
+                logging.warn("Process=%s has become orphan", os.getpid())
                 break
             time.sleep(1)

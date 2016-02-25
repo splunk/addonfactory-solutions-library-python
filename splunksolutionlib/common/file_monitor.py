@@ -1,21 +1,31 @@
-# Copyright (C) 2005-2016 Splunk Inc. All Rights Reserved.
+# -*- coding: utf-8 -*-
+
+"""
+This module contains file monitoring class that can be used to check files
+change periodically and call callback function to handle properly when
+detecting files change.
+
+:copyright: (c) 2016 by Splunk, Inc.
+"""
 
 import os.path as op
 import traceback
 import time
 import threading
-
-from splunksolutionlib.common import log
-
-logger = log.Logs().get_logger("solutionlib")
+import logging
 
 
 class FileChangesChecker(object):
+    """Files change checker.
+
+    :param callback: Callback function for files change.
+    :param files: Files to be monidtored with full path.
+    :type files: list, tuple
+    """
 
     def __init__(self, callback, files):
-        """
-        :files: files to be monidtored with full path
-        """
+        assert files is not None and isinstance(files, (list, tuple)), \
+            ValueError('Invalid files: %s' % files)
 
         self._callback = callback
         self._files = files
@@ -25,11 +35,20 @@ class FileChangesChecker(object):
             try:
                 self.file_mtimes[k] = op.getmtime(k)
             except OSError:
-                logger.debug("Getmtime for %s, failed: %s", k,
-                             traceback.format_exc())
+                logging.debug('Getmtime for %s, failed: %s', k,
+                              traceback.format_exc())
 
     def check_changes(self):
-        logger.debug("Checking files=%s", self._files)
+        """Check files change.
+
+        If some files are changed and callback function is not None, call
+        callback function to handle files change.
+
+        :returns: True if files changed else False
+        :rtype: bool
+        """
+
+        logging.debug("Checking files=%s", self._files)
         file_mtimes = self.file_mtimes
         changed_files = []
         for f, last_mtime in file_mtimes.iteritems():
@@ -38,7 +57,7 @@ class FileChangesChecker(object):
                 if current_mtime != last_mtime:
                     file_mtimes[f] = current_mtime
                     changed_files.append(f)
-                    logger.info("Detect %s has changed", f)
+                    logging.info("Detect %s has changed", f)
             except OSError:
                 pass
 
@@ -50,16 +69,26 @@ class FileChangesChecker(object):
 
 
 class FileMonitor(object):
-    """
-    Monitor file changes in a separated thread. Call callback when file changes
+    """Files change monitor.
+
+    Monitor files change in a separated thread and call callback
+    when there is files change.
+
+    :param callback: Callback for handling files change
+    :param files: Files to monitor
+    :type files: list, tuple
+    :param interval: Interval to check files change
+
+    Usage::
+
+      >>> import splunksolutionlib.common.file_monitor as fm
+      >>> fm = fm.FileMonitor(fm_callback, files_list, 5)
+      >>> fm.start()
     """
 
     def __init__(self, callback, files, interval=10):
-        """
-        :callback: callable
-        :files: tuple/list etc iteratable which contains absolute file paths
-        :interval: check intervals in seconds
-        """
+        assert files is not None and isinstance(files, (list, tuple)), \
+            ValueError('Invalid files: %s' % files)
 
         self._checker = FileChangesChecker(callback, files)
         self._thr = threading.Thread(target=self._do_monitor)
@@ -68,6 +97,11 @@ class FileMonitor(object):
         self._started = False
 
     def start(self):
+        """Start file monitor.
+
+        Start a background thread to monitor files change.
+        """
+
         if self._started:
             return
         self._started = True
@@ -75,12 +109,16 @@ class FileMonitor(object):
         self._thr.start()
 
     def stop(self):
+        """Stop file monitor.
+
+        Stop the background thread to monitor files change.
+        """
+
         self._started = False
 
     def _do_monitor(self):
         while self._started:
-            if self._checker.check_changes():
-                break
+            self._checker.check_changes()
 
             for _ in xrange(self._interval):
                 if not self._started:
