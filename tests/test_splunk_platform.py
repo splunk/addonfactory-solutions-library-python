@@ -3,7 +3,7 @@ import os
 import os.path as op
 import unittest as ut
 
-sys.path.insert(0, op.dirname(op.dirname(__file__)))
+sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 from splunksolutionlib.platform import platform as sp
 
 
@@ -17,16 +17,17 @@ class TestGetSplunkdUri(ut.TestCase):
         os.environ["SPLUNKD_URI"] = "https://10.0.0.1:8089"
         uri = sp.get_splunkd_uri()
         self.assertEquals(uri, "https://10.0.0.1:8089")
-
         del os.environ["SPLUNKD_URI"]
+
         os.environ["SPLUNK_BINDIP"] = "10.0.0.2:7080"
         uri = sp.get_splunkd_uri()
         self.assertEquals(uri, "https://10.0.0.2:8089")
+        del os.environ["SPLUNK_BINDIP"]
 
         os.environ["SPLUNK_BINDIP"] = "10.0.0.3"
         uri = sp.get_splunkd_uri()
         self.assertEquals(uri, "https://10.0.0.3:8089")
-
+        del os.environ["SPLUNK_BINDIP"]
 
 if __name__ == "__main__":
     ut.main()

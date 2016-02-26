@@ -5,5 +5,7 @@
 build
 dist
 splunksolutionlib.egg-info
+coverage-reports
+test-reports
 tests/__pycache__
 *.pyc

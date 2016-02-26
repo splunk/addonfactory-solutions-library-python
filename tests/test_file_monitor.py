@@ -4,7 +4,7 @@ import os.path as op
 import unittest as ut
 import time
 
-sys.path.insert(0, op.dirname(op.dirname(__file__)))
+sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 from splunksolutionlib.common import file_monitor as fm
 
 
@@ -65,7 +65,6 @@ class TestFileMonitor(ut.TestCase):
         self._called = True
 
     def test_check_monitor(self):
-        time.sleep(2)
         self.assertFalse(self._called)
 
         with open(self._filename, "w") as f:

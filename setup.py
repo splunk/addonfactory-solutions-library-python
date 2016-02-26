@@ -1,46 +1,100 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
+#
+# Copyright 2011-2015 Splunk, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"): you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
 
-import re
-from codecs import open
+import os.path as op
+from setuptools import setup, Command
 
-from setuptools import setup
+import splunksolutionlib
 
-with open('splunksolutionlib/__init__.py', 'r') as fd:
-    content = fd.read()
-    title = re.search(r'^__title__\s*=\s*[\'"]([^\'"]*)[\'"]',
-                      content, re.MULTILINE).group(1)
-    version = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]',
-                        content, re.MULTILINE).group(1)
-    release = re.search(r'^__release__\s*=\s*[\'"]([^\'"]*)[\'"]',
-                        content, re.MULTILINE).group(1)
-    author = re.search(r'^__author__\s*=\s*[\'"]([^\'"]*)[\'"]',
-                       content, re.MULTILINE).group(1)
-    copyright = re.search(r'^__copyright__\s*=\s*[\'"]([^\'"]*)[\'"]',
-                          content, re.MULTILINE).group(1)
 
-if not title:
-    raise RuntimeError("Cannot find title information")
+def run_test_suite():
+    try:
+        import unittest2 as unittest
+    except ImportError:
+        import unittest
+    tests_dir = op.sep.join([op.dirname(op.abspath(__file__)), 'tests'])
+    suite = unittest.defaultTestLoader.discover(tests_dir)
+    unittest.TextTestRunner().run(suite)
 
-if not version:
-    raise RuntimeError("Cannot find version information")
 
-if not release:
-    raise RuntimeError("Cannot find release information")
+def run_test_suite_with_junit_output():
+    try:
+        import unittest2 as unittest
+    except ImportError:
+        import unittest
+    import xmlrunner
+    tests_dir = op.sep.join([op.dirname(op.abspath(__file__)), 'tests'])
+    suite = unittest.defaultTestLoader.discover(tests_dir)
+    xmlrunner.XMLTestRunner(output='test-reports').run(suite)
 
-if not author:
-    raise RuntimeError("Cannot find author information")
 
-if not copyright:
-    raise RuntimeError("Cannot find copyright information")
+class TestCommand(Command):
+    """setup.py command to run the whole test suite."""
+    description = "Run test full test suite."
+    user_options = []
 
-packages = [
-    'splunksolutionlib',
-    'splunksolutionlib.common',
-    'splunksolutionlib.platform'
-]
+    def initialize_options(self):
+        pass
 
-install_requires = []
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        run_test_suite()
+
+
+class JunitXmlTestCommand(Command):
+    """setup.py command to run the whole test suite."""
+    description = "Run test full test suite with JUnit-formatted output."
+    user_options = []
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        run_test_suite_with_junit_output()
+
+
+class CoverageCommand(Command):
+    """setup.py command to run code coverage of the test suite."""
+    description = \
+        'Create an HTML coverage report from running the full test suite.'
+    user_options = []
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        try:
+            import coverage
+        except ImportError:
+            print "Could not import coverage. Please install it and try again."
+            exit(1)
+        cov = coverage.coverage(source=['splunksolutionlib'])
+        cov.start()
+        run_test_suite()
+        cov.stop()
+        cov.html_report(directory='coverage-reports')
+
 
 classifiers = (
     'Programming Language :: Python',
@@ -53,14 +107,37 @@ classifiers = (
 )
 
 setup(
-    name=title,
-    version=version,
+    name='splunksolutionlib',
+
     description='The Splunk Software Development Kit for Solutions',
-    author=author,
+
+    version=splunksolutionlib.__version__,
+
+    author='Splunk, Inc.',
+
     author_email='Shanghai-TA-dev@splunk.com',
+
+    license="http://www.apache.org/licenses/LICENSE-2.0",
+
     url='https://git.splunk.com/scm/solnsc/lib-solutions-python.git',
-    packages=packages,
-    install_requires=install_requires,
-    zip_safe=False,
-    classifiers=classifiers
+
+    packages=['splunksolutionlib',
+              'splunksolutionlib.common',
+              'splunksolutionlib.platform'],
+
+    install_requires=[],
+
+    cmdclass={'coverage': CoverageCommand,
+              'test': TestCommand,
+              'testjunit': JunitXmlTestCommand},
+
+    classifiers=[
+        'Programming Language :: Python',
+        'Development Status :: 1 - Alpha',
+        'Environment :: Other Environment',
+        'Intended Audience :: Developers',
+        "License :: OSI Approved :: Apache Software License",
+        'Operating System :: OS Independent',
+        'Topic :: Software Development :: Libraries :: Python Modules',
+        'Topic :: Software Development :: Libraries :: Application Frameworks']
 )

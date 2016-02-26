@@ -3,7 +3,7 @@ import os
 import os.path as op
 import unittest as ut
 
-sys.path.insert(0, op.dirname(op.dirname(__file__)))
+sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 from splunksolutionlib.common import utils as utils
 
 
@@ -30,20 +30,20 @@ class TestUtils(ut.TestCase):
             self.assertFalse(utils.is_true(val))
 
     def test_get_appname_from_path(self):
-        app_name = "Splunk_TA_kafka"
+        app_name = "Splunk_TA_test"
 
-        normal = "/opt/splunk/etc/apps/Splunk_TA_kafka/bin/kafka_mod.py"
-        double_slash = "/opt/splunk/etc//apps//Splunk_TA_kafka/bin/kafka_mod.py"
-        apps_prefix = "/apps/opt/splunk/etc//apps//Splunk_TA_kafka/bin/kafka_mod.py"
-        slave = "/opt/splunk/etc/slave-apps/Splunk_TA_kafka/bin/kafka_mod.py"
-        apps_prefix_slave = "/apps/opt/splunk/etc/slave-apps/Splunk_TA_kafka/bin/kafka_mod.py"
-        double_slash_slave = "/opt/splunk/etc//slave-apps//Splunk_TA_kafka/bin/kafka_mod.py"
-        master = "/opt/splunk/etc/master-apps/Splunk_TA_kafka/bin/kafka_mod.py"
-        apps_prefix_master = "/apps/opt/splunk/etc/master-apps/Splunk_TA_kafka/bin/kafka_mod.py"
-        double_slash_master = "/opt/splunk/etc//master-apps//Splunk_TA_kafka/bin/kafka_mod.py"
-        paths = [normal, double_slash, apps_prefix, slave, apps_prefix_slave,
-                 double_slash_slave, master, apps_prefix_master,
-                 double_slash_master]
+        normal = "/opt/splunk/etc/apps/Splunk_TA_test/bin/test_mod.py"
+        double_slash = "/opt/splunk/etc//apps//Splunk_TA_test/bin/test_mod.py"
+        apps_prefix = "/apps/opt/splunk/etc//apps//Splunk_TA_test/bin/test_mod.py"
+        slave = "/opt/splunk/etc/slave-apps/Splunk_TA_test/bin/test_mod.py"
+        apps_prefix_slave = "/apps/opt/splunk/etc/slave-apps/Splunk_TA_test/bin/test_mod.py"
+        double_slash_slave = "/opt/splunk/etc//slave-apps//Splunk_TA_test/bin/test_mod.py"
+        master = "/opt/splunk/etc/master-apps/Splunk_TA_test/bin/test_mod.py"
+        apps_prefix_master = "/apps/opt/splunk/etc/master-apps/Splunk_TA_test/bin/test_mod.py"
+        double_slash_master = "/opt/splunk/etc//master-apps//Splunk_TA_test/bin/test_mod.py"
+        paths = [normal, double_slash, apps_prefix,
+                 slave, apps_prefix_slave, double_slash_slave,
+                 master, apps_prefix_master, double_slash_master]
 
         for path in paths:
             name = utils.get_appname_from_path(path)
@@ -65,7 +65,6 @@ class TestUtils(ut.TestCase):
         utils.remove_http_proxy_env_vars()
         self.assertTrue("http_proxy" not in os.environ)
         self.assertTrue("https_proxy" not in os.environ)
-
 
 if __name__ == "__main__":
     ut.main()

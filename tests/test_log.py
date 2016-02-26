@@ -1,19 +1,18 @@
 import sys
-import os
 import os.path as op
 import unittest
 import threading
 import multiprocessing
 import time
 
-sys.path.insert(0, op.dirname(op.dirname(__file__)))
+sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 from splunksolutionlib.common import log
 
 
 class TestLog(unittest.TestCase):
 
     def setUp(self):
-        curdir = os.path.dirname(os.path.abspath(__file__))
+        curdir = op.dirname(op.abspath(__file__))
         # os.environ["SPLUNK_HOME"] = curdir
         namespace = "unittest"
         self.logger = log.Logs(namespace=namespace).get_logger("unitest")
@@ -26,7 +25,6 @@ class TestLog(unittest.TestCase):
         self.logger.warn("this is a test log that can show")
 
     def test_enter_exit(self):
-
         logger1 = log.Logs().get_logger("unitest1", level="DEBUG")
 
         @log.log_enter_exit(self.logger)
