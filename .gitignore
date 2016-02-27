@@ -1,9 +1,11 @@
 .cache
 .eggs
 .coverage*
-.DS_Store
+*.idea
+*.DS_Store*
 build
 dist
+docs/_build
 splunksolutionlib.egg-info
 coverage-reports
 test-reports

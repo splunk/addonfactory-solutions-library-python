@@ -109,7 +109,7 @@ classifiers = (
 setup(
     name='splunksolutionlib',
 
-    description='The Splunk Software Development Kit for Solutions',
+    description='The Splunk Software Development Kit for Splunk Solutions',
 
     version=splunksolutionlib.__version__,
 
