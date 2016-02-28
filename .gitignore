@@ -8,6 +8,6 @@ dist
 docs/_build
 splunksolutionlib.egg-info
 coverage-reports
-test-reports
+testjunit-reports
 tests/__pycache__
 *.pyc

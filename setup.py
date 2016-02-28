@@ -38,7 +38,7 @@ def run_test_suite_with_junit_output():
     import xmlrunner
     tests_dir = op.sep.join([op.dirname(op.abspath(__file__)), 'tests'])
     suite = unittest.defaultTestLoader.discover(tests_dir)
-    xmlrunner.XMLTestRunner(output='test-reports').run(suite)
+    xmlrunner.XMLTestRunner(output='testjunit-reports').run(suite)
 
 
 class TestCommand(Command):

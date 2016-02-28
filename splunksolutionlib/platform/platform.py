@@ -91,7 +91,6 @@ def _get_merged_conf_raw(conf_name):
     # TODO: dynamically caculate SPLUNK_HOME
     btool_cli = [op.join(os.environ["SPLUNK_HOME"], "bin", "btool"), conf_name,
                  "list"]
-
     try:
         p = subprocess.Popen(btool_cli,
                              stdout=subprocess.PIPE,
@@ -137,6 +136,7 @@ def get_splunkd_uri():
         return os.environ["SPLUNKD_URI"]
 
     server_conf = _get_conf_stanzas("server")
+
     if utils.is_true(server_conf["sslConfig"]["enableSplunkdSSL"]):
         http = "https://"
     else:
