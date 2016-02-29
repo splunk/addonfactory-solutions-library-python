@@ -48,8 +48,11 @@ class TestLog(unittest.TestCase):
 
         logger.debug('this is a test log')
 
-        logger.setLevel(log.logging.DEBUG)
+        log.Logs().set_level(log.logging.DEBUG)
         logger.warn('this is a test log that can show')
+
+        log.Logs().set_level(log.logging.ERROR, name='set_level')
+        logger.warn('this is a test log that can not show')
 
         os.remove(make_splunkhome_path(['var', 'log', 'splunk',
                                         'unittest_set_level.log']))
