@@ -57,5 +57,5 @@ class TestOrphanProcessMonitor(ut.TestCase):
 
         monitor.stop()
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     ut.main()

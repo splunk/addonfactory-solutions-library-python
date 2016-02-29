@@ -46,13 +46,13 @@ def make_splunkhome_path(parts):
         ValueError('Invalid path parts: %s' % parts)
 
     # Assume SPLUNK_HOME env has been set
-    basepath = os.environ["SPLUNK_HOME"]
+    basepath = os.environ['SPLUNK_HOME']
 
     relpath = os.path.normpath(os.path.join(*parts))
     fullpath = os.path.normpath(os.path.join(basepath, relpath))
 
     # Check that we haven't escaped from intended parent directories.
-    if os.path.relpath(fullpath, basepath)[0:2] == "..":
+    if os.path.relpath(fullpath, basepath)[0:2] == '..':
         raise ValueError('Illegal escape from parent directory "%s": %s' %
                          (basepath, fullpath))
 
@@ -66,11 +66,11 @@ def get_splunk_bin():
     :rtype: str
     """
 
-    if os.name == "nt":
-        splunk_bin = "splunk.exe"
+    if os.name == 'nt':
+        splunk_bin = 'splunk.exe'
     else:
-        splunk_bin = "splunk"
-    return make_splunkhome_path(("bin", splunk_bin))
+        splunk_bin = 'splunk'
+    return make_splunkhome_path(('bin', splunk_bin))
 
 
 def _get_merged_conf_raw(conf_name):
@@ -85,12 +85,12 @@ def _get_merged_conf_raw(conf_name):
 
     assert conf_name, ValueError('conf_name is None')
 
-    if conf_name.endswith(".conf"):
+    if conf_name.endswith('.conf'):
         conf_name = conf_name[:-5]
 
     # TODO: dynamically caculate SPLUNK_HOME
-    btool_cli = [op.join(os.environ["SPLUNK_HOME"], "bin", "btool"), conf_name,
-                 "list"]
+    btool_cli = [op.join(os.environ['SPLUNK_HOME'], 'bin', 'btool'), conf_name,
+                 'list']
     try:
         p = subprocess.Popen(btool_cli,
                              stdout=subprocess.PIPE,
@@ -132,26 +132,26 @@ def get_splunkd_uri():
     :rtype: str
     """
 
-    if os.environ.get("SPLUNKD_URI"):
-        return os.environ["SPLUNKD_URI"]
+    if os.environ.get('SPLUNKD_URI'):
+        return os.environ['SPLUNKD_URI']
 
-    server_conf = _get_conf_stanzas("server")
+    server_conf = _get_conf_stanzas('server')
 
-    if utils.is_true(server_conf["sslConfig"]["enableSplunkdSSL"]):
-        http = "https://"
+    if utils.is_true(server_conf['sslConfig']['enableSplunkdSSL']):
+        http = 'https://'
     else:
-        http = "http://"
+        http = 'http://'
 
-    web_conf = _get_conf_stanzas("web")
-    host_port = web_conf["settings"]["mgmtHostPort"]
-    splunkd_uri = "{http}{host_port}".format(http=http, host_port=host_port)
+    web_conf = _get_conf_stanzas('web')
+    host_port = web_conf['settings']['mgmtHostPort']
+    splunkd_uri = '{http}{host_port}'.format(http=http, host_port=host_port)
 
-    if os.environ.get("SPLUNK_BINDIP"):
-        bindip = os.environ["SPLUNK_BINDIP"]
-        port_idx = bindip.rfind(":")
+    if os.environ.get('SPLUNK_BINDIP'):
+        bindip = os.environ['SPLUNK_BINDIP']
+        port_idx = bindip.rfind(':')
         if port_idx > 0:
             bindip = bindip[:port_idx]
-        port = host_port[host_port.rfind(":"):]
-        splunkd_uri = "{http}{bindip}{port}".format(
+        port = host_port[host_port.rfind(':'):]
+        splunkd_uri = '{http}{bindip}{port}'.format(
             http=http, bindip=bindip, port=port)
     return splunkd_uri

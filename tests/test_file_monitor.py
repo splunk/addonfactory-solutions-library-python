@@ -12,9 +12,9 @@ class TestFileChangesChecker(ut.TestCase):
 
     def setUp(self):
         self._filename = op.sep.join([op.dirname(op.abspath(__file__)),
-                                      "test.log"])
-        with open(self._filename, "w") as fp:
-            fp.write("abc")
+                                      'test.log'])
+        with open(self._filename, 'w') as fp:
+            fp.write('abc')
 
         self._called = False
 
@@ -32,8 +32,8 @@ class TestFileChangesChecker(ut.TestCase):
         self.assertFalse(self._called)
 
         time.sleep(1)
-        with open(self._filename, "a") as fp:
-            fp.write("efg")
+        with open(self._filename, 'a') as fp:
+            fp.write('efg')
         res = checker.check_changes()
         self.assertTrue(res)
         self.assertTrue(self._called)
@@ -43,9 +43,9 @@ class TestFileMonitor(ut.TestCase):
 
     def setUp(self):
         self._filename = op.sep.join([op.dirname(op.abspath(__file__)),
-                                      "test.log"])
-        with open(self._filename, "w") as fp:
-            fp.write("abc")
+                                      'test.log'])
+        with open(self._filename, 'w') as fp:
+            fp.write('abc')
 
         self._called = False
 
@@ -63,12 +63,12 @@ class TestFileMonitor(ut.TestCase):
         self.assertFalse(self._called)
 
         time.sleep(1)
-        with open(self._filename, "w") as fp:
-            fp.write("efg")
+        with open(self._filename, 'w') as fp:
+            fp.write('efg')
         time.sleep(2)
         self.assertTrue(self._called)
 
         monitor.stop()
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     ut.main()

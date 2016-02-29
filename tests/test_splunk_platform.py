@@ -18,12 +18,12 @@ class MockPopen(object):
 
     def communicate(self, input=None):
         cur_dir = op.dirname(op.abspath(__file__))
-        if self._conf == "server":
-            file_path = op.sep.join([cur_dir, "conf", "server.conf"])
-        elif self._conf == "web":
-            file_path = op.sep.join([cur_dir, "conf", "web.conf"])
+        if self._conf == 'server':
+            file_path = op.sep.join([cur_dir, 'data', 'conf', 'server.conf'])
+        elif self._conf == 'web':
+            file_path = op.sep.join([cur_dir, 'data', 'conf', 'web.conf'])
         else:
-            raise ValueError("Unknown conf file %s." % self._conf)
+            raise ValueError('Unknown conf file %s.' % self._conf)
 
         with open(file_path) as fp:
             return fp.read(), None
@@ -41,22 +41,22 @@ class TestGetSplunkdUri(ut.TestCase):
     # Testcase depends on SPLUNK_HOME env variables
     def test_splunkd_uri(self):
         uri = sp.get_splunkd_uri()
-        self.assertEquals(uri, "https://127.0.0.1:8089")
+        self.assertEquals(uri, 'https://127.0.0.1:8089')
 
-        os.environ["SPLUNKD_URI"] = "https://10.0.0.1:8089"
+        os.environ['SPLUNKD_URI'] = 'https://10.0.0.1:8089'
         uri = sp.get_splunkd_uri()
-        self.assertEquals(uri, "https://10.0.0.1:8089")
-        del os.environ["SPLUNKD_URI"]
+        self.assertEquals(uri, 'https://10.0.0.1:8089')
+        del os.environ['SPLUNKD_URI']
 
-        os.environ["SPLUNK_BINDIP"] = "10.0.0.2:7080"
+        os.environ['SPLUNK_BINDIP'] = '10.0.0.2:7080'
         uri = sp.get_splunkd_uri()
-        self.assertEquals(uri, "https://10.0.0.2:8089")
-        del os.environ["SPLUNK_BINDIP"]
+        self.assertEquals(uri, 'https://10.0.0.2:8089')
+        del os.environ['SPLUNK_BINDIP']
 
-        os.environ["SPLUNK_BINDIP"] = "10.0.0.3"
+        os.environ['SPLUNK_BINDIP'] = '10.0.0.3'
         uri = sp.get_splunkd_uri()
-        self.assertEquals(uri, "https://10.0.0.3:8089")
-        del os.environ["SPLUNK_BINDIP"]
+        self.assertEquals(uri, 'https://10.0.0.3:8089')
+        del os.environ['SPLUNK_BINDIP']
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     ut.main()

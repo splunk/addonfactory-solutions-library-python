@@ -33,7 +33,7 @@ class OrphanProcessChecker(object):
     """
 
     def __init__(self, callback=None):
-        if os.name == "nt":
+        if os.name == 'nt':
             self._ppid = 0
         else:
             self._ppid = os.getppid()
@@ -48,7 +48,7 @@ class OrphanProcessChecker(object):
         :rtype: bool
         """
 
-        if os.name == "nt":
+        if os.name == 'nt':
             return False
         return self._ppid != os.getppid()
 
@@ -105,7 +105,7 @@ class OrphanProcessMonitor(object):
     def _do_monitor(self):
         while self._started:
             if self._checker.check_orphan():
-                logging.warn("Process=%s has become orphan", os.getpid())
+                logging.warn('Process=%s has become orphan', os.getpid())
                 break
 
             for _ in xrange(self._interval):

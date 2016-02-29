@@ -58,7 +58,7 @@ class FileChangesChecker(object):
         :rtype: bool
         """
 
-        logging.debug("Checking files=%s", self._files)
+        logging.debug('Checking files=%s', self._files)
         file_mtimes = self.file_mtimes
         changed_files = []
         for f, last_mtime in file_mtimes.iteritems():
@@ -67,7 +67,7 @@ class FileChangesChecker(object):
                 if current_mtime != last_mtime:
                     file_mtimes[f] = current_mtime
                     changed_files.append(f)
-                    logging.info("Detect %s has changed", f)
+                    logging.info('Detect %s has changed', f)
             except OSError:
                 pass
 

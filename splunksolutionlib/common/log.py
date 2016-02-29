@@ -41,9 +41,9 @@ def log_enter_exit(logger):
 
     def log_decorator(func):
         def wrapper(*args, **kwargs):
-            logger.debug("%s entered", func.__name__)
+            logger.debug('%s entered', func.__name__)
             result = func(*args, **kwargs)
-            logger.debug("%s exited", func.__name__)
+            logger.debug('%s exited', func.__name__)
             return result
 
         return wrapper
@@ -103,7 +103,7 @@ class Logs(object):
         if name in self._loggers:
             return self._loggers[name]
 
-        logfile = make_splunkhome_path(["var", "log", "splunk", name])
+        logfile = make_splunkhome_path(['var', 'log', 'splunk', name])
         logger = logging.getLogger(name)
 
         handler_exists = any(
@@ -111,12 +111,12 @@ class Logs(object):
         if not handler_exists:
             file_handler = handlers.RotatingFileHandler(
                 logfile,
-                mode="a",
+                mode='a',
                 maxBytes=max_bytes,
                 backupCount=backup_count)
             formatter = logging.Formatter(
-                "%(asctime)s %(levelname)s pid=%(process)d tid=%(threadName)s "
-                "file=%(filename)s:%(funcName)s:%(lineno)d | %(message)s")
+                '%(asctime)s %(levelname)s pid=%(process)d tid=%(threadName)s '
+                'file=%(filename)s:%(funcName)s:%(lineno)d | %(message)s')
             file_handler.setFormatter(formatter)
             logger.addHandler(file_handler)
             logger.setLevel(level)
@@ -146,11 +146,11 @@ class Logs(object):
                 logger.setLevel(level)
 
     def _get_log_name(self, name):
-        if name.endswith(".py"):
-            name = name.replace(".py", "")
+        if name.endswith('.py'):
+            name = name.replace('.py', '')
 
         if self._namespace:
-            name = "{}_{}.log".format(self._namespace, name)
+            name = '{}_{}.log'.format(self._namespace, name)
         else:
-            name = "{}.log".format(name)
+            name = '{}.log'.format(name)
         return name
