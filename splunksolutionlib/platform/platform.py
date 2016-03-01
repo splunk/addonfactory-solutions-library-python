@@ -12,9 +12,9 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-"""
+'''
 Splunk platform related utilities.
-"""
+'''
 
 import os
 import os.path as op
@@ -26,10 +26,10 @@ import splunksolutionlib.common.utils as utils
 
 
 def make_splunkhome_path(parts):
-    """Construct absolute path by $SPLUNK_HOME and `parts`.
+    '''Construct absolute path by $SPLUNK_HOME and `parts`.
 
     Concatenate $SPLUNK_HOME and `parts` to an absolute path.
-    For example, `parts` is ["etc", "apps", "Splunk_TA_test"],
+    For example, `parts` is ['etc', 'apps', 'Splunk_TA_test'],
     the return path will be $SPLUNK_HOME/etc/apps/Splunk_TA_test.
     Note: this function assumed SPLUNK_HOME is in environment varialbes.
 
@@ -38,9 +38,8 @@ def make_splunkhome_path(parts):
     :returns: Absolute path
     :rtype: str
 
-    :raises KeyError: If $SPLUNK_HOME has not been set
     :raises ValueError: Escape from intended parent directories
-    """
+    '''
 
     assert parts is not None and isinstance(parts, (list, tuple)), \
         ValueError('Invalid path parts: %s' % parts)
@@ -60,11 +59,11 @@ def make_splunkhome_path(parts):
 
 
 def get_splunk_bin():
-    """Get absolute path of splunk CLI.
+    '''Get absolute path of splunk CLI.
 
     :returns: absolute path of splunk CLI
     :rtype: str
-    """
+    '''
 
     if os.name == 'nt':
         splunk_bin = 'splunk.exe'
@@ -74,14 +73,12 @@ def get_splunk_bin():
 
 
 def _get_merged_conf_raw(conf_name):
-    """Get merged raw content of `conf_name`
+    '''Get merged raw content of `conf_name`
 
     :param conf_name: Configure file name
     :returns: Merged raw content of `conf_name`
     :rtype: str
-
-    :raises ValueError: If fail to get merged raw content
-    """
+    '''
 
     assert conf_name, ValueError('conf_name is None')
 
@@ -91,32 +88,29 @@ def _get_merged_conf_raw(conf_name):
     # TODO: dynamically caculate SPLUNK_HOME
     btool_cli = [op.join(os.environ['SPLUNK_HOME'], 'bin', 'btool'), conf_name,
                  'list']
-    try:
-        p = subprocess.Popen(btool_cli,
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
-        out, err = p.communicate()
-    except OSError:
-        raise
+
+    p = subprocess.Popen(btool_cli,
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE)
+    out, err = p.communicate()
 
     return out
 
 
 def _get_conf_stanzas(conf_name):
-    """Get stanzas of `conf_name`
+    '''Get stanzas of `conf_name`
 
     :param conf_name: Configure file name
     :returns: Config stanzas like: {stanza_name: stanza_configs}
     :rtype: dict
-
-    :raises ValueError: If fail to get merged raw content
-    """
+    '''
 
     res = _get_merged_conf_raw(conf_name)
     res = StringIO(res)
     parser = ConfigParser()
     parser.optionxform = str
     parser.readfp(res)
+
     res = {}
     for section in parser.sections():
         res[section] = {item[0]: item[1] for item in parser.items(section)}
@@ -124,13 +118,13 @@ def _get_conf_stanzas(conf_name):
 
 
 def get_splunkd_uri():
-    """Get splunkd uri.
+    '''Get splunkd uri.
 
     Construct splunkd uri by parsing web.conf and server.conf.
 
     :returns: Splunkd uri
     :rtype: str
-    """
+    '''
 
     if os.environ.get('SPLUNKD_URI'):
         return os.environ['SPLUNKD_URI']

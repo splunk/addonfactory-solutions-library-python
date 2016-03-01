@@ -12,9 +12,9 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-"""
+'''
 Common utilities.
-"""
+'''
 
 import os
 import os.path as op
@@ -23,14 +23,14 @@ import signal
 
 
 def handle_tear_down_signals(callback):
-    """Register handler for SIGTERM/SIGINT/SIGBREAK signal.
+    '''Register handler for SIGTERM/SIGINT/SIGBREAK signal.
 
     Catch SIGTERM/SIGINT/SIGBREAK signals, and invoke callback
     Note: this should be called in main thread since Python only catches
     signals in main thread
 
     :param callback: Callback for tear down signals
-    """
+    '''
 
     signal.signal(signal.SIGTERM, callback)
     signal.signal(signal.SIGINT, callback)
@@ -40,25 +40,25 @@ def handle_tear_down_signals(callback):
 
 
 def datetime_to_seconds(dt):
-    """Convert UTC datatime to seconds since epoch.
+    '''Convert UTC datatime to seconds since epoch.
 
     :param dt: Date time
     :type dt: datatime
     :returns: Seconds since epoch
     :rtype: float
-    """
+    '''
 
     epoch_time = datetime.datetime.utcfromtimestamp(0)
     return (dt - epoch_time).total_seconds()
 
 
 def is_true(val):
-    """Decide if `val` is true.
+    '''Decide if `val` is true.
 
     :param val: Value to check
     :returns: True or False
     :rtype: bool
-    """
+    '''
 
     value = str(val).strip().upper()
     if value in ('1', 'TRUE', 'T', 'Y', 'YES'):
@@ -67,12 +67,12 @@ def is_true(val):
 
 
 def is_false(val):
-    """Decide if `val` is false.
+    '''Decide if `val` is false.
 
     :param val: Value to check
     :returns: True or False
     :rtype: bool
-    """
+    '''
 
     value = str(val).strip().upper()
     if value in ('0', 'FALSE', 'F', 'N', 'NO', 'NONE', ''):
@@ -81,10 +81,10 @@ def is_false(val):
 
 
 def remove_http_proxy_env_vars():
-    """Remove http_proxy/https_proxy Env.
+    '''Remove http_proxy/https_proxy Env.
 
     These environment variables impacts some 3rd party libs like httplib2
-    """
+    '''
 
     for k in ('http_proxy', 'https_proxy'):
         if k in os.environ:
@@ -94,7 +94,7 @@ def remove_http_proxy_env_vars():
 
 
 def get_appname_from_path(absolute_path):
-    """Deduce appname from `absolute_path`
+    '''Deduce appname from `absolute_path`
 
     For example: the appname for /splunk/etc/apps/Splunk_TA_test/bin/test.py
     will be Splunk_TA_test
@@ -103,7 +103,7 @@ def get_appname_from_path(absolute_path):
         os.path.abspath(__file__)
     :returns: App name if successful otherwise return None
     :rtype: str
-    """
+    '''
 
     absolute_path = op.normpath(absolute_path)
     parts = absolute_path.split(os.path.sep)
@@ -123,12 +123,12 @@ def get_appname_from_path(absolute_path):
 
 
 def escape_json_control_chars(json_str):
-    """Escape josn control chars in `json_str`.
+    '''Escape josn control chars in `json_str`.
 
     :param json_str: Json string to escape
     :returns: Escaped string
     :rtype: string
-    """
+    '''
 
     control_chars = ((r'\n', '\\\\n'),
                      (r'\r', '\\\\r'),

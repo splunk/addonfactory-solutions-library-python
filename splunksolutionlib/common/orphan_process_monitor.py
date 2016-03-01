@@ -12,9 +12,9 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-"""
+'''
 Orphan process monitor.
-"""
+'''
 
 import os
 import threading
@@ -23,14 +23,14 @@ import logging
 
 
 class OrphanProcessChecker(object):
-    """Orphan process checker.
+    '''Orphan process checker.
 
     Only work for Linux platform. On Windows platform, is_orphan
     is always False and there is no need to do this monitoring on
     Windows.
 
     :param callback: (optional) Callback for orphan process
-    """
+    '''
 
     def __init__(self, callback=None):
         if os.name == 'nt':
@@ -40,27 +40,27 @@ class OrphanProcessChecker(object):
         self._callback = callback
 
     def is_orphan(self):
-        """Check process is orphan.
+        '''Check process is orphan.
 
         For windows platform just return False.
 
         :returns: True for orphan process else False
         :rtype: bool
-        """
+        '''
 
         if os.name == 'nt':
             return False
         return self._ppid != os.getppid()
 
     def check_orphan(self):
-        """Check if the process becomes orphan.
+        '''Check if the process becomes orphan.
 
         If the process becomes orphan then call callback function
         to handle properly.
 
         :returns: True for orphan process else False
         :rtype: bool
-        """
+        '''
 
         res = self.is_orphan()
         if res and self._callback:
@@ -69,14 +69,14 @@ class OrphanProcessChecker(object):
 
 
 class OrphanProcessMonitor(object):
-    """Orpan process monitor.
+    '''Orpan process monitor.
 
     Check if process become orphan in background thread per
     iterval and call callback if process become orphan.
 
     :param callback: Callback for orphan process monitor
     :param interval: (optional) Interval to monitor
-    """
+    '''
 
     def __init__(self, callback, interval=1):
         self._checker = OrphanProcessChecker(callback)
@@ -86,9 +86,9 @@ class OrphanProcessMonitor(object):
         self._interval = interval
 
     def start(self):
-        """
+        '''
         Start orphan process monitor.
-        """
+        '''
 
         if self._started:
             return
@@ -97,9 +97,9 @@ class OrphanProcessMonitor(object):
         self._thr.start()
 
     def stop(self):
-        """
+        '''
         Stop orphan process monitor.
-        """
+        '''
         self._started = False
 
     def _do_monitor(self):

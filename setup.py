@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright 2011-2015 Splunk, Inc.
+# Copyright 2016 Splunk, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"): you may
 # not use this file except in compliance with the License. You may obtain
@@ -94,17 +94,6 @@ class CoverageCommand(Command):
         run_test_suite()
         cov.stop()
         cov.html_report(directory='coverage-reports')
-
-
-classifiers = (
-    'Programming Language :: Python',
-    'Development Status :: 1 - Alpha',
-    'Environment :: Other Environment',
-    'Intended Audience :: Developers',
-    'Operating System :: OS Independent',
-    'Topic :: Software Development :: Libraries :: Python Modules',
-    'Topic :: Software Development :: Libraries :: Application Frameworks'
-)
 
 setup(
     name='splunksolutionlib',

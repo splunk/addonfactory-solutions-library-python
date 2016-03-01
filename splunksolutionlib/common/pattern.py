@@ -19,9 +19,9 @@ Commonly used design partten for python user, includes:
 
 
 class Singleton(type):
-    """
+    '''
     Singleton meta class
-    """
+    '''
 
     def __init__(cls, name, bases, attrs):
         super(Singleton, cls).__init__(name, bases, attrs)

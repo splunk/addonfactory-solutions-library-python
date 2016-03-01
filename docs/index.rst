@@ -4,12 +4,13 @@
    contain the root `toctree` directive.
 
 Welcome to Splunk Solution Library API reference.
-=========================================================
+=================================================
 
 .. toctree::
    :maxdepth: 2
+   :numbered:
 
-   splunksolutionlib/init
+   splunksolutionlib/init.rst
 
 
 Indices and tables
