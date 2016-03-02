@@ -42,19 +42,41 @@ def make_splunkhome_path(parts):
     '''
 
     assert parts is not None and isinstance(parts, (list, tuple)), \
-        ValueError('Invalid path parts: %s' % parts)
+        'parts is not a list or tuple: %r' % parts
 
-    # Assume SPLUNK_HOME env has been set
-    basepath = os.environ['SPLUNK_HOME']
+    on_shared_storage = [os.path.join('etc', 'apps'),
+                         os.path.join('etc', 'users'),
+                         os.path.join('var', 'run', 'splunk', 'dispatch'),
+                         os.path.join('var', 'run', 'splunk', 'srtemp'),
+                         os.path.join('var', 'run', 'splunk', 'rss'),
+                         os.path.join('var', 'run', 'splunk', 'scheduler'),
+                         os.path.join('var', 'run', 'splunk', 'lookup_tmp')]
 
+    server_conf = _get_conf_stanzas('server')
+    state = server_conf['pooling']['state']
+    storage = server_conf['pooling']['storage']
+    if ((state == 'enabled') and (len(storage) > 0)):
+        shared_storage = storage
+    else:
+        shared_storage = ''
+
+    basepath = ''
     relpath = os.path.normpath(os.path.join(*parts))
+    if len(shared_storage) > 0:
+        for candidate in on_shared_storage:
+            if os.path.relpath(relpath, candidate)[0:2] != '..':
+                basepath = shared_storage
+                break
+    if len(basepath) == 0:
+        basepath = os.environ["SPLUNK_HOME"]
+
     fullpath = os.path.normpath(os.path.join(basepath, relpath))
 
     # Check that we haven't escaped from intended parent directories.
     if os.path.relpath(fullpath, basepath)[0:2] == '..':
         raise ValueError('Illegal escape from parent directory "%s": %s' %
                          (basepath, fullpath))
-
+    print fullpath
     return fullpath
 
 
@@ -80,7 +102,7 @@ def _get_merged_conf_raw(conf_name):
     :rtype: str
     '''
 
-    assert conf_name, ValueError('conf_name is None')
+    assert conf_name, 'conf_name is None'
 
     if conf_name.endswith('.conf'):
         conf_name = conf_name[:-5]
