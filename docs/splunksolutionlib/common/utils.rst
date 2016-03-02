@@ -20,6 +20,10 @@ APIs
 
 :func:`~splunksolutionlib.common.utils.escape_json_control_chars` function
 
+:func:`~splunksolutionlib.common.utils.is_valid_ip` function
+
+:func:`~splunksolutionlib.common.utils.resolve_hostname` function
+
 Detail Info
 -----------
 
@@ -36,3 +40,7 @@ Detail Info
 .. autofunction:: get_appname_from_path
 
 .. autofunction:: escape_json_control_chars
+
+.. autofunction:: is_valid_ip
+
+.. autofunction:: resolve_hostname

@@ -4,6 +4,7 @@ import signal
 import datetime
 import os.path as op
 import unittest as ut
+import socket
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 from splunksolutionlib.common import utils as utils
@@ -100,6 +101,46 @@ class TestUtils(ut.TestCase):
         escaped_str1 = r'hello\\r\\nworld'
         self.assertTrue(escaped_str1 ==
                         utils.escape_json_control_chars(str1))
+
+    def test_is_valid_ip(self):
+        valid_ip = '192.168.1.1'
+        invalid_ip1 = '192.168.1'
+        invalid_ip2 = 192
+
+        self.assertTrue(utils.is_valid_ip(valid_ip))
+        self.assertFalse(utils.is_valid_ip(invalid_ip1))
+        self.assertFalse(utils.is_valid_ip(invalid_ip2))
+
+    def test_resolve_hostname(self):
+        invalid_ip = '192.1.1'
+        resolvable_ip = '192.168.0.1'
+        unresolvable_ip1 = '192.168.1.1'
+        unresolvable_ip2 = '192.168.1.2'
+        unresolvable_ip3 = '192.168.1.3'
+
+        def mock_gethostbyaddr(addr):
+            if addr == resolvable_ip:
+                return ("hostname", None, None)
+            elif addr == unresolvable_ip1:
+                raise socket.gaierror()
+            elif addr == unresolvable_ip2:
+                raise socket.herror()
+            else:
+                raise socket.timeout()
+
+        # Save origin gethostbyaddr
+        old_gethostbyaddr = socket.gethostbyaddr
+        socket.gethostbyaddr = mock_gethostbyaddr
+
+        with self.assertRaises(ValueError):
+            utils.resolve_hostname(invalid_ip)
+        self.assertIsNotNone(utils.resolve_hostname(resolvable_ip))
+        self.assertIsNone(utils.resolve_hostname(unresolvable_ip1))
+        self.assertIsNone(utils.resolve_hostname(unresolvable_ip2))
+        self.assertIsNone(utils.resolve_hostname(unresolvable_ip3))
+
+        # Restore gethostbyaddr
+        socket.gethostbyaddr = old_gethostbyaddr
 
 if __name__ == '__main__':
     ut.main()
