@@ -6,7 +6,8 @@
     "build": "python setup.py sdist",
     "lint": "python setup.py lint | tee pylint.log",
     "test": "python setup.py test",
-    "coverage": "python setup.py coverage"
+    "coverage": "python setup.py coverage",
+    "docs": "cd docs; make html"
   },
   "devDependencies": {
     "ext-grunt-basebuild": "0.1.9"
