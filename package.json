@@ -1,0 +1,14 @@
+{
+  "name": "lib-solutions-python",
+  "version": "1.0.0",
+  "description": "SDK for solutions",
+  "scripts": {
+    "build": "python setup.py sdist",
+    "lint": "python setup.py lint | tee pylint.log",
+    "test": "python setup.py test",
+    "coverage": "python setup.py coverage"
+  },
+  "devDependencies": {
+    "ext-grunt-basebuild": "0.1.9"
+  }
+}

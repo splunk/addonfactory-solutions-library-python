@@ -11,3 +11,4 @@ coverage-reports
 testjunit-reports
 tests/__pycache__
 *.pyc
+node_modules/*
