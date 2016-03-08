@@ -27,7 +27,7 @@ def run_test_suite():
         import unittest
     tests_dir = op.sep.join([op.dirname(op.abspath(__file__)), 'tests'])
     suite = unittest.defaultTestLoader.discover(tests_dir)
-    unittest.TextTestRunner().run(suite)
+    unittest.TextTestRunner(verbosity=2).run(suite)
 
 
 def run_test_suite_with_junit_output():

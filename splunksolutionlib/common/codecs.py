@@ -39,9 +39,9 @@ class GzipHandler(object):
         Bytes 0 and 1 should be (per RFC 1952):
         data[0] = 31 (0x1f), data[1] = 139 (0x8b).
 
-        :param data: data to check
-        :returns: True if it is in gzip format else False
-        :rtype: bool
+        :param data: data to check.
+        :returns: True if it is in gzip format else False.
+        :rtype: ``bool``
         '''
 
         return data[0:2] == '\x1f\x8b'
@@ -53,12 +53,12 @@ class GzipHandler(object):
         It will perform basic validation, then return the decompressed
         data or raises ValueError exception for invalid `data`.
 
-        :param data: gzip-compressed data to decompress
-        :returns: decompressed data
-        :rtype: str
+        :param data: gzip-compressed data to decompress.
+        :returns: decompressed data.
+        :rtype: ``string``
 
         :raises ValueError:
-            with error cls.ERR_INVALID_FORMAT for `data` is not in gzip format
+            with error cls.ERR_INVALID_FORMAT for `data` is not in gzip format.
         '''
 
         if not cls.check_format(data):
@@ -74,8 +74,7 @@ class ZipHandler(object):
     '''
 
     # Error messages
-    ERR_EXCESS_FILES = \
-        'Zip files containing multiple files not supported by this handler.'
+    ERR_EXCESS_FILES = 'Zip files containing multiple files not supported by this handler.'
     ERR_EXTRACT_ERROR = 'Unknown exception when extracting zip file.'
     ERR_INVALID_FORMAT = 'File is not zip format.'
     ERR_SIZE_MISMATCH = 'Zip file size does not match actual size.'
@@ -87,9 +86,9 @@ class ZipHandler(object):
     def check_format(cls, data):
         '''Validate `data` whether it is in zip format.
 
-        :param data: data to check
-        :returns: True if it is in zip format else False
-        :rtype: bool
+        :param data: data to check.
+        :returns: True if it is in zip format else False.
+        :rtype: ``bool``
         '''
 
         return zipfile.is_zipfile(StringIO.StringIO(data))
@@ -101,9 +100,9 @@ class ZipHandler(object):
         It will perform basic validation, then return the decompressed
         data or raises ValueError exception with error message.
 
-        :param data: zip-compressed data to decompress
-        :returns: decompressed data
-        :rtype: str
+        :param data: zip-compressed data to decompress.
+        :returns: decompressed data.
+        :rtype: ``string``
 
         :raises ValueError: with error message of
             cls.ERR_INVALID_FORMAT for `data` is not in zip format,

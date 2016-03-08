@@ -29,7 +29,7 @@ class OrphanProcessChecker(object):
     is always False and there is no need to do this monitoring on
     Windows.
 
-    :param callback: (optional) Callback for orphan process
+    :param callback: (optional) Callback for orphan process.
     '''
 
     def __init__(self, callback=None):
@@ -45,7 +45,7 @@ class OrphanProcessChecker(object):
         For windows platform just return False.
 
         :returns: True for orphan process else False
-        :rtype: bool
+        :rtype: ``bool``
         '''
 
         if os.name == 'nt':
@@ -59,7 +59,7 @@ class OrphanProcessChecker(object):
         to handle properly.
 
         :returns: True for orphan process else False
-        :rtype: bool
+        :rtype: ``bool``
         '''
 
         res = self.is_orphan()
@@ -74,8 +74,8 @@ class OrphanProcessMonitor(object):
     Check if process become orphan in background thread per
     iterval and call callback if process become orphan.
 
-    :param callback: Callback for orphan process monitor
-    :param interval: (optional) Interval to monitor
+    :param callback: Callback for orphan process monitor.
+    :param interval: (optional) Interval to monitor.
     '''
 
     def __init__(self, callback, interval=1):

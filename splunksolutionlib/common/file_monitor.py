@@ -30,11 +30,11 @@ class FileChangesChecker(object):
 
     :param callback: Callback function for files change.
     :param files: Files to be monidtored with full path.
-    :type files: list, tuple
+    :type files: ``list, tuple``
     '''
 
     def __init__(self, callback, files):
-        assert files is not None and isinstance(files, (list, tuple)), \
+        assert files and isinstance(files, (list, tuple)), \
             'files is not a list or tuple: %r' % files
 
         self._callback = callback
@@ -55,7 +55,7 @@ class FileChangesChecker(object):
         callback function to handle files change.
 
         :returns: True if files changed else False
-        :rtype: bool
+        :rtype: ``bool``
         '''
 
         logging.debug('Checking files=%s', self._files)
@@ -84,10 +84,10 @@ class FileMonitor(object):
     Monitor files change in a separated thread and call callback
     when there is files change.
 
-    :param callback: Callback for handling files change
-    :param files: Files to monitor
-    :type files: list, tuple
-    :param interval: Interval to check files change
+    :param callback: Callback for handling files change.
+    :param files: Files to monitor.
+    :type files: ``list, tuple``
+    :param interval: Interval to check files change.
 
     Usage::
 
@@ -97,7 +97,7 @@ class FileMonitor(object):
     '''
 
     def __init__(self, callback, files, interval=10):
-        assert files is not None and isinstance(files, (list, tuple)), \
+        assert files and isinstance(files, (list, tuple)), \
             'files is not a list or tuple: %r' % files
 
         self._checker = FileChangesChecker(callback, files)

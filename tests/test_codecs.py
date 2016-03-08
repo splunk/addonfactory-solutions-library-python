@@ -3,7 +3,7 @@ import os.path as op
 import unittest
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-from splunksolutionlib.common import codecs
+import splunksolutionlib.common.codecs as codecs
 
 
 class TestGzipHandler(unittest.TestCase):
@@ -55,4 +55,4 @@ class TestZiphandler(unittest.TestCase):
         self.assertEqual(codecs.ZipHandler.decompress(zcomp_data), 'test\n')
 
 if __name__ == '__main__':
-    unittest.main()
+    unittest.main(verbosity=2)

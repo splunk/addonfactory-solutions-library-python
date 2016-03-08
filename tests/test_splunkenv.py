@@ -5,7 +5,7 @@ import unittest as ut
 import subprocess
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-from splunksolutionlib.platform import platform as sp
+import splunksolutionlib.splunkenv as splunkenv
 
 
 class MockPopen(object):
@@ -38,25 +38,37 @@ class TestGetSplunkdUri(ut.TestCase):
     def tearDown(self):
         subprocess.Popen = self._old_Popen
 
+    def test_splunk_bin(self):
+        splunk_bin = splunkenv.get_splunk_bin()
+        self.assertTrue(splunk_bin in (
+            os.environ['SPLUNK_HOME'] + 'bin/splunk',
+            os.environ['SPLUNK_HOME'] + 'bin/splunk.exe'))
+
+    def test_get_splunkd_serverinfo(self):
+        scheme, host, port = splunkenv.get_splunkd_serverinfo()
+        self.assertEqual(scheme, 'https')
+        self.assertEqual(host, '127.0.0.1')
+        self.assertEqual(port, 8089)
+
     # Testcase depends on SPLUNK_HOME env variables
     def test_splunkd_uri(self):
-        uri = sp.get_splunkd_uri()
+        uri = splunkenv.get_splunkd_uri()
         self.assertEquals(uri, 'https://127.0.0.1:8089')
 
         os.environ['SPLUNKD_URI'] = 'https://10.0.0.1:8089'
-        uri = sp.get_splunkd_uri()
+        uri = splunkenv.get_splunkd_uri()
         self.assertEquals(uri, 'https://10.0.0.1:8089')
         del os.environ['SPLUNKD_URI']
 
         os.environ['SPLUNK_BINDIP'] = '10.0.0.2:7080'
-        uri = sp.get_splunkd_uri()
+        uri = splunkenv.get_splunkd_uri()
         self.assertEquals(uri, 'https://10.0.0.2:8089')
         del os.environ['SPLUNK_BINDIP']
 
         os.environ['SPLUNK_BINDIP'] = '10.0.0.3'
-        uri = sp.get_splunkd_uri()
+        uri = splunkenv.get_splunkd_uri()
         self.assertEquals(uri, 'https://10.0.0.3:8089')
         del os.environ['SPLUNK_BINDIP']
 
 if __name__ == '__main__':
-    ut.main()
+    ut.main(verbosity=2)
