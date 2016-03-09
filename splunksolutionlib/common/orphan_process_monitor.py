@@ -21,6 +21,8 @@ import threading
 import time
 import logging
 
+__all__ = ['OrphanProcessChecker',
+           'OrphanProcessMonitor']
 
 class OrphanProcessChecker(object):
     '''Orphan process checker.

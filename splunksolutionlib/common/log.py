@@ -21,6 +21,8 @@ import logging
 import logging.handlers as handlers
 import os.path as op
 
+__all__ = ['log_enter_exit',
+           'Logs']
 
 def log_enter_exit(logger):
     '''Decorator for logger to log function enter and exit.

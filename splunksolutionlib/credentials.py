@@ -22,6 +22,11 @@ from xml.etree.ElementTree import XML
 import splunklib.binding as binding
 import splunklib.client as client
 
+__all__ = ['CredException',
+           'CredNotExistException',
+           'CredentialManager',
+           'get_session_key']
+
 
 class CredException(Exception):
     pass

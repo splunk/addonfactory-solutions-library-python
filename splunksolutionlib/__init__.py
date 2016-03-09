@@ -16,5 +16,14 @@
 The Splunk Software Development Kit for Solutions.
 """
 
+from . import common
+from . import credentials
+from . import splunkenv
+
+__all__ = ['common',
+           'credentials',
+           'splunkenv',
+           '__version__']
+
 __version_info__ = (0, 1, 0)
 __version__ = '.'.join(map(str, __version_info__))

@@ -24,6 +24,11 @@ from cStringIO import StringIO
 
 import splunksolutionlib.common.utils as utils
 
+__all__ = ['make_splunkhome_path',
+           'get_splunk_bin',
+           'get_splunkd_serverinfo',
+           'get_splunkd_uri']
+
 
 def make_splunkhome_path(parts):
     '''Construct absolute path by $SPLUNK_HOME and `parts`.

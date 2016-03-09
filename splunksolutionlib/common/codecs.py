@@ -20,6 +20,9 @@ import gzip
 import cStringIO as StringIO
 import zipfile
 
+__all__ = ['GzipHandler',
+           'ZipHandler']
+
 
 class GzipHandler(object):
     '''

@@ -24,6 +24,9 @@ import time
 import threading
 import logging
 
+__all__ = ['FileChangesChecker',
+           'FileMonitor']
+
 
 class FileChangesChecker(object):
     '''Files change checker.
