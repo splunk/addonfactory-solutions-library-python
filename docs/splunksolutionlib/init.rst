@@ -8,4 +8,5 @@ splunksolutionlib
    :maxdepth: 2
 
    common/init
-   platform/init
+   credentials
+   splunkenv

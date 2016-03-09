@@ -14,10 +14,6 @@ APIs
 
 :func:`~splunksolutionlib.common.utils.is_false` function
 
-:func:`~splunksolutionlib.common.utils.remove_http_proxy_env_vars` function
-
-:func:`~splunksolutionlib.common.utils.get_appname_from_path` function
-
 :func:`~splunksolutionlib.common.utils.escape_json_control_chars` function
 
 :func:`~splunksolutionlib.common.utils.is_valid_ip` function
@@ -34,10 +30,6 @@ Detail Info
 .. autofunction:: is_true
 
 .. autofunction:: is_false
-
-.. autofunction:: remove_http_proxy_env_vars
-
-.. autofunction:: get_appname_from_path
 
 .. autofunction:: escape_json_control_chars
 

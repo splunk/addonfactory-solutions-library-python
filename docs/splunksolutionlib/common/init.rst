@@ -10,6 +10,5 @@ common
    file_monitor
    log
    orphan_process_monitor
-   pattern
    utils
    codecs
