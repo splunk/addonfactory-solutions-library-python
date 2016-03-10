@@ -7,7 +7,7 @@ import multiprocessing
 import time
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-import splunksolutionlib.common.log as log
+from splunksolutionlib.common import log
 
 
 class TestLog(unittest.TestCase):

@@ -1,8 +1,8 @@
 import hashlib
 
 from splunklib.data import record
-import splunklib.binding as binding
-import splunklib.client as client
+from splunklib import binding
+from splunklib import client
 
 
 class _MocBufReader(object):

@@ -14,5 +14,6 @@ Detail Info
 -----------
 
 .. autoclass:: CredentialManager
+   :members:
 
 .. autofunction:: get_session_key

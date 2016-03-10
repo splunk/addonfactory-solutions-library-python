@@ -26,9 +26,7 @@ __all__ = ['handle_tear_down_signals',
            'datetime_to_seconds',
            'is_true',
            'is_false',
-           'escape_json_control_chars',
-           'is_valid_ip',
-           'resolve_hostname']
+           'escape_json_control_chars']
 
 
 def handle_tear_down_signals(callback):
@@ -103,58 +101,3 @@ def escape_json_control_chars(json_str):
     for ch, replace in control_chars:
         json_str = json_str.replace(ch, replace)
     return json_str
-
-
-def is_valid_ip(addr):
-    """Validate an IP address.
-
-    :param value: IP address to validate.
-    :returns: True if is valid else False.
-    :rtype: ``bool``
-    """
-
-    ip_rx = re.compile(r'''
-        ^(((
-              [0-1]\d{2}                  # matches 000-199
-            | 2[0-4]\d                    # matches 200-249
-            | 25[0-5]                     # matches 250-255
-            | \d{1,2}                     # matches 0-9, 00-99
-        )\.){3})                          # 3 of the preceding stanzas
-        ([0-1]\d{2}|2[0-4]\d|25[0-5]|\d{1,2})$     # final octet
-    ''', re.VERBOSE)
-
-    try:
-        return bool(ip_rx.match(addr.strip()))
-    except AttributeError:
-        # Value was not a string
-        return False
-
-
-def resolve_hostname(addr):
-    """Try to resolve an IP to a host name and returns None
-    on common failures.
-
-    :param addr: IP address to resolve.
-    :returns: host name if success else None.
-    :rtype: ``string``
-
-    :raises ValueError: If `addr` is not a valid address
-    """
-
-    if is_valid_ip(addr):
-        try:
-            name, _, _ = socket.gethostbyaddr(addr)
-            return name
-        except socket.gaierror:
-            # [Errno 8] nodename nor servname provided, or not known
-            pass
-        except socket.herror:
-            # [Errno 1] Unknown host
-            pass
-        except socket.timeout:
-            # Timeout.
-            pass
-
-        return None
-    else:
-        raise ValueError('Invalid ip address.')

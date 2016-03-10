@@ -5,7 +5,7 @@ import unittest as ut
 import time
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-import splunksolutionlib.common.file_monitor as file_minitor
+from splunksolutionlib.common import file_monitor
 
 
 class TestFileChangesChecker(ut.TestCase):
@@ -25,7 +25,7 @@ class TestFileChangesChecker(ut.TestCase):
         self._called = True
 
     def test_check_changes(self):
-        checker = file_minitor.FileChangesChecker(
+        checker = file_monitor.FileChangesChecker(
             self.callback_when_file_changes,
             [self._filename])
         res = checker.check_changes()
@@ -57,7 +57,7 @@ class TestFileMonitor(ut.TestCase):
         self._called = True
 
     def test_check_monitor(self):
-        monitor = file_minitor.FileMonitor(self.callback_when_file_changes,
+        monitor = file_monitor.FileMonitor(self.callback_when_file_changes,
                                            [self._filename], interval=1)
         monitor.start()
 

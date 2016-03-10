@@ -5,7 +5,7 @@ import unittest as ut
 import rest_client
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-import splunksolutionlib.credentials as credentials
+from splunksolutionlib import credentials
 
 
 class TestCredentials(ut.TestCase):

@@ -3,7 +3,7 @@ import os.path as op
 import unittest
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-import splunksolutionlib.common.codecs as codecs
+from splunksolutionlib.common import codecs
 
 
 class TestGzipHandler(unittest.TestCase):

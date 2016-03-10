@@ -14,7 +14,7 @@ Detail Info
 -----------
 
 .. autoclass:: OrphanProcessChecker
-    :members:
+   :members:
 
 .. autoclass:: OrphanProcessMonitor
-	:members:
+   :members:

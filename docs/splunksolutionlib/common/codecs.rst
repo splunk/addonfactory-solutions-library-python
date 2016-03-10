@@ -14,7 +14,7 @@ Detail Info
 -----------
 
 .. autoclass:: GzipHandler
-    :members:
+   :members:
 
 .. autoclass:: ZipHandler
-    :members:
+   :members:

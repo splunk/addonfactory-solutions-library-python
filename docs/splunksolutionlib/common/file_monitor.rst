@@ -14,7 +14,7 @@ Detail Info
 -----------
 
 .. autoclass:: FileChangesChecker
-    :members:
+   :members:
 
 .. autoclass:: FileMonitor
-    :members:
+   :members:

@@ -16,9 +16,9 @@
 The Splunk Software Development Kit for Solutions.
 """
 
-from . import common
-from . import credentials
-from . import splunkenv
+from splunksolutionlib import common
+from splunksolutionlib import credentials
+from splunksolutionlib import splunkenv
 
 __all__ = ['common',
            'credentials',

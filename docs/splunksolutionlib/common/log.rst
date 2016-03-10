@@ -16,4 +16,4 @@ Detail Info
 .. autofunction:: log_enter_exit
 
 .. autoclass:: Logs
-    :members:
+   :members:

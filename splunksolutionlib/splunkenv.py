@@ -58,21 +58,28 @@ def make_splunkhome_path(parts):
                          os.path.join('var', 'run', 'splunk', 'lookup_tmp')]
 
     server_conf = _get_conf_stanzas('server')
-    state = server_conf['pooling']['state']
-    storage = server_conf['pooling']['storage']
-    if ((state == 'enabled') and (len(storage) > 0)):
+    try:
+        state = server_conf['pooling']['state']
+        storage = server_conf['pooling']['storage']
+    except KeyError:
+        state = 'disabled'
+        storage = None
+
+    if state == 'enabled' and storage:
         shared_storage = storage
     else:
-        shared_storage = ''
+        shared_storage = None
 
-    basepath = ''
     relpath = os.path.normpath(os.path.join(*parts))
-    if len(shared_storage) > 0:
+
+    basepath = None
+    if shared_storage:
         for candidate in on_shared_storage:
             if os.path.relpath(relpath, candidate)[0:2] != '..':
                 basepath = shared_storage
                 break
-    if len(basepath) == 0:
+
+    if basepath is None:
         basepath = os.environ["SPLUNK_HOME"]
 
     fullpath = os.path.normpath(os.path.join(basepath, relpath))

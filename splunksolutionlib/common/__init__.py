@@ -12,11 +12,11 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from . import codecs
-from . import file_monitor
-from . import log
-from . import orphan_process_monitor
-from . import utils
+from splunksolutionlib.common import codecs
+from splunksolutionlib.common import file_monitor
+from splunksolutionlib.common import log
+from splunksolutionlib.common import orphan_process_monitor
+from splunksolutionlib.common import utils
 
 __all__ = ['codecs',
            'file_monitor',

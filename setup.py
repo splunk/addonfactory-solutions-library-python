@@ -42,8 +42,10 @@ def run_test_suite_with_junit_output():
 
 
 class TestCommand(Command):
-    """setup.py command to run the whole test suite."""
-    description = "Run test full test suite."
+    '''
+    Command to run the whole test suite.
+    '''
+    description = 'Run test full test suite.'
     user_options = []
 
     def initialize_options(self):
@@ -57,8 +59,10 @@ class TestCommand(Command):
 
 
 class JunitXmlTestCommand(Command):
-    """setup.py command to run the whole test suite."""
-    description = "Run test full test suite with JUnit-formatted output."
+    '''
+    Command to run the whole test suite.
+    '''
+    description = 'Run test full test suite with JUnit-formatted output.'
     user_options = []
 
     def initialize_options(self):
@@ -69,31 +73,6 @@ class JunitXmlTestCommand(Command):
 
     def run(self):
         run_test_suite_with_junit_output()
-
-
-class CoverageCommand(Command):
-    """setup.py command to run code coverage of the test suite."""
-    description = \
-        'Create an HTML coverage report from running the full test suite.'
-    user_options = []
-
-    def initialize_options(self):
-        pass
-
-    def finalize_options(self):
-        pass
-
-    def run(self):
-        try:
-            import coverage
-        except ImportError:
-            print "Could not import coverage. Please install it and try again."
-            exit(1)
-        cov = coverage.coverage(source=['splunksolutionlib'])
-        cov.start()
-        run_test_suite()
-        cov.stop()
-        cov.html_report(directory='coverage-reports')
 
 setup(
     name='splunksolutionlib',
@@ -106,7 +85,7 @@ setup(
 
     author_email='Shanghai-TA-dev@splunk.com',
 
-    license="http://www.apache.org/licenses/LICENSE-2.0",
+    license='http://www.apache.org/licenses/LICENSE-2.0',
 
     url='https://git.splunk.com/scm/solnsc/lib-solutions-python.git',
 
@@ -116,8 +95,7 @@ setup(
 
     install_requires=[],
 
-    cmdclass={'coverage': CoverageCommand,
-              'test': TestCommand,
+    cmdclass={'test': TestCommand,
               'testjunit': JunitXmlTestCommand},
 
     classifiers=[
@@ -125,7 +103,7 @@ setup(
         'Development Status :: 1 - Alpha',
         'Environment :: Other Environment',
         'Intended Audience :: Developers',
-        "License :: OSI Approved :: Apache Software License",
+        'License :: OSI Approved :: Apache Software License',
         'Operating System :: OS Independent',
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Topic :: Software Development :: Libraries :: Application Frameworks']

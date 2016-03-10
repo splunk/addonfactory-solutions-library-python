@@ -5,7 +5,7 @@ import unittest as ut
 import subprocess
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-import splunksolutionlib.splunkenv as splunkenv
+from splunksolutionlib import splunkenv
 
 
 class MockPopen(object):
