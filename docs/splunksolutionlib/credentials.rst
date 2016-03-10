@@ -1,5 +1,5 @@
-CredentialManager
-=================
+credentials
+===========
 
 .. automodule:: splunksolutionlib.credentials
 

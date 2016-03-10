@@ -15,14 +15,14 @@ class _MocBufReader(object):
 
 # Session key
 # ================================================================================
-session_key_post_backup = binding.HttpLib.post
+_session_key_post_backup = binding.HttpLib.post
 
 SESSION_KEY = 'W5l05ATp_CuWFwDg29z6zz2TZMtYb5d6wrVK^qBOVXZfvgadV1GscFcb8QWq3l7V_drv94R1kHMX1Ttx_ow^Ig_0EZH4AFFfX_QhuIN'
 
 
 def _mock_session_key_post(self, url, headers=None, **kwargs):
     return record(
-        {'body': binding.ResponseReader(_MocBufReader('<response>\n  <sessionKey>{}</sessionKey>\n</response>'.format(SESSION_KEY))),
+        {'body': binding.ResponseReader(_MocBufReader('{"sessionKey":"' + SESSION_KEY + '"}')),
          'headers': [
              ('content-length', '154'),
              ('x-content-type-options', 'nosniff'),
@@ -42,14 +42,14 @@ def setup_session_key_env():
 
 
 def restore_session_key_env():
-    binding.HttpLib.post = _mock_session_key_post
+    binding.HttpLib.post = _session_key_post_backup
 
 
 # Credential
 # ================================================================================
-credential_list_backup = client.ReadOnlyCollection.list
-credential_create_backup = client.StoragePasswords.create
-credential_delete_backup = client.StoragePasswords.delete
+_credential_list_backup = client.ReadOnlyCollection.list
+_credential_create_backup = client.StoragePasswords.create
+_credential_delete_backup = client.StoragePasswords.delete
 
 
 credentials_store = {}
@@ -96,6 +96,60 @@ def setup_credential_env():
 
 
 def restore_credential_env():
-    client.ReadOnlyCollection.list = credential_list_backup
-    client.StoragePasswords.create = credential_create_backup
-    client.StoragePasswords.delete = credential_delete_backup
+    client.ReadOnlyCollection.list = _credential_list_backup
+    client.StoragePasswords.create = _credential_create_backup
+    client.StoragePasswords.delete = _credential_delete_backup
+
+# ACL
+# ================================================================================
+_acl_get_backup = binding.Context.get
+_acl_post_backup = binding.Context.post
+
+_acl_get_body = '{"entry": [{"author": "nobody", "name": "transforms", "acl": {"sharing": "global", "perms": {"read": ["*"], "write": ["*"]}, "app": "Splunk_TA_test", "modifiable": true, "owner": "nobody", "can_change_perms": true, "can_share_global": true, "can_list": true, "can_share_user": false, "can_share_app": true, "removable": false, "can_write": true}}]}'
+
+_acl_post_body = '{"entry": [{"author": "nobody", "name": "transforms", "acl": {"sharing": "global", "perms": {"read": ["*"], "write": ["admin"]}, "app": "Splunk_TA_test", "modifiable": true, "owner": "nobody", "can_change_perms": true, "can_share_global": true, "can_list": true, "can_share_user": false, "can_share_app": true, "removable": false, "can_write": true}}]}'
+
+
+def _mock_acl_get(self, path_segment, owner=None, app=None, sharing=None, **query):
+    return record(
+        {'body': binding.ResponseReader(_MocBufReader(_acl_get_body)),
+         'headers': [('content-length', '39903'),
+                     ('x-content-type-options', 'nosniff'),
+                     ('expires', 'Thu, 26 Oct 1978 00:00:00 GMT'),
+                     ('vary', 'Authorization'),
+                     ('server', 'Splunkd'),
+                     ('connection', 'Close'),
+                     ('cache-control', 'no-store, no-cache, must-revalidate, max-age=0'),
+                     ('date', 'Fri, 11 Mar 2016 03:15:57 GMT'),
+                     ('x-frame-options', 'SAMEORIGIN'),
+                     ('content-type', 'application/json; charset=UTF-8')],
+         'reason': 'OK',
+         'status': 200})
+
+
+def _mock_acl_post(self, path_segment, owner=None, app=None, sharing=None, headers=None, **query):
+    return record(
+        {'body': binding.ResponseReader(_MocBufReader(_acl_post_body)),
+         'headers': [('content-length', '39903'),
+                     ('x-content-type-options', 'nosniff'),
+                     ('expires', 'Thu, 26 Oct 1978 00:00:00 GMT'),
+                     ('vary', 'Authorization'),
+                     ('server', 'Splunkd'),
+                     ('connection', 'Close'),
+                     ('cache-control', 'no-store, no-cache, must-revalidate, max-age=0'),
+                     ('date', 'Fri, 11 Mar 2016 03:15:57 GMT'),
+                     ('x-frame-options', 'SAMEORIGIN'),
+                     ('content-type', 'application/json; charset=UTF-8')],
+         'reason': 'OK',
+         'status': 200}
+    )
+
+
+def setup_acl_env():
+    binding.Context.get = _mock_acl_get
+    binding.Context.post = _mock_acl_post
+
+
+def restore_acl_env():
+    binding.Context.get = _acl_get_backup
+    binding.Context.post = _acl_post_backup

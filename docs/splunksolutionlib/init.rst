@@ -9,4 +9,5 @@ splunksolutionlib
 
    common/init
    credentials
+   acl
    splunkenv

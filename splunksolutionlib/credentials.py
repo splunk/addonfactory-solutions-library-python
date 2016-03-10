@@ -17,7 +17,7 @@ This module contains Splunk credential related interfaces.
 """
 
 import re
-from xml.etree.ElementTree import XML
+import json
 
 import splunklib.binding as binding
 import splunklib.client as client
@@ -39,7 +39,7 @@ class CredNotExistException(CredException):
 class CredentialManager(object):
     '''Credential manager.
 
-    This class provides interfaces to get/set/delete password.
+    This class provides interfaces of CRUD operations on password.
 
     :param scheme: The scheme for accessing the service, option: http/https.
     :type scheme: ``string``
@@ -52,7 +52,7 @@ class CredentialManager(object):
 
     Usage::
 
-       >>> import splunksolutionlib.common.credentials as scc
+       >>> import splunksolutionlib.credentials as scc
        >>> cm = scc.CredentialManager('https', '127.0.0.1', 8089, session_key)
     '''
 
@@ -89,7 +89,7 @@ class CredentialManager(object):
         :type user: ``string``
         :param app: App name of namespace.
         :type user: ``string``
-        :param owner: Owner of namespace.
+        :param owner: (optional) Owner of namespace.
         :type user: ``string``
         :param realm: Realm of password.
         :type user: ``string``
@@ -124,7 +124,7 @@ class CredentialManager(object):
         :type password: ``string``
         :param app: App name of namespace.
         :type user: ``string``
-        :param owner: Owner of namespace.
+        :param owner: (optional) Owner of namespace.
         :type user: ``string``
         :param realm: Realm of password.
         :type user: ``string``
@@ -166,7 +166,7 @@ class CredentialManager(object):
         :type user: ``string``
         :param app: App name of namespace.
         :type user: ``string``
-        :param owner: Owner of namespace.
+        :param owner: (optional) Owner of namespace.
         :type user: ``string``
         :param realm: Realm of password.
         :type user: ``string``
@@ -265,7 +265,7 @@ def get_session_key(scheme, host, port, username, password):
     response = binding.Context().http.post(
         '{}://{}:{}{}'.format(scheme, host, port, '/services/auth/login'),
         username=username,
-        password=password)
+        password=password,
+        output_mode='json')
 
-    body = response.body.read()
-    return XML(body).findtext("./sessionKey")
+    return json.loads(response.body.read())['sessionKey']
