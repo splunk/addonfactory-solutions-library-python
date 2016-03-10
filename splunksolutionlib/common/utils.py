@@ -17,10 +17,8 @@ Common utilities.
 '''
 
 import os
-import re
 import datetime
 import signal
-import socket
 
 __all__ = ['handle_tear_down_signals',
            'datetime_to_seconds',

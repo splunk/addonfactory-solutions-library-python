@@ -19,6 +19,7 @@ Splunk platform related utilities.
 import os
 import os.path as op
 import subprocess
+import logging
 from ConfigParser import ConfigParser
 from cStringIO import StringIO
 
@@ -28,6 +29,53 @@ __all__ = ['make_splunkhome_path',
            'get_splunk_bin',
            'get_splunkd_serverinfo',
            'get_splunkd_uri']
+
+ETC_LEAF = 'etc'
+
+# See validateSearchHeadPooling() in src/libbundle/ConfSettings.cpp
+on_shared_storage = [os.path.join(ETC_LEAF, 'apps'),
+                     os.path.join(ETC_LEAF, 'users'),
+                     os.path.join('var', 'run', 'splunk', 'dispatch'),
+                     os.path.join('var', 'run', 'splunk', 'srtemp'),
+                     os.path.join('var', 'run', 'splunk', 'rss'),
+                     os.path.join('var', 'run', 'splunk', 'scheduler'),
+                     os.path.join('var', 'run', 'splunk', 'lookup_tmp')]
+
+
+def _splunk_home():
+    return os.path.normpath(os.environ["SPLUNK_HOME"])
+
+
+def _splunk_etc():
+    try:
+        result = os.environ['SPLUNK_ETC']
+    except KeyError:
+        result = op.join(_splunk_home, ETC_LEAF)
+        logging.warn('SPLUNK_ETC is not defined; falling back to %s' % result)
+
+    return os.path.normpath(result)
+
+
+# Verify path prefix and return true if both paths have drives
+def _verify_path_prefix(path, start):
+    path_drive = os.path.splitdrive(path)[0]
+    start_drive = os.path.splitdrive(start)[0]
+    return len(path_drive) == len(start_drive)
+
+
+def _get_shared_storage():
+    server_conf = _get_conf_stanzas('server')
+    try:
+        state = server_conf['pooling']['state']
+        storage = server_conf['pooling']['storage']
+    except KeyError:
+        state = 'disabled'
+        storage = None
+
+    if state == 'enabled' and storage:
+        return storage
+
+    return None
 
 
 def make_splunkhome_path(parts):
@@ -46,41 +94,34 @@ def make_splunkhome_path(parts):
     :raises ValueError: Escape from intended parent directories
     '''
 
-    assert parts is not None and isinstance(parts, (list, tuple)), \
+    assert parts and isinstance(parts, (list, tuple)), \
         'parts is not a list or tuple: %r' % parts
-
-    on_shared_storage = [os.path.join('etc', 'apps'),
-                         os.path.join('etc', 'users'),
-                         os.path.join('var', 'run', 'splunk', 'dispatch'),
-                         os.path.join('var', 'run', 'splunk', 'srtemp'),
-                         os.path.join('var', 'run', 'splunk', 'rss'),
-                         os.path.join('var', 'run', 'splunk', 'scheduler'),
-                         os.path.join('var', 'run', 'splunk', 'lookup_tmp')]
-
-    server_conf = _get_conf_stanzas('server')
-    try:
-        state = server_conf['pooling']['state']
-        storage = server_conf['pooling']['storage']
-    except KeyError:
-        state = 'disabled'
-        storage = None
-
-    if state == 'enabled' and storage:
-        shared_storage = storage
-    else:
-        shared_storage = None
 
     relpath = os.path.normpath(os.path.join(*parts))
 
     basepath = None
+    shared_storage = _get_shared_storage()
     if shared_storage:
         for candidate in on_shared_storage:
+            # SPL-100508 On windows if the path is missing the drive letter, construct fullpath manually and call relpath
+            if os.name == 'nt' and not _verify_path_prefix(relpath, candidate):
+                break
+
             if os.path.relpath(relpath, candidate)[0:2] != '..':
                 basepath = shared_storage
                 break
 
     if basepath is None:
-        basepath = os.environ["SPLUNK_HOME"]
+        etc_with_trailing_sep = os.path.join(ETC_LEAF, '')
+        if relpath == ETC_LEAF or relpath.startswith(etc_with_trailing_sep):
+            # Redirect $SPLUNK_HOME/etc to $SPLUNK_ETC.
+            basepath = _splunk_etc()
+            # Remove leading etc (and path separator, if present). Note: when
+            # emitting $SPLUNK_ETC exactly, with no additional path parts, we
+            # set <relpath> to the empty string.
+            relpath = relpath[4:]
+        else:
+            basepath = _splunk_home()
 
     fullpath = os.path.normpath(os.path.join(basepath, relpath))
 
