@@ -10,4 +10,5 @@ splunksolutionlib
    common/init
    credentials
    acl
+   metadata
    splunkenv

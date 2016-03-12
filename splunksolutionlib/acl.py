@@ -112,6 +112,8 @@ class ACLManager(object):
         :type perms_write: ``list``
         :returns: A dict contains ACL after update.
         :rtype: ``dict``
+
+        :raises ACLException: If `path` doesn't end by 'acl/_acl'.
         '''
 
         if not path.endswith('/acl') and not path.endswith('/_acl'):
