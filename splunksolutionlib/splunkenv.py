@@ -20,15 +20,20 @@ import os
 import os.path as op
 import subprocess
 import logging
+import socket
 from ConfigParser import ConfigParser
 from cStringIO import StringIO
 
-import splunksolutionlib.common.utils as utils
+from splunksolutionlib.common import utils
 
 __all__ = ['make_splunkhome_path',
+           'get_splunk_host_info',
            'get_splunk_bin',
-           'get_splunkd_serverinfo',
-           'get_splunkd_uri']
+           'get_splunkd_access_info',
+           'get_splunkd_uri',
+           'get_conf_key_value',
+           'get_conf_stanza',
+           'get_conf_stanzas']
 
 ETC_LEAF = 'etc'
 
@@ -50,24 +55,22 @@ def _splunk_etc():
     try:
         result = os.environ['SPLUNK_ETC']
     except KeyError:
-        result = op.join(_splunk_home, ETC_LEAF)
+        result = op.join(_splunk_home(), ETC_LEAF)
         logging.warn('SPLUNK_ETC is not defined; falling back to %s' % result)
 
     return os.path.normpath(result)
 
 
-# Verify path prefix and return true if both paths have drives
-def _verify_path_prefix(path, start):
-    path_drive = os.path.splitdrive(path)[0]
-    start_drive = os.path.splitdrive(start)[0]
-    return len(path_drive) == len(start_drive)
-
-
 def _get_shared_storage():
-    server_conf = _get_conf_stanzas('server')
+    """Get splunk shared storage name.
+
+    :returns: Splunk shared storage name.
+    :rtype: ``string``
+    """
+
     try:
-        state = server_conf['pooling']['state']
-        storage = server_conf['pooling']['storage']
+        state = get_conf_key_value('server', 'pooling', 'state')
+        storage = get_conf_key_value('server', 'pooling', 'storage')
     except KeyError:
         state = 'disabled'
         storage = None
@@ -76,6 +79,13 @@ def _get_shared_storage():
         return storage
 
     return None
+
+
+# Verify path prefix and return true if both paths have drives
+def _verify_path_prefix(path, start):
+    path_drive = os.path.splitdrive(path)[0]
+    start_drive = os.path.splitdrive(start)[0]
+    return len(path_drive) == len(start_drive)
 
 
 def make_splunkhome_path(parts):
@@ -132,6 +142,19 @@ def make_splunkhome_path(parts):
     return fullpath
 
 
+def get_splunk_host_info():
+    """Get splunk host info.
+
+    :returns: (server_name, host_name)
+    :rtype: ``tuple``
+    """
+
+    server_name = get_conf_key_value('server', 'general', 'serverName')
+    host_name = socket.gethostname()
+
+    return (server_name, host_name)
+
+
 def get_splunk_bin():
     '''Get absolute path of splunk CLI.
 
@@ -146,21 +169,20 @@ def get_splunk_bin():
     return make_splunkhome_path(('bin', splunk_bin))
 
 
-def get_splunkd_serverinfo():
-    '''Get splunkd server info.
+def get_splunkd_access_info():
+    '''Get splunkd server access info.
 
-    :returns: Splunkd server info (scheme, host, port)
+    :returns: (scheme, host, port)
     :rtype: ``tuple``
     '''
 
-    server_conf = _get_conf_stanzas('server')
-    if utils.is_true(server_conf['sslConfig']['enableSplunkdSSL']):
+    if utils.is_true(get_conf_key_value('server', 'sslConfig',
+                                        'enableSplunkdSSL')):
         scheme = 'https'
     else:
         scheme = 'http'
 
-    web_conf = _get_conf_stanzas('web')
-    host_port = web_conf['settings']['mgmtHostPort']
+    host_port = get_conf_key_value('web', 'settings', 'mgmtHostPort')
     host = host_port.split(':')[0]
     port = int(host_port.split(':')[1])
 
@@ -182,16 +204,49 @@ def get_splunkd_uri():
     if os.environ.get('SPLUNKD_URI'):
         return os.environ['SPLUNKD_URI']
 
-    scheme, host, port = get_splunkd_serverinfo()
+    scheme, host, port = get_splunkd_access_info()
     return '{scheme}://{host}:{port}'.format(scheme=scheme,
                                              host=host, port=port)
 
 
-def _get_conf_stanzas(conf_name):
+def get_conf_key_value(conf_name, stanza, key):
+    '''Get value of `key` of `stanza` in `conf_name`.
+
+    :param conf_name: Config file.
+    :type conf_name: ``string``
+    :param stanza: Stanza name.
+    :type stanza: ``string``
+    :param key: Key name.
+    :type key: ``string``
+    :returns: Config value.
+    :rtype: ``(string, list, dict)``
+    '''
+
+    stanzas = get_conf_stanzas(conf_name)
+    return stanzas[stanza][key]
+
+
+def get_conf_stanza(conf_name, stanza):
+    '''Get `stanza` in `conf_name`.
+
+    :param conf_name: Config file.
+    :type conf_name: ``string``
+    :param stanza: Stanza name.
+    :type stanza: ``string``
+    :returns: Config stanza.
+    :rtype: ``dict``
+    '''
+
+    stanzas = get_conf_stanzas(conf_name)
+    return stanzas[stanza]
+
+
+def get_conf_stanzas(conf_name):
     '''Get stanzas of `conf_name`
 
-    :param conf_name: Configure file name
-    :returns: Config stanzas like: {stanza_name: stanza_configs}
+    :param conf_name: Config file.
+    :type conf_name: ``string``
+    :returns: Config stanzas.
     :rtype: ``dict``
     '''
 

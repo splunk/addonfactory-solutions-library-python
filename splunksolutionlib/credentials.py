@@ -41,19 +41,19 @@ class CredentialManager(object):
 
     This class provides interfaces of CRUD operations on password.
 
-    :param scheme: The scheme for accessing the service, option: http/https.
-    :type scheme: ``string``
-    :param host: The host name.
-    :type host: ``string``
-    :param port: The port number.
-    :type port: ``integer``
     :param session_key: Splunk access token.
     :type session_key: ``string``
+    :param scheme: (optional) The scheme for accessing the service, default is `https`.
+    :type scheme: ``string``
+    :param host: (optional) The host name, default is `localhost`.
+    :type host: ``string``
+    :param port: (optional) The port number, default is 8089.
+    :type port: ``integer``
 
     Usage::
 
        >>> import splunksolutionlib.credentials as scc
-       >>> cm = scc.CredentialManager('https', '127.0.0.1', 8089, session_key)
+       >>> cm = scc.CredentialManager(session_key)
     '''
 
     # Splunk can only encrypt string with length <=255
@@ -62,14 +62,12 @@ class CredentialManager(object):
     # Splunk credential separator
     SEP = '``splunk_cred_sep``'
 
-    def __init__(self, scheme, host, port, session_key):
-        assert scheme and host and port and session_key, \
-            'scheme/host/port/session_key should not be empty.'
-
+    def __init__(self, session_key,
+                 scheme='https', host='localhost', port=8089):
+        self._session_key = session_key
         self._scheme = scheme
         self._host = host
-        self._port = int(port)
-        self._session_key = session_key
+        self._port = port
 
     def _storage_password_context(self, app, owner):
         kwargs = {}
@@ -244,20 +242,21 @@ class CredentialManager(object):
         return results.values()
 
 
-def get_session_key(scheme, host, port, username, password):
+def get_session_key(username, password,
+                    scheme='https', host='localhost', port=8089):
     '''Get splunkd access token.
 
-    :param scheme: The scheme for accessing the service, option: http/https.
-    :type scheme: ``string``
-    :param host: The host name.
-    :type host: ``string``
-    :param port: The port number.
-    :type port: ``integer``
     :param username: The Splunk account username, which is used to
         authenticate the Splunk instance.
     :type username: ``string``
     :param password: The password for the Splunk account.
     :type password: ``string``
+    :param scheme: (optional) The scheme for accessing the service, default is `https`.
+    :type scheme: ``string``
+    :param host: (optional) The host name, default is `localhost`.
+    :type host: ``string``
+    :param port: (optional) The port number, default is `8089`.
+    :type port: ``integer``
     :returns: Splunk access token.
     :rtype: ``string``
     '''

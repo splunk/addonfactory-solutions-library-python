@@ -13,7 +13,7 @@ class TestACL(ut.TestCase):
     def test_acl_manager(self):
         rest_client.setup_acl_env()
 
-        aclm = acl.ACLManager('https', '127.0.0.1', 8089, rest_client.SESSION_KEY)
+        aclm = acl.ACLManager(rest_client.SESSION_KEY)
         perms = aclm.get('data/transforms/extractions/_acl', 'Splunk_TA_test')
         self.assertEqual(perms,
                          {

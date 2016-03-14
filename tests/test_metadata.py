@@ -14,11 +14,11 @@ def mock_make_splunkhome_path(parts):
 
 class TestGetSplunkdUri(ut.TestCase):
     def setUp(self):
-        self._old_make_splunkhome_path = splunkenv.make_splunkhome_path
+        self._make_splunkhome_path_backup = splunkenv.make_splunkhome_path
         splunkenv.make_splunkhome_path = mock_make_splunkhome_path
 
     def tearDown(self):
-        splunkenv.make_splunkhome_path = self._old_make_splunkhome_path
+        splunkenv.make_splunkhome_path = self._make_splunkhome_path_backup
 
     def test_metadata_reader(self):
         from splunksolutionlib import metadata

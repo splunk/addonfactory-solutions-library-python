@@ -3,12 +3,13 @@ import os
 import os.path as op
 import unittest as ut
 import subprocess
+import socket
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 from splunksolutionlib import splunkenv
 
 
-class MockPopen(object):
+class _MockPopen(object):
     def __init__(self, args, bufsize=0, executable=None,
                  stdin=None, stdout=None, stderr=None,
                  preexec_fn=None, close_fds=False, shell=False,
@@ -29,14 +30,33 @@ class MockPopen(object):
             return fp.read(), None
 
 
+def _mock_gethostname():
+    return 'hostname_test'
+
+
 class TestGetSplunkdUri(ut.TestCase):
 
     def setUp(self):
-        self._old_Popen = subprocess.Popen
-        subprocess.Popen = MockPopen
+        self._Popen_backup = subprocess.Popen
+        subprocess.Popen = _MockPopen
 
     def tearDown(self):
-        subprocess.Popen = self._old_Popen
+        subprocess.Popen = self._Popen_backup
+
+    def test_splunkhome_path(self):
+        self.assertEqual(splunkenv.make_splunkhome_path(['etc', 'apps']),
+                         os.environ['SPLUNK_HOME'] + 'etc/apps')
+
+    def test_get_splunk_host_info(self):
+        # Save origin gethostbyaddr
+        gethostname_backup = socket.gethostname
+        socket.gethostname = _mock_gethostname
+
+        server_name, host_name = splunkenv.get_splunk_host_info()
+        self.assertEqual(server_name, 'servername_test')
+        self.assertEqual(host_name, 'hostname_test')
+
+        socket.gethostname = gethostname_backup
 
     def test_splunk_bin(self):
         splunk_bin = splunkenv.get_splunk_bin()
@@ -44,8 +64,8 @@ class TestGetSplunkdUri(ut.TestCase):
             os.environ['SPLUNK_HOME'] + 'bin/splunk',
             os.environ['SPLUNK_HOME'] + 'bin/splunk.exe'))
 
-    def test_get_splunkd_serverinfo(self):
-        scheme, host, port = splunkenv.get_splunkd_serverinfo()
+    def test_get_splunkd_access_info(self):
+        scheme, host, port = splunkenv.get_splunkd_access_info()
         self.assertEqual(scheme, 'https')
         self.assertEqual(host, '127.0.0.1')
         self.assertEqual(port, 8089)

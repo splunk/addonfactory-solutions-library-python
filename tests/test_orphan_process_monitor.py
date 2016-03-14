@@ -17,11 +17,11 @@ class TestOrphanProcessChecker(ut.TestCase):
 
     def setUp(self):
         self._called = False
-        self._old_getppid = os.getppid
+        self._getppid_backup = os.getppid
         os.getppid = mock_getppid
 
     def tearDown(self):
-        os.getppid = self._old_getppid
+        os.getppid = self._getppid_backup
 
     def orphan_callback(self):
         self._called = True
@@ -39,11 +39,11 @@ class TestOrphanProcessMonitor(ut.TestCase):
 
     def setUp(self):
         self._called = False
-        self._old_getppid = os.getppid
+        self._getppid_backup = os.getppid
         os.getppid = mock_getppid
 
     def tearDown(self):
-        os.getppid = self._old_getppid
+        os.getppid = self._getppid_backup
 
     def orphan_callback(self):
         self._called = True

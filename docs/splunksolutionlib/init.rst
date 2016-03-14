@@ -11,4 +11,5 @@ splunksolutionlib
    credentials
    acl
    metadata
+   server_info
    splunkenv

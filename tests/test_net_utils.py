@@ -16,7 +16,7 @@ class TestUtils(ut.TestCase):
         unresolvable_ip2 = '192.168.1.2'
         unresolvable_ip3 = '192.168.1.3'
 
-        def mock_gethostbyaddr(addr):
+        def _mock_gethostbyaddr(addr):
             if addr == resolvable_ip:
                 return ("hostname", None, None)
             elif addr == unresolvable_ip1:
@@ -27,8 +27,8 @@ class TestUtils(ut.TestCase):
                 raise socket.timeout()
 
         # Save origin gethostbyaddr
-        old_gethostbyaddr = socket.gethostbyaddr
-        socket.gethostbyaddr = mock_gethostbyaddr
+        gethostbyaddr_backup = socket.gethostbyaddr
+        socket.gethostbyaddr = _mock_gethostbyaddr
 
         with self.assertRaises(ValueError):
             net_utils.resolve_hostname(invalid_ip)
@@ -38,7 +38,7 @@ class TestUtils(ut.TestCase):
         self.assertIsNone(net_utils.resolve_hostname(unresolvable_ip3))
 
         # Restore gethostbyaddr
-        socket.gethostbyaddr = old_gethostbyaddr
+        socket.gethostbyaddr = gethostbyaddr_backup
 
 if __name__ == '__main__':
     ut.main(verbosity=2)

@@ -13,7 +13,7 @@ class TestCredentials(ut.TestCase):
     def test_get_session_key(self):
         rest_client.setup_session_key_env()
 
-        self.assertEqual(credentials.get_session_key('https', 'localhost', 8089, 'user', 'password'),
+        self.assertEqual(credentials.get_session_key('user', 'password'),
                          rest_client.SESSION_KEY)
 
         rest_client.restore_session_key_env()
@@ -21,7 +21,7 @@ class TestCredentials(ut.TestCase):
     def test_credential_manager(self):
         rest_client.setup_credential_env()
 
-        cm = credentials.CredentialManager('https', '127.0.0.1', 8089, rest_client.SESSION_KEY)
+        cm = credentials.CredentialManager(rest_client.SESSION_KEY)
 
         cm.set_password('testuser1', 'password1', 'app-test', realm='realm_test')
         self.assertEqual(cm.get_password('testuser1', 'app-test', realm='realm_test'),

@@ -33,32 +33,30 @@ class ACLManager(object):
 
     This class provides interfaces of CRUD operations on ACL.
 
-    :param scheme: The scheme for accessing the service, option: http/https.
-    :type scheme: ``string``
-    :param host: The host name.
-    :type host: ``string``
-    :param port: The port number.
-    :type port: ``integer``
     :param session_key: Splunk access token.
     :type session_key: ``string``
+    :param scheme: (optional) The scheme for accessing the service, default is `https`.
+    :type scheme: ``string``
+    :param host: (optional) The host name, default is `localhost`.
+    :type host: ``string``
+    :param port: (optional) The port number, default is 8089.
+    :type port: ``integer``
 
     Usage::
 
        >>> import splunksolutionlib.acl as sacl
-       >>> saclm = sacl.ACLManager('https', '127.0.0.1', 8089, session_key)
+       >>> saclm = sacl.ACLManager(session_key)
        >>> saclm.get('data/transforms/extractions', 'Splunk_TA_test')
        >>> saclm.update('data/transforms/extractions/_acl', 'Splunk_TA_test',
                         perms_read=['*'], perms_write=['*'])
     '''
 
-    def __init__(self, scheme, host, port, session_key):
-        assert scheme and host and port and session_key, \
-            'scheme/host/port/session_key should not be empty.'
-
+    def __init__(self, session_key,
+                 scheme='https', host='localhost', port=8089):
+        self._session_key = session_key
         self._scheme = scheme
         self._host = host
-        self._port = int(port)
-        self._session_key = session_key
+        self._port = port
 
     def _acl_context(self, app, owner):
         kwargs = {}
