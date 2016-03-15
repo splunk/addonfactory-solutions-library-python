@@ -29,7 +29,7 @@ class MetadataReader(object):
     :param app: App name.
     :type app: ``string``
 
-    :raises IOError: If no such Splunk `app`.
+    :raises IOError: If Splunk `app` doesn't exist.
     '''
 
     def __init__(self, app):

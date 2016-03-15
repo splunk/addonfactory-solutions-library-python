@@ -37,9 +37,6 @@ class FileChangesChecker(object):
     '''
 
     def __init__(self, callback, files):
-        assert files and isinstance(files, (list, tuple)), \
-            'files is not a list or tuple: %r' % files
-
         self._callback = callback
         self._files = files
 
@@ -100,9 +97,6 @@ class FileMonitor(object):
     '''
 
     def __init__(self, callback, files, interval=10):
-        assert files and isinstance(files, (list, tuple)), \
-            'files is not a list or tuple: %r' % files
-
         self._checker = FileChangesChecker(callback, files)
         self._thr = threading.Thread(target=self._do_monitor)
         self._thr.daemon = True

@@ -1,7 +1,6 @@
 import sys
 import os
 import os.path as op
-import unittest as ut
 import time
 import random
 
@@ -9,53 +8,44 @@ sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 from splunksolutionlib.common import orphan_process_monitor as opm
 
 
-def mock_getppid():
+def _mock_getppid():
     return random.randint(1, 65535)
 
 
-class TestOrphanProcessChecker(ut.TestCase):
+class TestOrphanProcessChecker(object):
 
-    def setUp(self):
+    def setup(self):
         self._called = False
-        self._getppid_backup = os.getppid
-        os.getppid = mock_getppid
-
-    def tearDown(self):
-        os.getppid = self._getppid_backup
 
     def orphan_callback(self):
         self._called = True
 
-    def test_is_orphan(self):
+    def test_is_orphan(self, monkeypatch):
+        monkeypatch.setattr(os, 'getppid', _mock_getppid)
+
         checker = opm.OrphanProcessChecker(callback=self.orphan_callback)
         res = checker.is_orphan()
-        self.assertTrue(res)
+        assert res
         res = checker.check_orphan()
-        self.assertTrue(res)
-        self.assertTrue(self._called)
+        assert res
+        assert self._called
 
 
-class TestOrphanProcessMonitor(ut.TestCase):
+class TestOrphanProcessMonitor(object):
 
-    def setUp(self):
+    def setup(self):
         self._called = False
-        self._getppid_backup = os.getppid
-        os.getppid = mock_getppid
-
-    def tearDown(self):
-        os.getppid = self._getppid_backup
 
     def orphan_callback(self):
         self._called = True
 
-    def test_monitor(self):
+    def test_monitor(self, monkeypatch):
+        monkeypatch.setattr(os, 'getppid', _mock_getppid)
+
         monitor = opm.OrphanProcessMonitor(callback=self.orphan_callback)
         monitor.start()
 
         time.sleep(1)
-        self.assertTrue(self._called)
+        assert self._called
 
         monitor.stop()
-
-if __name__ == '__main__':
-    ut.main(verbosity=2)

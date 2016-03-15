@@ -1,7 +1,6 @@
 import sys
 import os
 import os.path as op
-import unittest as ut
 import subprocess
 import socket
 
@@ -20,75 +19,66 @@ class _MockPopen(object):
     def communicate(self, input=None):
         cur_dir = op.dirname(op.abspath(__file__))
         if self._conf == 'server':
-            file_path = op.sep.join([cur_dir, 'data', 'conf', 'server.conf'])
-        elif self._conf == 'web':
-            file_path = op.sep.join([cur_dir, 'data', 'conf', 'web.conf'])
+            file_path = op.sep.join(
+                [cur_dir, 'data', 'unittest/server.conf'])
         else:
-            raise ValueError('Unknown conf file %s.' % self._conf)
+            file_path = op.sep.join(
+                [cur_dir, 'data', 'unittest/web.conf'])
 
         with open(file_path) as fp:
             return fp.read(), None
 
 
-def _mock_gethostname():
-    return 'hostname_test'
+def test_splunkhome_path(monkeypatch):
+    monkeypatch.setattr(subprocess, 'Popen', _MockPopen)
+
+    splunkhome_path = splunkenv.make_splunkhome_path(['etc', 'apps'])
+    assert splunkhome_path == os.environ['SPLUNK_HOME'] + 'etc/apps'
 
 
-class TestGetSplunkdUri(ut.TestCase):
+def test_get_splunk_host_info(monkeypatch):
+    def _mock_gethostname():
+        return 'testServer'
 
-    def setUp(self):
-        self._Popen_backup = subprocess.Popen
-        subprocess.Popen = _MockPopen
+    monkeypatch.setattr(subprocess, 'Popen', _MockPopen)
+    monkeypatch.setattr(socket, 'gethostname', _mock_gethostname)
 
-    def tearDown(self):
-        subprocess.Popen = self._Popen_backup
+    server_name, host_name = splunkenv.get_splunk_host_info()
+    assert server_name == 'testServer'
+    assert host_name == 'testServer'
 
-    def test_splunkhome_path(self):
-        self.assertEqual(splunkenv.make_splunkhome_path(['etc', 'apps']),
-                         os.environ['SPLUNK_HOME'] + 'etc/apps')
 
-    def test_get_splunk_host_info(self):
-        # Save origin gethostbyaddr
-        gethostname_backup = socket.gethostname
-        socket.gethostname = _mock_gethostname
+def test_splunk_bin(monkeypatch):
+    monkeypatch.setattr(subprocess, 'Popen', _MockPopen)
 
-        server_name, host_name = splunkenv.get_splunk_host_info()
-        self.assertEqual(server_name, 'servername_test')
-        self.assertEqual(host_name, 'hostname_test')
+    splunk_bin = splunkenv.get_splunk_bin()
+    assert splunk_bin in (os.environ['SPLUNK_HOME'] + 'bin/splunk',
+                          os.environ['SPLUNK_HOME'] + 'bin/splunk.exe')
 
-        socket.gethostname = gethostname_backup
 
-    def test_splunk_bin(self):
-        splunk_bin = splunkenv.get_splunk_bin()
-        self.assertTrue(splunk_bin in (
-            os.environ['SPLUNK_HOME'] + 'bin/splunk',
-            os.environ['SPLUNK_HOME'] + 'bin/splunk.exe'))
+def test_get_splunkd_access_info(monkeypatch):
+    monkeypatch.setattr(subprocess, 'Popen', _MockPopen)
 
-    def test_get_splunkd_access_info(self):
-        scheme, host, port = splunkenv.get_splunkd_access_info()
-        self.assertEqual(scheme, 'https')
-        self.assertEqual(host, '127.0.0.1')
-        self.assertEqual(port, 8089)
+    scheme, host, port = splunkenv.get_splunkd_access_info()
+    assert scheme == 'https'
+    assert host == '127.0.0.1'
+    assert port == 8089
 
-    # Testcase depends on SPLUNK_HOME env variables
-    def test_splunkd_uri(self):
-        uri = splunkenv.get_splunkd_uri()
-        self.assertEquals(uri, 'https://127.0.0.1:8089')
 
-        os.environ['SPLUNKD_URI'] = 'https://10.0.0.1:8089'
-        uri = splunkenv.get_splunkd_uri()
-        self.assertEquals(uri, 'https://10.0.0.1:8089')
-        del os.environ['SPLUNKD_URI']
+def test_splunkd_uri(monkeypatch):
+    monkeypatch.setattr(subprocess, 'Popen', _MockPopen)
 
-        os.environ['SPLUNK_BINDIP'] = '10.0.0.2:7080'
-        uri = splunkenv.get_splunkd_uri()
-        self.assertEquals(uri, 'https://10.0.0.2:8089')
-        del os.environ['SPLUNK_BINDIP']
+    uri = splunkenv.get_splunkd_uri()
+    assert uri == 'https://127.0.0.1:8089'
 
-        os.environ['SPLUNK_BINDIP'] = '10.0.0.3'
-        uri = splunkenv.get_splunkd_uri()
-        self.assertEquals(uri, 'https://10.0.0.3:8089')
-        del os.environ['SPLUNK_BINDIP']
+    monkeypatch.setitem(os.environ, 'SPLUNK_BINDIP', '10.0.0.2:7080')
+    uri = splunkenv.get_splunkd_uri()
+    assert uri == 'https://10.0.0.2:8089'
 
-if __name__ == '__main__':
-    ut.main(verbosity=2)
+    monkeypatch.setitem(os.environ, 'SPLUNK_BINDIP', '10.0.0.3')
+    uri = splunkenv.get_splunkd_uri()
+    assert uri == 'https://10.0.0.3:8089'
+
+    monkeypatch.setitem(os.environ, 'SPLUNKD_URI', 'https://10.0.0.1:8089')
+    uri = splunkenv.get_splunkd_uri()
+    assert uri == 'https://10.0.0.1:8089'

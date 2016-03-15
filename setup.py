@@ -20,32 +20,11 @@ from setuptools import setup, Command
 import splunksolutionlib
 
 
-def run_test_suite():
-    try:
-        import unittest2 as unittest
-    except ImportError:
-        import unittest
-    tests_dir = op.sep.join([op.dirname(op.abspath(__file__)), 'tests'])
-    suite = unittest.defaultTestLoader.discover(tests_dir)
-    unittest.TextTestRunner(verbosity=2).run(suite)
-
-
-def run_test_suite_with_junit_output():
-    try:
-        import unittest2 as unittest
-    except ImportError:
-        import unittest
-    import xmlrunner
-    tests_dir = op.sep.join([op.dirname(op.abspath(__file__)), 'tests'])
-    suite = unittest.defaultTestLoader.discover(tests_dir)
-    xmlrunner.XMLTestRunner(output='testjunit-reports').run(suite)
-
-
 class TestCommand(Command):
     '''
     Command to run the whole test suite.
     '''
-    description = 'Run test full test suite.'
+    description = 'Run full test suite.'
     user_options = []
 
     def initialize_options(self):
@@ -55,24 +34,9 @@ class TestCommand(Command):
         pass
 
     def run(self):
-        run_test_suite()
-
-
-class JunitXmlTestCommand(Command):
-    '''
-    Command to run the whole test suite.
-    '''
-    description = 'Run test full test suite with JUnit-formatted output.'
-    user_options = []
-
-    def initialize_options(self):
-        pass
-
-    def finalize_options(self):
-        pass
-
-    def run(self):
-        run_test_suite_with_junit_output()
+        import pytest
+        tests_dir = op.sep.join([op.dirname(op.abspath(__file__)), 'tests'])
+        pytest.main(['-v', tests_dir])
 
 setup(
     name='splunksolutionlib',
@@ -90,13 +54,11 @@ setup(
     url='https://git.splunk.com/scm/solnsc/lib-solutions-python.git',
 
     packages=['splunksolutionlib',
-              'splunksolutionlib.common',
-              'splunksolutionlib.platform'],
+              'splunksolutionlib.common'],
 
     install_requires=[],
 
-    cmdclass={'test': TestCommand,
-              'testjunit': JunitXmlTestCommand},
+    cmdclass={'test': TestCommand},
 
     classifiers=[
         'Programming Language :: Python',

@@ -7,9 +7,8 @@ build
 dist
 docs/_build
 splunksolutionlib.egg-info
-coverage-reports
-testjunit-reports
-tests/__pycache__
+__pycache__
 *.pyc
 *.pyo
 node_modules/*
+htmlcov

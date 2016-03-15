@@ -1,7 +1,6 @@
 import sys
 import os
 import os.path as op
-import unittest
 import threading
 import multiprocessing
 import time
@@ -10,9 +9,31 @@ sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 from splunksolutionlib.common import log
 
 
-class TestLog(unittest.TestCase):
+def test_enter_exit():
+    logger1 = log.Logs().get_logger(
+        'enter_exit1', directory='/tmp/', namespace='unittest')
+    logger2 = log.Logs().get_logger(
+        'enter_exit2', directory='/tmp/', namespace='unittest',
+        level=log.logging.DEBUG)
 
-    def test_logging(self):
+    @log.log_enter_exit(logger1)
+    def test1():
+        pass
+
+    @log.log_enter_exit(logger2)
+    def test2():
+        pass
+
+    test1()
+    test2()
+
+    os.remove('/tmp/unittest_enter_exit1.log')
+    os.remove('/tmp/unittest_enter_exit2.log')
+
+
+class TestLogs(object):
+
+    def test_get_logger(self):
         logger = log.Logs().get_logger(
             'logging', directory='/tmp/', namespace='unittest')
 
@@ -20,27 +41,6 @@ class TestLog(unittest.TestCase):
         logger.warn('this is a test log that can show')
 
         os.remove('/tmp/unittest_logging.log')
-
-    def test_enter_exit(self):
-        logger1 = log.Logs().get_logger(
-            'enter_exit1', directory='/tmp/', namespace='unittest')
-        logger2 = log.Logs().get_logger(
-            'enter_exit2', directory='/tmp/', namespace='unittest',
-            level=log.logging.DEBUG)
-
-        @log.log_enter_exit(logger1)
-        def test1():
-            pass
-
-        @log.log_enter_exit(logger2)
-        def test2():
-            pass
-
-        test1()
-        test2()
-
-        os.remove('/tmp/unittest_enter_exit1.log')
-        os.remove('/tmp/unittest_enter_exit2.log')
 
     def test_set_level(self):
         logger = log.Logs().get_logger(
@@ -106,6 +106,3 @@ class TestLog(unittest.TestCase):
 
         time.sleep(1)
         os.remove('/tmp/unittest_test_multi_process.log')
-
-if __name__ == '__main__':
-    unittest.main(verbosity=2)

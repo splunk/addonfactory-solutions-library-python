@@ -1,38 +1,37 @@
 import sys
 import os.path as op
-import unittest
+import pytest
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 from splunksolutionlib.common import codecs
 
 
-class TestGzipHandler(unittest.TestCase):
+class TestGzipHandler(object):
 
     def test_check_format(self):
         normal_data = 'test'
-        self.assertFalse(codecs.GzipHandler.check_format(normal_data))
+        assert not codecs.GzipHandler.check_format(normal_data)
 
         gzcomp_data = \
             '\x1f\x8b\x08\x08\xc7I\xd5V\x02\xfftest\x00+I-.\x01\x00\x0c~\x7f\xd8\x04\x00\x00\x00'
-        self.assertTrue(codecs.GzipHandler.check_format(gzcomp_data))
+        assert codecs.GzipHandler.check_format(gzcomp_data)
 
     def test_decompress(self):
         normal_data = 'test'
         gzcomp_data = \
             '\x1f\x8b\x08\x08\xc7I\xd5V\x02\xfftest\x00+I-.\x01\x00\x0c~\x7f\xd8\x04\x00\x00\x00'
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             codecs.GzipHandler.decompress(normal_data)
 
-        self.assertEqual(normal_data,
-                         codecs.GzipHandler.decompress(gzcomp_data))
+        assert normal_data == codecs.GzipHandler.decompress(gzcomp_data)
 
 
-class TestZiphandler(unittest.TestCase):
+class TestZiphandler(object):
 
     def test_check_format(self):
         normal_data = "test"
-        self.assertFalse(codecs.ZipHandler.check_format(normal_data))
+        assert not codecs.ZipHandler.check_format(normal_data)
 
     def test_decompress(self):
         normal_data = 'test'
@@ -43,16 +42,13 @@ class TestZiphandler(unittest.TestCase):
         zcomp_data = \
             'PK\x03\x04\x14\x00\x00\x00\x00\x00\x03\x89aH\xc65\xb9;\x05\x00\x00\x00\x05\x00\x00\x00\t\x00\x00\x00test1.txttest\nPK\x01\x02\x14\x03\x14\x00\x00\x00\x00\x00\x03\x89aH\xc65\xb9;\x05\x00\x00\x00\x05\x00\x00\x00\t\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xa4\x81\x00\x00\x00\x00test1.txtPK\x05\x06\x00\x00\x00\x00\x01\x00\x01\x007\x00\x00\x00,\x00\x00\x00\x00\x00'
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             codecs.ZipHandler.decompress(normal_data)
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             codecs.ZipHandler.decompress(zcomp_data_2files)
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             codecs.ZipHandler.decompress(zcomp_bad_data)
 
-        self.assertEqual(codecs.ZipHandler.decompress(zcomp_data), 'test\n')
-
-if __name__ == '__main__':
-    unittest.main(verbosity=2)
+        assert codecs.ZipHandler.decompress(zcomp_data) == 'test\n'

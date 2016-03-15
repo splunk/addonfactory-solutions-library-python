@@ -104,9 +104,6 @@ def make_splunkhome_path(parts):
     :raises ValueError: Escape from intended parent directories
     '''
 
-    assert parts and isinstance(parts, (list, tuple)), \
-        'parts is not a list or tuple: %r' % parts
-
     relpath = os.path.normpath(os.path.join(*parts))
 
     basepath = None
@@ -151,7 +148,6 @@ def get_splunk_host_info():
 
     server_name = get_conf_key_value('server', 'general', 'serverName')
     host_name = socket.gethostname()
-
     return (server_name, host_name)
 
 
@@ -249,9 +245,6 @@ def get_conf_stanzas(conf_name):
     :returns: Config stanzas.
     :rtype: ``dict``
     '''
-
-    assert conf_name and isinstance(conf_name, basestring), \
-        'conf_name is not a basestring: %s.' % conf_name
 
     if conf_name.endswith('.conf'):
         conf_name = conf_name[:-5]

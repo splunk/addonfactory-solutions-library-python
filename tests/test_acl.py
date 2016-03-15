@@ -1,58 +1,67 @@
 import sys
 import os.path as op
-import unittest as ut
+import json
+import pytest
 
-import rest_client
+from splunklib import binding
+
+import common
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 from splunksolutionlib import acl
 
 
-class TestACL(ut.TestCase):
+class TestACLManager(object):
+    _old_acl = '{"entry": [{"author": "nobody", "name": "transforms", "acl": {"sharing": "global", "perms": {"read": ["*"], "write": ["*"]}, "app": "Splunk_TA_test", "modifiable": true, "owner": "nobody", "can_change_perms": true, "can_share_global": true, "can_list": true, "can_share_user": false, "can_share_app": true, "removable": false, "can_write": true}}]}'
 
-    def test_acl_manager(self):
-        rest_client.setup_acl_env()
+    _new_acl1 = '{"entry": [{"author": "nobody", "name": "transforms", "acl": {"sharing": "global", "perms": {"read": ["admin"], "write": ["admin"]}, "app": "Splunk_TA_test", "modifiable": true, "owner": "nobody", "can_change_perms": true, "can_share_global": true, "can_list": true, "can_share_user": false, "can_share_app": true, "removable": false, "can_write": true}}]}'
 
-        aclm = acl.ACLManager(rest_client.SESSION_KEY)
-        perms = aclm.get('data/transforms/extractions/_acl', 'Splunk_TA_test')
-        self.assertEqual(perms,
-                         {
-                             'app': 'Splunk_TA_test',
-                             'can_change_perms': True,
-                             'can_list': True,
-                             'can_share_app': True,
-                             'can_share_global': True,
-                             'can_share_user': False,
-                             'can_write': True,
-                             'modifiable': True,
-                             'owner': 'nobody',
-                             'perms': {'read': ['*'], 'write': ['*']},
-                             'removable': False,
-                             'sharing': 'global'
-                         })
+    _new_acl2 = '{"entry": [{"author": "nobody", "name": "transforms", "acl": {"sharing": "global", "perms": {"read": ["admin"], "write": ["*"]}, "app": "Splunk_TA_test", "modifiable": true, "owner": "nobody", "can_change_perms": true, "can_share_global": true, "can_list": true, "can_share_user": false, "can_share_app": true, "removable": false, "can_write": true}}]}'
 
-        with self.assertRaises(acl.ACLException):
-            aclm.update('data/transforms/extractions', 'Splunk_TA_test', perms_write=['admin'])
+    _new_acl3 = '{"entry": [{"author": "nobody", "name": "transforms", "acl": {"sharing": "global", "perms": {"read": ["*"], "write": ["admin"]}, "app": "Splunk_TA_test", "modifiable": true, "owner": "nobody", "can_change_perms": true, "can_share_global": true, "can_list": true, "can_share_user": false, "can_share_app": true, "removable": false, "can_write": true}}]}'
 
-        perms = aclm.update('data/transforms/extractions/_acl', 'Splunk_TA_test', perms_write=['admin'])
-        self.assertEqual(perms,
-                         {
-                             'app': 'Splunk_TA_test',
-                             'can_change_perms': True,
-                             'can_list': True,
-                             'can_share_app': True,
-                             'can_share_global': True,
-                             'can_share_user': False,
-                             'can_write': True,
-                             'modifiable': True,
-                             'owner': 'nobody',
-                             'perms': {'read': ['*'], 'write': ['admin']},
-                             'removable': False,
-                             'sharing': 'global'
-                         })
+    def _mock_acl_get(self, path_segment, owner=None, app=None, sharing=None,
+                      **query):
+        return common.make_response_record(self._old_acl)
 
-        rest_client.restore_acl_env()
+    def _mock_acl_post(self, path_segment, owner=None, app=None, sharing=None,
+                       headers=None, **query):
+        if 'perms.read=admin' in query['body'] and 'perms.write=admin' in query['body']:
+            return common.make_response_record(self._new_acl1)
+        elif 'perms.read=admin' in query['body']:
+            return common.make_response_record(self._new_acl2)
+        elif 'perms.write=admin' in query['body']:
+            return common.make_response_record(self._new_acl3)
+        else:
+            return common.make_response_record(self._old_acl)
 
+    def test_get(self, monkeypatch):
+        monkeypatch.setattr(binding.Context, 'get', self._mock_acl_get)
 
-if __name__ == '__main__':
-    ut.main(verbosity=2)
+        aclm = acl.ACLManager(common.SESSION_KEY, 'Splunk_TA_test')
+        perms = aclm.get('data/transforms/extractions/_acl')
+        assert perms == json.loads(self._old_acl)['entry'][0]['acl']
+
+    def test_update(self, monkeypatch):
+        monkeypatch.setattr(binding.Context, 'get', self._mock_acl_get)
+        monkeypatch.setattr(binding.Context, 'post', self._mock_acl_post)
+
+        aclm = acl.ACLManager(common.SESSION_KEY, 'Splunk_TA_test')
+
+        perms = aclm.update('data/transforms/extractions/_acl',
+                            perms_read=['admin'], perms_write=['admin'])
+        assert perms == json.loads(self._new_acl1)['entry'][0]['acl']
+
+        perms = aclm.update('data/transforms/extractions/_acl',
+                            perms_read=['admin'])
+        assert perms == json.loads(self._new_acl2)['entry'][0]['acl']
+
+        perms = aclm.update('data/transforms/extractions/_acl',
+                            perms_write=['admin'])
+        assert perms == json.loads(self._new_acl3)['entry'][0]['acl']
+
+        perms = aclm.update('data/transforms/extractions/_acl')
+        assert perms == json.loads(self._old_acl)['entry'][0]['acl']
+
+        with pytest.raises(acl.ACLException):
+            aclm.update('data/transforms/extractions', perms_write=['admin'])

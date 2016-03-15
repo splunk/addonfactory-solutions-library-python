@@ -35,6 +35,10 @@ class ACLManager(object):
 
     :param session_key: Splunk access token.
     :type session_key: ``string``
+    :param app: App name of namespace.
+    :type app: ``string``
+    :param owner: (optional) Owner of namespace.
+    :type owner: ``string``
     :param scheme: (optional) The scheme for accessing the service, default is `https`.
     :type scheme: ``string``
     :param host: (optional) The host name, default is `localhost`.
@@ -45,49 +49,37 @@ class ACLManager(object):
     Usage::
 
        >>> import splunksolutionlib.acl as sacl
-       >>> saclm = sacl.ACLManager(session_key)
-       >>> saclm.get('data/transforms/extractions', 'Splunk_TA_test')
-       >>> saclm.update('data/transforms/extractions/_acl', 'Splunk_TA_test',
+       >>> saclm = sacl.ACLManager(session_key, 'Splunk_TA_test')
+       >>> saclm.get('data/transforms/extractions')
+       >>> saclm.update('data/transforms/extractions/_acl',
                         perms_read=['*'], perms_write=['*'])
     '''
 
-    def __init__(self, session_key,
+    def __init__(self, session_key, app, owner='nobody',
                  scheme='https', host='localhost', port=8089):
-        self._session_key = session_key
-        self._scheme = scheme
-        self._host = host
-        self._port = port
+        self._binding_context = binding.Context(scheme=scheme,
+                                                host=host,
+                                                port=port,
+                                                token=session_key,
+                                                app=app,
+                                                owner=owner,
+                                                autologin=True)
 
-    def _acl_context(self, app, owner):
-        kwargs = {}
-        kwargs['scheme'] = self._scheme
-        kwargs['host'] = self._host
-        kwargs['port'] = self._port
-        kwargs['token'] = self._session_key
-        kwargs['app'] = app
-        kwargs['owner'] = owner
-        kwargs['autologin'] = True
-        return binding.Context(**kwargs)
-
-    def get(self, path, app, owner='nobody'):
+    def get(self, path):
         '''Get ACL of  /servicesNS/owner/app/{`path`}.
 
         :param path: Path of ACL relative to /servicesNS/{`owner`}/{`app`}
         :type path: ``string``
-        :param app: App of ACL.
-        :type app: ``string``
-        :param owner: (optional) Owner of ACL.
-        :type owner: ``string``
         :returns: A dict contains ACL.
         :rtype: ``dict``
         '''
 
-        context = self._acl_context(app, owner)
-        content = context.get(path, output_mode='json').body.read()
+        content = self._binding_context.get(path,
+                                            output_mode='json').body.read()
 
         return json.loads(content)['entry'][0]['acl']
 
-    def update(self, path, app, owner=None, perms_read=None, perms_write=None):
+    def update(self, path, owner=None, perms_read=None, perms_write=None):
         '''Update ACL of /servicesNS/{`owner`}/{`app`}/{`path`}.
 
         If the ACL is per-entity (ends in /acl), owner can be reassigned. If
@@ -98,9 +90,7 @@ class ACLManager(object):
             contain /acl or /_acl indicating whether the permission is applied
             at the per-entity level or endpoint level, respectively.
         :type path: ``string``
-        :param app: App of ACL.
-        :type app: ``string``
-        :param owner: (optional) Owner of ACL.
+        :param owner: (optional) New owner of ACL.
         :type owner: ``string``
         :param perms_read: list of roles (['*'] for all roles).
             If unspecified we will POST with current (if available) perms.read.
@@ -118,7 +108,7 @@ class ACLManager(object):
             raise ACLException(
                 'Endpoint: %s must end with /acl or /_acl.' % path)
 
-        curr_acl = self.get(path, app, owner='nobody')
+        curr_acl = self.get(path)
 
         postargs = {}
         if perms_read and perms_write:
@@ -147,10 +137,10 @@ class ACLManager(object):
 
         postargs['sharing'] = curr_acl['sharing']
 
-        context = self._acl_context(app, curr_acl['owner'])
-        content = context.post(
-            path,
-            body=binding._encode(**postargs),
-            output_mode='json').body.read()
+        content = self._binding_context.post(path,
+                                             owner=curr_acl['owner'],
+                                             app=curr_acl['app'],
+                                             body=binding._encode(**postargs),
+                                             output_mode='json').body.read()
 
         return json.loads(content)['entry'][0]['acl']

@@ -43,6 +43,10 @@ class CredentialManager(object):
 
     :param session_key: Splunk access token.
     :type session_key: ``string``
+    :param app: App name of namespace.
+    :type app: ``string``
+    :param owner: (optional) Owner of namespace.
+    :type owner: ``string``
     :param scheme: (optional) The scheme for accessing the service, default is `https`.
     :type scheme: ``string``
     :param host: (optional) The host name, default is `localhost`.
@@ -53,7 +57,7 @@ class CredentialManager(object):
     Usage::
 
        >>> import splunksolutionlib.credentials as scc
-       >>> cm = scc.CredentialManager(session_key)
+       >>> cm = scc.CredentialManager(session_key, 'Splunk_TA_test')
     '''
 
     # Splunk can only encrypt string with length <=255
@@ -62,35 +66,24 @@ class CredentialManager(object):
     # Splunk credential separator
     SEP = '``splunk_cred_sep``'
 
-    def __init__(self, session_key,
+    def __init__(self, session_key, app, owner='nobody',
                  scheme='https', host='localhost', port=8089):
-        self._session_key = session_key
-        self._scheme = scheme
-        self._host = host
-        self._port = port
+        service = client.Service(scheme=scheme,
+                                 host=host,
+                                 port=port,
+                                 token=session_key,
+                                 app=app,
+                                 owner=owner,
+                                 autologin=True)
+        self._storage_passwords = service.storage_passwords
 
-    def _storage_password_context(self, app, owner):
-        kwargs = {}
-        kwargs['scheme'] = self._scheme
-        kwargs['host'] = self._host
-        kwargs['port'] = self._port
-        kwargs['token'] = self._session_key
-        kwargs['app'] = app
-        kwargs['owner'] = owner
-        kwargs['autologin'] = True
-        return client.Service(**kwargs).storage_passwords
-
-    def get_password(self, user, app, owner='nobody', realm=None):
+    def get_password(self, user, realm=None):
         """Get password.
 
         :param user: User name of password.
         :type user: ``string``
-        :param app: App name of namespace.
-        :type user: ``string``
-        :param owner: (optional) Owner of namespace.
-        :type user: ``string``
         :param realm: Realm of password.
-        :type user: ``string``
+        :type realm: ``string``
         :returns: Passwords: {realm:user: clear_password}.
         :rtype: ``dict``
 
@@ -99,13 +92,11 @@ class CredentialManager(object):
 
         Usage::
            >>> import splunksolutionlib.common.credentials as scc
-           >>> cm = scc.CredentialManager('https', '127.0.0.1', 8089,
-                                          session_key)
-           >>> cm.get_password('username', 'Splunk_TA_test', 'nobody',
-                               'realm_test')
+           >>> cm = scc.CredentialManager(session_key, 'Splunk_TA_test')
+           >>> cm.get_password('username', 'realm_test')
         """
 
-        all_passwords = self._get_all_passwords(app, owner)
+        all_passwords = self._get_all_passwords()
         for password in all_passwords:
             if password['username'] == user and password['realm'] == realm:
                 return password['clear_password']
@@ -113,39 +104,29 @@ class CredentialManager(object):
         raise CredNotExistException(
             'Failed to get password of realm=%s, user=%s.' % (realm, user))
 
-    def set_password(self, user, password, app, owner='nobody', realm=None):
+    def set_password(self, user, password, realm=None):
         """Set password.
 
         :param user: User name of password.
         :type user: ``string``
         :param password: Password of user.
         :type password: ``string``
-        :param app: App name of namespace.
-        :type user: ``string``
-        :param owner: (optional) Owner of namespace.
-        :type user: ``string``
         :param realm: Realm of password.
-        :type user: ``string``
+        :type realm: ``string``
 
         Usage::
            >>> import splunksolutionlib.common.credentials as scc
-           >>> cm = scc.CredentialManager('https', '127.0.0.1', 8089,
-                                          session_key)
-           >>> cm.set_password('username', 'test_password', Splunk_TA_test',
-                               'nobody', 'realm_test')
+           >>> cm = scc.CredentialManager(session_key, 'Splunk_TA_test')
+           >>> cm.set_password('username', 'test_password', 'realm_test')
         """
 
-        assert password and isinstance(password, basestring), \
-            'password is not a basestring.'
-
         try:
-            self.delete_password(user, app, owner, realm)
+            self.delete_password(user, realm)
         except CredException:
             pass
 
-        spc = self._storage_password_context(app, owner)
         if len(password) <= self.SPLUNK_CRED_LEN_LIMIT:
-            spc.create(password, user, realm)
+            self._storage_passwords.create(password, user, realm)
         else:
             # split the str_to_encrypt when len > 255
             length = 0
@@ -155,44 +136,37 @@ class CredentialManager(object):
 
                 partial_user = self.SEP.join(
                     [user, str(length/self.SPLUNK_CRED_LEN_LIMIT)])
-                spc.create(curr_str, partial_user, realm)
+                self._storage_passwords.create(curr_str, partial_user, realm)
 
-    def delete_password(self, user, app, owner='nobody', realm=None):
+    def delete_password(self, user, realm=None):
         """Delete password.
 
         :param user: User name of password.
         :type user: ``string``
-        :param app: App name of namespace.
-        :type user: ``string``
-        :param owner: (optional) Owner of namespace.
-        :type user: ``string``
         :param realm: Realm of password.
-        :type user: ``string``
+        :type realm: ``string``
 
         :raises CredNotExistException: If passwords for realm:user
             doesn't exist.
 
         Usage::
            >>> import splunksolutionlib.common.credentials as scc
-           >>> cm = scc.CredentialManager('https', '127.0.0.1', 8089,
-                                          session_key)
-           >>> cm.delete_password('username', 'Splunk_TA_test', 'nobody',
-                                  'realm_test')
+           >>> cm = scc.CredentialManager(session_key, 'Splunk_TA_test')
+           >>> cm.delete_password('username', 'realm_test')
         """
 
         deleted = False
-        spc = self._storage_password_context(app, owner)
         try:
-            spc.delete(user, realm)
+            self._storage_passwords.delete(user, realm)
             deleted = True
         except KeyError:
             ent_pattern = re.compile('.*:(%s%s\d+):' % (user, self.SEP))
-            all_passwords = spc.list()
+            all_passwords = self._storage_passwords.list()
 
             for password in all_passwords:
                 match = ent_pattern.match(password.name)
                 if match and password.realm == realm:
-                    spc.delete(match.group(1), realm)
+                    self._storage_passwords.delete(match.group(1), realm)
                     deleted = True
 
         if not deleted:
@@ -200,9 +174,8 @@ class CredentialManager(object):
                 'Failed to delete password of realm=%s, user=%s' % (
                     realm, user))
 
-    def _get_all_passwords(self, app, owner):
-        spc = self._storage_password_context(app, owner)
-        all_passwords = spc.list()
+    def _get_all_passwords(self):
+        all_passwords = self._storage_passwords.list()
 
         results = {}
         for password in all_passwords:

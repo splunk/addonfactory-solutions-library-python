@@ -24,6 +24,7 @@ import os.path as op
 __all__ = ['log_enter_exit',
            'Logs']
 
+
 def log_enter_exit(logger):
     '''Decorator for logger to log function enter and exit.
 
@@ -161,7 +162,7 @@ class Logs(object):
             for logger in self._loggers.itervalues():
                 logger.setLevel(level)
 
-    def _get_logfile(self, name, directory=None, namespace=None):
+    def _get_logfile(self, name, directory, namespace):
         if namespace:
             name = '{}_{}.log'.format(namespace, name)
         else:

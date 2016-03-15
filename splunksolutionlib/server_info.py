@@ -38,7 +38,7 @@ class ServerInfo(object):
     SHC_MEMBER_ENDPOINT = '/services/shcluster/member/members'
 
     def __init__(self, session_key,
-                 scheme='https', host='localhost', port='8089'):
+                 scheme='https', host='localhost', port=8089):
         self._session_key = session_key
         self._scheme = scheme
         self._host = host
