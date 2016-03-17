@@ -21,6 +21,8 @@ import time
 
 from splunklib import binding
 
+__all__ = ['KvStoreManager']
+
 
 class KvStoreManager(object):
     '''This class is a wrapper of splunk kvstore.

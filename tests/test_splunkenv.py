@@ -71,14 +71,14 @@ def test_splunkd_uri(monkeypatch):
     uri = splunkenv.get_splunkd_uri()
     assert uri == 'https://127.0.0.1:8089'
 
-    monkeypatch.setitem(os.environ, 'SPLUNK_BINDIP', '10.0.0.2:7080')
+    monkeypatch.setenv('SPLUNK_BINDIP', '10.0.0.2:7080')
     uri = splunkenv.get_splunkd_uri()
     assert uri == 'https://10.0.0.2:8089'
 
-    monkeypatch.setitem(os.environ, 'SPLUNK_BINDIP', '10.0.0.3')
+    monkeypatch.setenv('SPLUNK_BINDIP', '10.0.0.3')
     uri = splunkenv.get_splunkd_uri()
     assert uri == 'https://10.0.0.3:8089'
 
-    monkeypatch.setitem(os.environ, 'SPLUNKD_URI', 'https://10.0.0.1:8089')
+    monkeypatch.setenv('SPLUNKD_URI', 'https://10.0.0.1:8089')
     uri = splunkenv.get_splunkd_uri()
     assert uri == 'https://10.0.0.1:8089'

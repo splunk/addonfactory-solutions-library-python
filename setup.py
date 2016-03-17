@@ -14,10 +14,16 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import re
 import os.path as op
 from setuptools import setup, Command
 
-import splunksolutionlib
+with open('splunksolutionlib/__init__.py', 'r') as fd:
+    version = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]',
+                        fd.read(), re.MULTILINE).group(1)
+
+if not version:
+    raise RuntimeError('Cannot find version information')
 
 
 class TestCommand(Command):
@@ -43,7 +49,7 @@ setup(
 
     description='The Splunk Software Development Kit for Splunk Solutions',
 
-    version=splunksolutionlib.__version__,
+    version=version,
 
     author='Splunk, Inc.',
 
