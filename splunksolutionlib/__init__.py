@@ -17,12 +17,19 @@ The Splunk Software Development Kit for Solutions.
 """
 
 from splunksolutionlib import common
+from splunksolutionlib import acl
 from splunksolutionlib import credentials
+from splunksolutionlib import kvstore
+from splunksolutionlib import metadata
+from splunksolutionlib import server_info
 from splunksolutionlib import splunkenv
 
 __all__ = ['common',
+           'acl',
            'credentials',
-           'splunkenv',
-           '__version__']
+           'kvstore',
+           'metadata',
+           'server_info',
+           'splunkenv']
 
 __version__ = '1.0.0'
