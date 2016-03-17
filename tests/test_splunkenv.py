@@ -30,6 +30,7 @@ class _MockPopen(object):
 
 
 def test_splunkhome_path(monkeypatch):
+    monkeypatch.setenv('SPLUNK_HOME', '/opt/splunk/')
     monkeypatch.setattr(subprocess, 'Popen', _MockPopen)
 
     splunkhome_path = splunkenv.make_splunkhome_path(['etc', 'apps'])
@@ -40,6 +41,7 @@ def test_get_splunk_host_info(monkeypatch):
     def _mock_gethostname():
         return 'testServer'
 
+    monkeypatch.setenv('SPLUNK_HOME', '/opt/splunk/')
     monkeypatch.setattr(subprocess, 'Popen', _MockPopen)
     monkeypatch.setattr(socket, 'gethostname', _mock_gethostname)
 
@@ -49,6 +51,7 @@ def test_get_splunk_host_info(monkeypatch):
 
 
 def test_splunk_bin(monkeypatch):
+    monkeypatch.setenv('SPLUNK_HOME', '/opt/splunk/')
     monkeypatch.setattr(subprocess, 'Popen', _MockPopen)
 
     splunk_bin = splunkenv.get_splunk_bin()
@@ -57,6 +60,7 @@ def test_splunk_bin(monkeypatch):
 
 
 def test_get_splunkd_access_info(monkeypatch):
+    monkeypatch.setenv('SPLUNK_HOME', '/opt/splunk/')
     monkeypatch.setattr(subprocess, 'Popen', _MockPopen)
 
     scheme, host, port = splunkenv.get_splunkd_access_info()
@@ -66,6 +70,7 @@ def test_get_splunkd_access_info(monkeypatch):
 
 
 def test_splunkd_uri(monkeypatch):
+    monkeypatch.setenv('SPLUNK_HOME', '/opt/splunk/')
     monkeypatch.setattr(subprocess, 'Popen', _MockPopen)
 
     uri = splunkenv.get_splunkd_uri()

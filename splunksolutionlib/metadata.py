@@ -20,7 +20,7 @@ import os
 import re
 import ConfigParser
 
-from splunksolutionlib.splunkenv import make_splunkhome_path
+from splunksolutionlib import splunkenv
 
 
 class MetadataReader(object):
@@ -33,7 +33,7 @@ class MetadataReader(object):
     '''
 
     def __init__(self, app):
-        local_meta = make_splunkhome_path(
+        local_meta = splunkenv.make_splunkhome_path(
             ['etc', 'apps', app, 'metadata', 'local.meta'])
 
         self._cfg = ConfigParser.SafeConfigParser()
@@ -63,7 +63,7 @@ class MetadataReader(object):
         '''
 
         try:
-            #Note: This may return a list because Python's stdlib ConfigParser
+            # Note: This may return a list because Python's stdlib ConfigParser
             # is broken. The exception raised on lines 550-551 will affect
             # SUCCESSFULLY parsed stanzas, because "join()" on a list of a
             # single item flattens the list. If this is an issue, uncomment
@@ -96,7 +96,7 @@ class MetadataReader(object):
         '''
 
         try:
-            #Note: This may return a list because Python's stdlib ConfigParser
+            # Note: This may return a list because Python's stdlib ConfigParser
             # is broken. The exception raised on lines 550-551 will affect
             # SUCCESSFULLY parsed stanzas, because "join()" on a list of a
             # single item flattens the list. If this is an issue, uncomment

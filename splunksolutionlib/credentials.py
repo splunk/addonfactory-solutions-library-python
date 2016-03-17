@@ -47,7 +47,7 @@ class CredentialManager(object):
     :type app: ``string``
     :param owner: (optional) Owner of namespace.
     :type owner: ``string``
-    :param scheme: (optional) The scheme for accessing the service, default is `https`.
+    :param scheme: (optional) The access scheme, default is `https`.
     :type scheme: ``string``
     :param host: (optional) The host name, default is `localhost`.
     :type host: ``string``
@@ -159,7 +159,7 @@ class CredentialManager(object):
         try:
             self._storage_passwords.delete(user, realm)
             deleted = True
-        except KeyError:
+        except (binding.HTTPError, KeyError):
             ent_pattern = re.compile('.*:(%s%s\d+):' % (user, self.SEP))
             all_passwords = self._storage_passwords.list()
 
@@ -224,7 +224,7 @@ def get_session_key(username, password,
     :type username: ``string``
     :param password: The password for the Splunk account.
     :type password: ``string``
-    :param scheme: (optional) The scheme for accessing the service, default is `https`.
+    :param scheme: (optional) The access scheme, default is `https`.
     :type scheme: ``string``
     :param host: (optional) The host name, default is `localhost`.
     :type host: ``string``

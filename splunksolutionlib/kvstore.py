@@ -33,7 +33,7 @@ class KvStoreManager(object):
     :type app: ``string``
     :param owner: (optional) Owner of namespace.
     :type owner: ``string``
-    :param scheme: (optional) The scheme for accessing the service, default is `https`.
+    :param scheme: (optional) The access scheme, default is `https`.
     :type scheme: ``string``
     :param host: (optional) The host name, default is `localhost`.
     :type host: ``string``

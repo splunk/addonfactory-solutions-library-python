@@ -23,6 +23,7 @@ from splunksolutionlib import kvstore
 from splunksolutionlib import metadata
 from splunksolutionlib import server_info
 from splunksolutionlib import splunkenv
+from splunksolutionlib import http_request
 
 __all__ = ['common',
            'acl',
@@ -30,6 +31,7 @@ __all__ = ['common',
            'kvstore',
            'metadata',
            'server_info',
-           'splunkenv']
+           'splunkenv',
+           'http_request']
 
 __version__ = '1.0.0'

@@ -26,7 +26,7 @@ class ServerInfo(object):
 
     :param session_key: Splunk access token.
     :type session_key: ``string``
-    :param scheme: (optional) The scheme for accessing the service, default is `https`.
+    :param scheme: (optional) The access scheme, default is `https`.
     :type scheme: ``string``
     :param host: (optional) The host name, default is `localhost`.
     :type host: ``string``

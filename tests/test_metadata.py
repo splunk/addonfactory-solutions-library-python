@@ -4,6 +4,7 @@ import pytest
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 from splunksolutionlib import splunkenv
+from splunksolutionlib import metadata
 
 
 def _mock_make_splunkhome_path(parts):
@@ -17,7 +18,6 @@ class TestMetadataReader(object):
         monkeypatch.setattr(splunkenv, 'make_splunkhome_path',
                             _mock_make_splunkhome_path)
 
-        from splunksolutionlib import metadata
         mr = metadata.MetadataReader('Splunk_TA_test')
 
         assert mr.get('conf1', 'stanza1', 'modtime') == '1453272423.443622000'
