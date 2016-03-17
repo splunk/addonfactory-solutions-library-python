@@ -62,7 +62,9 @@ setup(
     packages=['splunksolutionlib',
               'splunksolutionlib.common'],
 
-    install_requires=[],
+    install_requires=["splunk-sdk==1.5.0"],
+
+    dependency_links=["https://github.com/splunk/splunk-sdk-python/archive/master.zip#egg=splunk-sdk-1.5.0"],
 
     cmdclass={'test': TestCommand},
 
