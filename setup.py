@@ -44,6 +44,51 @@ class TestCommand(Command):
         tests_dir = op.sep.join([op.dirname(op.abspath(__file__)), 'tests'])
         pytest.main(['-v', tests_dir])
 
+
+class CoverageCommand(Command):
+    '''
+    Command to run the whole coverage.
+    '''
+    description = 'Run full coverage.'
+    user_options = []
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        import coverage
+        import pytest_cov
+        import pytest
+
+        tests_dir = op.sep.join([op.dirname(op.abspath(__file__)), 'tests'])
+        pytest.main(['-v', '--cov=splunksolutionlib', tests_dir])
+
+
+class CoverageHtmlCommand(Command):
+    '''
+    Command to run the whole coverage.
+    '''
+    description = 'Run full coverage.'
+    user_options = []
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        import coverage
+        import pytest_cov
+        import pytest
+
+        tests_dir = op.sep.join([op.dirname(op.abspath(__file__)), 'tests'])
+        pytest.main(['-v', '--cov=splunksolutionlib', '--cov-report=html', tests_dir])
+
+
 setup(
     name='splunksolutionlib',
 
@@ -66,7 +111,9 @@ setup(
 
     dependency_links=["https://github.com/splunk/splunk-sdk-python/archive/develop.zip#egg=splunk-sdk-1.5.0"],
 
-    cmdclass={'test': TestCommand},
+    cmdclass={'test': TestCommand,
+              'cov': CoverageCommand,
+              'cov-html': CoverageHtmlCommand},
 
     classifiers=[
         'Programming Language :: Python',
