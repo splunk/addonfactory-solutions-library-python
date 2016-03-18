@@ -111,7 +111,7 @@ setup(
 
     cmdclass={'test': TestCommand,
               'cov': CoverageCommand,
-              'cov-html': CoverageHtmlCommand},
+              'cov_html': CoverageHtmlCommand},
 
     classifiers=[
         'Programming Language :: Python',

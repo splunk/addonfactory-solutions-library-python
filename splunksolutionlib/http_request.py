@@ -31,10 +31,11 @@ __all__ = ['HTTPRequest']
 class HTTPRequest(object):
     """A wrapper of http request.
 
-    This class provides an easy interface to set login credential
-    and http proxy (should be noticed that the login and proxy
-    credential need to be fetched from splunk password storage,
-    user just need to input the user names of login and proxy).
+    This class provides an easy interface to set http authentication
+    and http proxy for http request (should be noticed that the http
+    authentication and proxy credential need to be fetched from splunk
+    password storage, need to provide the user names of http authentication
+    and proxy).
 
     :param session_key: Splunk access token.
     :type session_key: ``string``
@@ -48,6 +49,29 @@ class HTTPRequest(object):
     :type host: ``string``
     :param port: (optional) The port number, default is 8089.
     :type port: ``integer``
+    :param realm: (optional) Realm for `api_user` and `proxy_user` if
+        credentials stored in splunk with realm.
+    :type realm: ``string``
+    :param api_user: (optional) User for http authentication, make sure
+        the password has been stored in splunk password storage.
+    :type api_user: ``string``
+    :param proxy_server: (optional) Proxy server ip.
+    :type proxy_server: ``string``
+    :param proxy_port: (optional) Proxy server port.
+    :type proxy_port: ``integer``
+    :param proxy_user: (optional) User for http proxy authentication.
+    :type proxy_user: ``string``
+    :param timeout: (optional) Http request timeout.
+    :type timeout: ``integer``
+
+    Usage::
+
+       >>> from splunksolutionlib import http_request
+       >>> hq = http_request.HTTPRequest(session_key, 'Splunk_TA_test', realm='realm_test',
+                                         api_user='admin', proxy_server='192.168.1.120',
+                                         proxy_port=8000, proxy_user='user1', timeout=20)
+       >>> content = hq.open('http://host:port/namespace/endpoint', body={'key1': kv1},
+                             headers={'h1': hv1})
     """
 
     DEFAULT_TIMEOUT = 30
@@ -129,9 +153,22 @@ class HTTPRequest(object):
         else:
             return output
 
-    def open(self, url, data=None, headers={}):
-        if data is not None:
-            data = urllib.urlencode(data)
+    def send(self, url, body=None, headers={}):
+        """Send a http request, if body is None will select GET
+        method else select POST method.
+
+        :param url: Http request url.
+        :type url: ``string``
+        :param body: Http post body.
+        :type body: ``dict``
+        :param headers: Http request headers
+        :type headers: ``dict``
+        :returns: Http request response body.
+        :rtype: ``raw``
+        """
+
+        if body is not None:
+            data = urllib.urlencode(body)
 
         opener = self._build_opener(url)
         request = urllib2.Request(url, data=data, headers=headers)

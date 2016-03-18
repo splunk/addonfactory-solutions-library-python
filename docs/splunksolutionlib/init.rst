@@ -13,4 +13,5 @@ splunksolutionlib
    metadata
    server_info
    kvstore
+   http_request
    splunkenv

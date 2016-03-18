@@ -58,8 +58,8 @@ class CredentialManager(object):
 
     Usage::
 
-       >>> import splunksolutionlib.credentials as scc
-       >>> cm = scc.CredentialManager(session_key, 'Splunk_TA_test')
+       >>> from splunksolutionlib import credentials
+       >>> cm = credentials.CredentialManager(session_key, 'Splunk_TA_test')
     '''
 
     # Splunk can only encrypt string with length <=255
