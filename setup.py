@@ -59,8 +59,6 @@ class CoverageCommand(Command):
         pass
 
     def run(self):
-        import coverage
-        import pytest_cov
         import pytest
 
         tests_dir = op.sep.join([op.dirname(op.abspath(__file__)), 'tests'])
@@ -81,8 +79,6 @@ class CoverageHtmlCommand(Command):
         pass
 
     def run(self):
-        import coverage
-        import pytest_cov
         import pytest
 
         tests_dir = op.sep.join([op.dirname(op.abspath(__file__)), 'tests'])
@@ -107,7 +103,9 @@ setup(
     packages=['splunksolutionlib',
               'splunksolutionlib.common'],
 
-    install_requires=["splunk-sdk==1.5.0"],
+    install_requires=['splunk-sdk==1.5.0'],
+
+    tests_require=['pytest', 'pytest-cov', 'coverage'],
 
     dependency_links=["https://github.com/splunk/splunk-sdk-python/archive/develop.zip#egg=splunk-sdk-1.5.0"],
 

@@ -49,24 +49,23 @@ def test_credential_manager(monkeypatch):
                         _mock_credential_list)
 
     cm = credentials.CredentialManager(common.SESSION_KEY,
-                                       'Splunk_TA_test')
+                                       'Splunk_TA_test',
+                                       realm='realm_test')
 
-    cm.set_password('testuser1', 'password1', realm='realm_test')
-    assert cm.get_password(
-        'testuser1', realm='realm_test') == 'password1'
+    cm.set_password('testuser1', 'password1')
+    assert cm.get_password('testuser1') == 'password1'
 
     long_password = "".join(['1111111111' for i in xrange(30)])
-    cm.set_password('testuser2', long_password, realm='realm_test')
-    assert cm.get_password(
-        'testuser2', realm='realm_test') == long_password
+    cm.set_password('testuser2', long_password)
+    assert cm.get_password('testuser2') == long_password
 
-    cm.delete_password('testuser1', realm='realm_test')
+    cm.delete_password('testuser1')
     with pytest.raises(Exception):
-        cm.get_password('testuser1', realm='realm_test')
+        cm.get_password('testuser1')
 
-    cm.delete_password('testuser2', realm='realm_test')
+    cm.delete_password('testuser2')
     with pytest.raises(Exception):
-        cm.get_password('testuser2', realm='realm_test')
+        cm.get_password('testuser2')
 
 
 def test_get_session_key(monkeypatch):

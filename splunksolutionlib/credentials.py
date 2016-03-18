@@ -47,6 +47,8 @@ class CredentialManager(object):
     :type app: ``string``
     :param owner: (optional) Owner of namespace.
     :type owner: ``string``
+    :param realm: (optional) Realm of credential.
+    :type realm: ``string``
     :param scheme: (optional) The access scheme, default is `https`.
     :type scheme: ``string``
     :param host: (optional) The host name, default is `localhost`.
@@ -66,24 +68,23 @@ class CredentialManager(object):
     # Splunk credential separator
     SEP = '``splunk_cred_sep``'
 
-    def __init__(self, session_key, app, owner='nobody',
+    def __init__(self, session_key, app, owner='nobody', realm=None,
                  scheme='https', host='localhost', port=8089):
-        service = client.Service(scheme=scheme,
-                                 host=host,
-                                 port=port,
-                                 token=session_key,
-                                 app=app,
-                                 owner=owner,
-                                 autologin=True)
-        self._storage_passwords = service.storage_passwords
+        self._realm = realm
+        self._storage_passwords = client.Service(
+            scheme=scheme,
+            host=host,
+            port=port,
+            token=session_key,
+            app=app,
+            owner=owner,
+            autologin=True).storage_passwords
 
-    def get_password(self, user, realm=None):
+    def get_password(self, user):
         """Get password.
 
         :param user: User name of password.
         :type user: ``string``
-        :param realm: Realm of password.
-        :type realm: ``string``
         :returns: Passwords: {realm:user: clear_password}.
         :rtype: ``dict``
 
@@ -98,21 +99,19 @@ class CredentialManager(object):
 
         all_passwords = self._get_all_passwords()
         for password in all_passwords:
-            if password['username'] == user and password['realm'] == realm:
+            if password['username'] == user and password['realm'] == self._realm:
                 return password['clear_password']
 
         raise CredNotExistException(
-            'Failed to get password of realm=%s, user=%s.' % (realm, user))
+            'Failed to get password of realm=%s, user=%s.' % (self._realm, user))
 
-    def set_password(self, user, password, realm=None):
+    def set_password(self, user, password):
         """Set password.
 
         :param user: User name of password.
         :type user: ``string``
         :param password: Password of user.
         :type password: ``string``
-        :param realm: Realm of password.
-        :type realm: ``string``
 
         Usage::
            >>> import splunksolutionlib.common.credentials as scc
@@ -121,12 +120,12 @@ class CredentialManager(object):
         """
 
         try:
-            self.delete_password(user, realm)
+            self.delete_password(user)
         except CredException:
             pass
 
         if len(password) <= self.SPLUNK_CRED_LEN_LIMIT:
-            self._storage_passwords.create(password, user, realm)
+            self._storage_passwords.create(password, user, self._realm)
         else:
             # split the str_to_encrypt when len > 255
             length = 0
@@ -136,15 +135,13 @@ class CredentialManager(object):
 
                 partial_user = self.SEP.join(
                     [user, str(length/self.SPLUNK_CRED_LEN_LIMIT)])
-                self._storage_passwords.create(curr_str, partial_user, realm)
+                self._storage_passwords.create(curr_str, partial_user, self._realm)
 
-    def delete_password(self, user, realm=None):
+    def delete_password(self, user):
         """Delete password.
 
         :param user: User name of password.
         :type user: ``string``
-        :param realm: Realm of password.
-        :type realm: ``string``
 
         :raises CredNotExistException: If passwords for realm:user
             doesn't exist.
@@ -157,7 +154,7 @@ class CredentialManager(object):
 
         deleted = False
         try:
-            self._storage_passwords.delete(user, realm)
+            self._storage_passwords.delete(user, self._realm)
             deleted = True
         except (binding.HTTPError, KeyError):
             ent_pattern = re.compile('.*:(%s%s\d+):' % (user, self.SEP))
@@ -165,14 +162,14 @@ class CredentialManager(object):
 
             for password in all_passwords:
                 match = ent_pattern.match(password.name)
-                if match and password.realm == realm:
-                    self._storage_passwords.delete(match.group(1), realm)
+                if match and password.realm == self._realm:
+                    self._storage_passwords.delete(match.group(1), self._realm)
                     deleted = True
 
         if not deleted:
             raise CredNotExistException(
                 'Failed to delete password of realm=%s, user=%s' % (
-                    realm, user))
+                    self._realm, user))
 
     def _get_all_passwords(self):
         all_passwords = self._storage_passwords.list()

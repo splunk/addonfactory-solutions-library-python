@@ -54,16 +54,17 @@ class HTTPRequest(object):
 
     def __init__(self, session_key, app, owner='nobody',
                  scheme='https', host='localhost', port=8089, **options):
-        cred_manager = CredentialManager(session_key, app, owner, scheme, host, port)
-
         # Splunk credential realm
         realm = options.get('realm', None)
+
+        cred_manager = CredentialManager(session_key, app, owner, realm,
+                                         scheme, host, port)
 
         # Http authentication
         self._api_user = options.get('api_user', None)
         if self._api_user:
             try:
-                self._api_password = cred_manager.get_password(self._api_user, realm)
+                self._api_password = cred_manager.get_password(self._api_user)
             except CredNotExistException:
                 logging.error('API user: %s credential could not be found.' % self._api_user)
                 raise
@@ -76,7 +77,7 @@ class HTTPRequest(object):
         self._proxy_user = options.get('proxy_user', None)
         if self._proxy_user:
             try:
-                self._proxy_password = cred_manager.get_password(self._proxy_user, realm)
+                self._proxy_password = cred_manager.get_password(self._proxy_user)
             except CredNotExistException:
                 logging.error('Proxy user: %s credential could not be found.' % self._proxy_user)
                 raise
