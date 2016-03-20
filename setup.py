@@ -105,8 +105,6 @@ setup(
 
     install_requires=['splunk-sdk==1.5.0'],
 
-    tests_require=['pytest', 'pytest-cov', 'coverage'],
-
     dependency_links=["https://github.com/splunk/splunk-sdk-python/archive/develop.zip#egg=splunk-sdk-1.5.0"],
 
     cmdclass={'test': TestCommand,

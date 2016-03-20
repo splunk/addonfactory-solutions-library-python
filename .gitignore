@@ -11,4 +11,6 @@ __pycache__
 *.pyc
 *.pyo
 node_modules/*
+pylint.log
+pypi_modules/*
 htmlcov
