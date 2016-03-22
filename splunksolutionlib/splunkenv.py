@@ -62,11 +62,11 @@ def _splunk_etc():
 
 
 def _get_shared_storage():
-    """Get splunk shared storage name.
+    '''Get splunk shared storage name.
 
     :returns: Splunk shared storage name.
     :rtype: ``string``
-    """
+    '''
 
     try:
         state = get_conf_key_value('server', 'pooling', 'state')
@@ -110,7 +110,8 @@ def make_splunkhome_path(parts):
     shared_storage = _get_shared_storage()
     if shared_storage:
         for candidate in on_shared_storage:
-            # SPL-100508 On windows if the path is missing the drive letter, construct fullpath manually and call relpath
+            # SPL-100508 On windows if the path is missing the drive letter,
+            # construct fullpath manually and call relpath
             if os.name == 'nt' and not _verify_path_prefix(relpath, candidate):
                 break
 
@@ -140,11 +141,11 @@ def make_splunkhome_path(parts):
 
 
 def get_splunk_host_info():
-    """Get splunk host info.
+    '''Get splunk host info.
 
     :returns: (server_name, host_name)
     :rtype: ``tuple``
-    """
+    '''
 
     server_name = get_conf_key_value('server', 'general', 'serverName')
     host_name = socket.gethostname()
@@ -179,6 +180,7 @@ def get_splunkd_access_info():
         scheme = 'http'
 
     host_port = get_conf_key_value('web', 'settings', 'mgmtHostPort')
+    host_port = host_port.strip()
     host = host_port.split(':')[0]
     port = int(host_port.split(':')[1])
 
@@ -216,6 +218,8 @@ def get_conf_key_value(conf_name, stanza, key):
     :type key: ``string``
     :returns: Config value.
     :rtype: ``(string, list, dict)``
+
+    :Raises KeyError: If `stanza` or `key` doesn't exist.
     '''
 
     stanzas = get_conf_stanzas(conf_name)
@@ -231,6 +235,8 @@ def get_conf_stanza(conf_name, stanza):
     :type stanza: ``string``
     :returns: Config stanza.
     :rtype: ``dict``
+
+    :Raises KeyError: If stanza doesn't exist.
     '''
 
     stanzas = get_conf_stanzas(conf_name)
@@ -244,6 +250,10 @@ def get_conf_stanzas(conf_name):
     :type conf_name: ``string``
     :returns: Config stanzas.
     :rtype: ``dict``
+
+    Usage::
+       >>> stanzas = get_conf_stanzas('server')
+       >>> return: {'serverName': 'testServer', 'sessionTimeout': '1h', ...}
     '''
 
     if conf_name.endswith('.conf'):
@@ -252,7 +262,6 @@ def get_conf_stanzas(conf_name):
     # TODO: dynamically caculate SPLUNK_HOME
     btool_cli = [op.join(os.environ['SPLUNK_HOME'], 'bin', 'btool'),
                  conf_name, 'list']
-
     p = subprocess.Popen(btool_cli,
                          stdout=subprocess.PIPE,
                          stderr=subprocess.PIPE)

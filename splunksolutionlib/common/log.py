@@ -13,13 +13,15 @@
 # under the License.
 
 '''
-log utility for Splunk solutions.
+This module provides log functionalities.
 '''
 
 import os
 import logging
 import logging.handlers as handlers
 import os.path as op
+
+from splunksolutionlib.common.pattern import Singleton
 
 __all__ = ['log_enter_exit',
            'Logs']
@@ -51,21 +53,6 @@ def log_enter_exit(logger):
     return log_decorator
 
 
-class _Singleton(type):
-    '''
-    Singleton meta class
-    '''
-
-    def __init__(cls, name, bases, attrs):
-        super(_Singleton, cls).__init__(name, bases, attrs)
-        cls._instance = None
-
-    def __call__(cls, *args, **kwargs):
-        if cls._instance is None:
-            cls._instance = super(_Singleton, cls).__call__(*args, **kwargs)
-        return cls._instance
-
-
 class Logs(object):
     '''A singleton class that manage all kinds of logger.
 
@@ -83,7 +70,7 @@ class Logs(object):
       >>> logger.debug('a debug log')
     '''
 
-    __metaclass__ = _Singleton
+    __metaclass__ = Singleton
 
     def __init__(self, default_level=logging.INFO):
         self._default_level = default_level

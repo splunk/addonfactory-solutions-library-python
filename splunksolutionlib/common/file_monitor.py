@@ -12,11 +12,11 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-"""
+'''
 This module contains file monitoring class that can be used to check files
 change periodically and call callback function to handle properly when
 detecting files change.
-"""
+'''
 
 import os.path as op
 import traceback

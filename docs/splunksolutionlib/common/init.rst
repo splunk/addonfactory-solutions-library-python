@@ -14,3 +14,4 @@ common
    net_utils
    ip_math
    codecs
+   pattern

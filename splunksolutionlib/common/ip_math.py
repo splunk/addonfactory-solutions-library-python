@@ -19,6 +19,16 @@ This module provides IP manipulate/calculation functionalities.
 import re
 
 
+__all__ = ['ip2long',
+           'long2ip',
+           'cidr2long',
+           'is_valid_mac',
+           'is_valid_ip',
+           'is_valid_mask',
+           'is_valid_cidr',
+           'expand_ip_range_to_cidr']
+
+
 def ip2long(addr):
     '''Convert dotted IPv4 address to long.
 

@@ -12,9 +12,9 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-"""
+'''
 This module contains interfaces that support CRUD operations on ACL.
-"""
+'''
 
 import json
 
@@ -72,6 +72,10 @@ class ACLManager(object):
         :type path: ``string``
         :returns: A dict contains ACL.
         :rtype: ``dict``
+
+        Usage::
+           >>> aclm = acl.ACLManager(session_key, 'Splunk_TA_test')
+           >>> perms = aclm.get('data/transforms/extractions/_acl')
         '''
 
         content = self._binding_context.get(path,
@@ -102,6 +106,11 @@ class ACLManager(object):
         :rtype: ``dict``
 
         :raises ACLException: If `path` doesn't end by 'acl/_acl'.
+
+        Usage::
+           >>> aclm = acl.ACLManager(session_key, 'Splunk_TA_test')
+           >>> perms = aclm.update('data/transforms/extractions/_acl',
+                                   perms_read=['admin'], perms_write=['admin'])
         '''
 
         if not path.endswith('/acl') and not path.endswith('/_acl'):
@@ -111,25 +120,19 @@ class ACLManager(object):
         curr_acl = self.get(path)
 
         postargs = {}
-        if perms_read and perms_write:
-            postargs = {'perms.read': ','.join(perms_read),
-                        'perms.write': ','.join(perms_write)}
-        elif perms_read:
-            curr_write = curr_acl['perms'].get('write', [])
-
-            if curr_write:
-                postargs = {'perms.read': ','.join(perms_read),
-                            'perms.write': ','.join(curr_write)}
-            else:
-                postargs = {'perms.read': ','.join(perms_read)}
-        elif perms_write:
+        if perms_read:
+            postargs['perms.read'] = ','.join(perms_read)
+        else:
             curr_read = curr_acl['perms'].get('read', [])
-
             if curr_read:
-                postargs = {'perms.read': ','.join(curr_read),
-                            'perms.write': ','.join(perms_write)}
-            else:
-                postargs = {'perms.write': ','.join(perms_write)}
+                postargs['perms.read'] = ','.join(curr_read)
+
+        if perms_write:
+            postargs['perms.write'] = ','.join(perms_write)
+        else:
+            curr_write = curr_acl['perms'].get('write', [])
+            if curr_write:
+                postargs['perms.write'] = ','.join(curr_write)
 
         if path.endswith('/acl'):
             # Allow ownership to be reset only at entity level.

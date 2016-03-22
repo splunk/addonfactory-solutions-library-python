@@ -12,14 +12,13 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-"""
+'''
 The Splunk Software Development Kit for Solutions.
-"""
+'''
 
 from splunksolutionlib import common
 from splunksolutionlib import acl
 from splunksolutionlib import credentials
-from splunksolutionlib import kvstore
 from splunksolutionlib import metadata
 from splunksolutionlib import server_info
 from splunksolutionlib import splunkenv
@@ -28,7 +27,6 @@ from splunksolutionlib import http_request
 __all__ = ['common',
            'acl',
            'credentials',
-           'kvstore',
            'metadata',
            'server_info',
            'splunkenv',

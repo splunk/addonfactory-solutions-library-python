@@ -12,9 +12,9 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-"""
+'''
 This module contains Splunk credential related interfaces.
-"""
+'''
 
 import re
 import json
@@ -59,7 +59,9 @@ class CredentialManager(object):
     Usage::
 
        >>> from splunksolutionlib import credentials
-       >>> cm = credentials.CredentialManager(session_key, 'Splunk_TA_test')
+       >>> cm = credentials.CredentialManager(session_key,
+                                              'Splunk_TA_test',
+                                              realm='realm_test')
     '''
 
     # Splunk can only encrypt string with length <=255
@@ -81,7 +83,7 @@ class CredentialManager(object):
             autologin=True).storage_passwords
 
     def get_password(self, user):
-        """Get password.
+        '''Get password.
 
         :param user: User name of password.
         :type user: ``string``
@@ -92,10 +94,13 @@ class CredentialManager(object):
             doesn't exist.
 
         Usage::
-           >>> import splunksolutionlib.common.credentials as scc
-           >>> cm = scc.CredentialManager(session_key, 'Splunk_TA_test')
-           >>> cm.get_password('username', 'realm_test')
-        """
+
+           >>> from splunksolutionlib import credentials
+           >>> cm = credentials.CredentialManager(session_key,
+                                                  'Splunk_TA_test',
+                                                  realm='realm_test')
+           >>> cm.get_password('testuser2')
+        '''
 
         all_passwords = self._get_all_passwords()
         for password in all_passwords:
@@ -106,7 +111,7 @@ class CredentialManager(object):
             'Failed to get password of realm=%s, user=%s.' % (self._realm, user))
 
     def set_password(self, user, password):
-        """Set password.
+        '''Set password.
 
         :param user: User name of password.
         :type user: ``string``
@@ -114,10 +119,13 @@ class CredentialManager(object):
         :type password: ``string``
 
         Usage::
-           >>> import splunksolutionlib.common.credentials as scc
-           >>> cm = scc.CredentialManager(session_key, 'Splunk_TA_test')
-           >>> cm.set_password('username', 'test_password', 'realm_test')
-        """
+
+           >>> from splunksolutionlib import credentials
+           >>> cm = credentials.CredentialManager(session_key,
+                                                  'Splunk_TA_test',
+                                                  realm='realm_test')
+           >>> cm.set_password('testuser1', 'password1')
+        '''
 
         try:
             self.delete_password(user)
@@ -138,7 +146,7 @@ class CredentialManager(object):
                 self._storage_passwords.create(curr_str, partial_user, self._realm)
 
     def delete_password(self, user):
-        """Delete password.
+        '''Delete password.
 
         :param user: User name of password.
         :type user: ``string``
@@ -147,10 +155,13 @@ class CredentialManager(object):
             doesn't exist.
 
         Usage::
-           >>> import splunksolutionlib.common.credentials as scc
-           >>> cm = scc.CredentialManager(session_key, 'Splunk_TA_test')
-           >>> cm.delete_password('username', 'realm_test')
-        """
+
+           >>> from splunksolutionlib import credentials
+           >>> cm = credentials.CredentialManager(session_key,
+                                                  'Splunk_TA_test',
+                                                  realm='realm_test')
+           >>> cm.delete_password('testuser1')
+        '''
 
         deleted = False
         try:
@@ -175,8 +186,9 @@ class CredentialManager(object):
         all_passwords = self._storage_passwords.list()
 
         results = {}
+        ptn = re.compile(r'(.+){cred_sep}(\d+)'.format(cred_sep=self.SEP))
         for password in all_passwords:
-            match = re.match(r'(.+){}(\d+)'.format(self.SEP), password.name)
+            match = ptn.match(password.name)
             if match:
                 actual_name = match.group(1) + ':'
                 index = int(match.group(2))
@@ -229,10 +241,15 @@ def get_session_key(username, password,
     :type port: ``integer``
     :returns: Splunk access token.
     :rtype: ``string``
+
+    Usage::
+
+       >>> credentials.get_session_key('user', 'password')
     '''
 
     response = binding.Context().http.post(
-        '{}://{}:{}{}'.format(scheme, host, port, '/services/auth/login'),
+        '{scheme}://{host}:{port}/{endpoint}'.format(
+            scheme=scheme, host=host, port=port, endpoint='services/auth/login'),
         username=username,
         password=password,
         output_mode='json')

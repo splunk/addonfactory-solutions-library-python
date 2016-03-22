@@ -24,7 +24,7 @@ __all__ = ['resolve_hostname']
 
 
 def resolve_hostname(addr):
-    """Try to resolve an IP to a host name and returns None
+    '''Try to resolve an IP to a host name and returns None
     on common failures.
 
     :param addr: IP address to resolve.
@@ -32,7 +32,7 @@ def resolve_hostname(addr):
     :rtype: ``string``
 
     :raises ValueError: If `addr` is not a valid address
-    """
+    '''
 
     if ip_math.is_valid_ip(addr):
         try:

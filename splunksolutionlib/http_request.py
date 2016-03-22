@@ -12,9 +12,9 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-"""
+'''
 This module contains a http request wrapper.
-"""
+'''
 
 import ssl
 import urllib
@@ -29,7 +29,7 @@ __all__ = ['HTTPRequest']
 
 
 class HTTPRequest(object):
-    """A wrapper of http request.
+    '''A wrapper of http request.
 
     This class provides an easy interface to set http authentication
     and http proxy for http request (should be noticed that the http
@@ -67,73 +67,88 @@ class HTTPRequest(object):
     Usage::
 
        >>> from splunksolutionlib import http_request
-       >>> hq = http_request.HTTPRequest(session_key, 'Splunk_TA_test', realm='realm_test',
-                                         api_user='admin', proxy_server='192.168.1.120',
-                                         proxy_port=8000, proxy_user='user1', timeout=20)
-       >>> content = hq.open('http://host:port/namespace/endpoint', body={'key1': kv1},
+       >>> hq = http_request.HTTPRequest(session_key, 'Splunk_TA_test',
+                                         realm='realm_test', api_user='admin',
+                                         proxy_server='192.168.1.120',
+                                         proxy_port=8000, proxy_user='user1',
+                                         timeout=20)
+       >>> content = hq.open('http://host:port/namespace/endpoint',
+                             body={'key1': kv1},
                              headers={'h1': hv1})
-    """
+    '''
 
     DEFAULT_TIMEOUT = 30
 
     def __init__(self, session_key, app, owner='nobody',
                  scheme='https', host='localhost', port=8089, **options):
         # Splunk credential realm
-        realm = options.get('realm', None)
+        realm = options.get('realm')
 
         cred_manager = CredentialManager(session_key, app, owner, realm,
                                          scheme, host, port)
 
-        # Http authentication
-        self._api_user = options.get('api_user', None)
+        # Http authentication args
+        self._api_user = options.get('api_user')
         if self._api_user:
             try:
                 self._api_password = cred_manager.get_password(self._api_user)
             except CredNotExistException:
-                logging.error('API user: %s credential could not be found.' % self._api_user)
+                logging.error('API user: %s credential could not be found.' %
+                              self._api_user)
                 raise
         else:
             self._api_password = None
 
-        # Http proxy
-        self._proxy_server = options.get('proxy_server', None)
-        self._proxy_port = options.get('proxy_port', None)
-        self._proxy_user = options.get('proxy_user', None)
-        if self._proxy_user:
+        # Http proxy handler
+        proxy_server = options.get('proxy_server')
+        proxy_port = options.get('proxy_port')
+        proxy_user = options.get('proxy_user')
+        if proxy_user:
             try:
-                self._proxy_password = cred_manager.get_password(self._proxy_user)
+                proxy_password = cred_manager.get_password(proxy_user)
             except CredNotExistException:
-                logging.error('Proxy user: %s credential could not be found.' % self._proxy_user)
+                logging.error('Proxy user: %s credential could not be found.' %
+                              proxy_user)
                 raise
         else:
-            self._proxy_password = None
+            proxy_password = None
+        self._proxy_handler = self._get_proxy_handler(
+            proxy_server, proxy_port, proxy_user, proxy_password)
+
+        # Https handlers
+        self._https_handler = urllib2.HTTPSHandler(
+            context=ssl._create_unverified_context())
 
         # Http request timeout
         self._timeout = options.get('timeout', self.DEFAULT_TIMEOUT)
+
+    def _get_proxy_handler(self, proxy_server, proxy_port, proxy_user,
+                           proxy_password):
+        proxy_setting = None
+        if proxy_server and proxy_port and proxy_user and proxy_password:
+            proxy_setting = 'http://{user}:{password}@{server}:{port}'.format(
+                user=proxy_user, password=proxy_password,
+                server=proxy_server, port=proxy_port)
+        elif proxy_server is not None and proxy_port is not None:
+            proxy_server = 'http://{server}:{port}'.format(
+                server=proxy_server, port=proxy_port)
+        elif proxy_server or proxy_port or proxy_user or proxy_password:
+            logging.error('Invalid proxy settings.')
+
+        if proxy_setting:
+            return urllib2.ProxyHandler({'http': proxy_server,
+                                         'https': proxy_server})
+        return None
 
     def _build_opener(self, url):
         http_handlers = []
 
         # HTTPS connection handling
-        http_handlers.append(
-            urllib2.HTTPSHandler(context=ssl._create_unverified_context()))
+        http_handlers.append(self._https_handler)
 
         # Proxy handling
-        proxy_server = None
-        if self._proxy_server and self._proxy_port and self._proxy_user and self._proxy_password:
-            proxy_server = 'http://{user}:{password}@{server}:{port}'.format(
-                user=self._proxy_user, password=self._proxy_password,
-                server=self._proxy_server, port=self._proxy_port)
-        elif self._proxy_server is not None and self._proxy_port is not None:
-            proxy_server = 'http://{server}:{port}'.format(
-                server=self._proxy_server, port=self._proxy_port)
-        elif self._proxy_server or self._proxy_port or self._proxy_user or self._proxy_password:
-            logging.error('Invalid proxy settings.')
-
-        if proxy_server:
-            proxy_handler = urllib2.ProxyHandler({'http': proxy_server,
-                                                  'https': proxy_server})
-            http_handlers.append(proxy_handler)
+        if self._proxy_handler:
+            http_handlers.append(self._proxy_handler)
 
         # HTTP auth handling
         if self._api_user and self._api_password:
@@ -153,25 +168,30 @@ class HTTPRequest(object):
         else:
             return output
 
-    def send(self, url, body=None, headers={}):
-        """Send a http request, if body is None will select GET
+    def send(self, url, body=None, headers=None):
+        '''Send a http request, if body is None will select GET
         method else select POST method.
 
         :param url: Http request url.
         :type url: ``string``
-        :param body: Http post body.
-        :type body: ``dict``
-        :param headers: Http request headers
+        :param body: (optional) Http post body.
+        :type body: ``(dict, string)``
+        :param headers: (optional) Http request headers
         :type headers: ``dict``
         :returns: Http request response body.
-        :rtype: ``raw``
-        """
+        :rtype: ``(bytes, string)``
+        '''
 
-        if body is not None:
-            data = urllib.urlencode(body)
+        if isinstance(body, dict):
+            body = urllib.urlencode(body)
 
+        args = {}
+        if body:
+            args['data'] = body
+        if headers:
+            headers['headers'] = headers
         opener = self._build_opener(url)
-        request = urllib2.Request(url, data=data, headers=headers)
+        request = urllib2.Request(url, **args)
         response = opener.open(request, timeout=self._timeout)
         content = response.read()
         return self._format_output(content)

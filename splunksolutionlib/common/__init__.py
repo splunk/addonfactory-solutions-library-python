@@ -14,12 +14,14 @@
 
 from splunksolutionlib.common import codecs
 from splunksolutionlib.common import file_monitor
+from splunksolutionlib.common import pattern
 from splunksolutionlib.common import log
 from splunksolutionlib.common import orphan_process_monitor
 from splunksolutionlib.common import utils
 
 __all__ = ['codecs',
            'file_monitor',
+           'pattern',
            'log',
            'orphan_process_monitor',
            'utils']

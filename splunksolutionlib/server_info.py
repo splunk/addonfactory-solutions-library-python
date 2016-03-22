@@ -19,6 +19,7 @@ This module contains splunk server info related functionalities.
 import json
 
 from splunklib import binding
+from splunklib import client
 
 
 class ServerInfo(object):
@@ -34,7 +35,6 @@ class ServerInfo(object):
     :type port: ``integer``
     '''
 
-    SERVER_INFO_ENDPOINT = '/services/server/info/server-info'
     SHC_MEMBER_ENDPOINT = '/services/shcluster/member/members'
 
     def __init__(self, session_key,
@@ -45,13 +45,10 @@ class ServerInfo(object):
         self._port = port
 
     def _get_server_info(self):
-        context = binding.Context(scheme=self._scheme, host=self._host,
-                                  port=self._port, token=self._session_key,
-                                  autologin=True)
-        content = context.get(self.SERVER_INFO_ENDPOINT,
-                              output_mode='json').body.read()
-
-        return json.loads(content)['entry'][0]['content']
+        service = client.Service(
+            scheme=self._scheme, host=self._host, port=self._port,
+            token=self._session_key, autologin=True)
+        return service.info
 
     def is_captain(self):
         '''Check if this server is SHC captain.
@@ -81,8 +78,9 @@ class ServerInfo(object):
         :rtype: ``bool``
         '''
 
+        server_info = self._get_server_info()
         for sh in ('search_head', 'cluster_search_head'):
-            if sh in self._get_server_info()['server_roles']:
+            if sh in server_info['server_roles']:
                 return True
 
         return False
@@ -101,18 +99,15 @@ class ServerInfo(object):
 
         :returns: SHC members list: [(label, peer_scheme_host_port) ...]
         :rtype: ``list``
+
+        :Raises splunklib.binding.HTTPError: If network is down.
         '''
         context = binding.Context(scheme=self._scheme, host=self._host,
                                   port=self._port, token=self._session_key,
                                   autologin=True)
 
-        try:
-            content = context.get(self.SHC_MEMBER_ENDPOINT,
-                                  output_mode='json').body.read()
-        except binding.HTTPError:
-            # If SHC is not enabled return empty list directly
-            return []
-
+        content = context.get(self.SHC_MEMBER_ENDPOINT,
+                              output_mode='json').body.read()
         members = []
         for member in json.loads(content)['entry']:
             content = member['content']

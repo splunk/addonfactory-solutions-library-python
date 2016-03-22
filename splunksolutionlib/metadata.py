@@ -12,9 +12,9 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-"""
+'''
 This module contains configuration parser for Splunk local.metadata.
-"""
+'''
 
 import os
 import re
@@ -63,17 +63,7 @@ class MetadataReader(object):
         '''
 
         try:
-            # Note: This may return a list because Python's stdlib ConfigParser
-            # is broken. The exception raised on lines 550-551 will affect
-            # SUCCESSFULLY parsed stanzas, because "join()" on a list of a
-            # single item flattens the list. If this is an issue, uncomment
-            # the AttributeError-handling block below to attempt to recover.
             return self._cfg.get('/'.join([conf, stanza]), option)
-        # except AttributeError:
-        #     try:
-        #         return self._cfg.get('/'.join([conf, stanza]), option, raw=True)[0]
-        #     except:
-        #         raise
         except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
             raise ValueError('The metadata value could not be determined.')
 
@@ -96,16 +86,6 @@ class MetadataReader(object):
         '''
 
         try:
-            # Note: This may return a list because Python's stdlib ConfigParser
-            # is broken. The exception raised on lines 550-551 will affect
-            # SUCCESSFULLY parsed stanzas, because "join()" on a list of a
-            # single item flattens the list. If this is an issue, uncomment
-            # the AttributeError-handling block below to attempt to recover.
             return self._cfg.getfloat('/'.join([conf, stanza]), option)
-        # except AttributeError:
-        #     try:
-        #         return float(self._cfg.get('/'.join([conf, stanza]), option, raw=True)[0])
-        #     except:
-        #         raise
         except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
             raise ValueError('The metadata value could not be determined.')

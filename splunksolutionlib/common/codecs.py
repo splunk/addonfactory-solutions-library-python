@@ -32,9 +32,6 @@ class GzipHandler(object):
     # Error messages
     ERR_INVALID_FORMAT = 'File is not gzip format.'
 
-    def __init__(self):
-        pass
-
     @classmethod
     def check_format(cls, data):
         '''Validate `data` whether it is in gzip format.
@@ -82,9 +79,6 @@ class ZipHandler(object):
     ERR_INVALID_FORMAT = 'File is not zip format.'
     ERR_SIZE_MISMATCH = 'Zip file size does not match actual size.'
 
-    def __init__(self):
-        pass
-
     @classmethod
     def check_format(cls, data):
         '''Validate `data` whether it is in zip format.
@@ -122,11 +116,11 @@ class ZipHandler(object):
         files = decompressor.infolist()
         if len(files) > 1:
             raise ValueError(cls.ERR_EXCESS_FILES)
-        else:
-            try:
-                text = decompressor.read(files[0].filename)
-            except:
-                raise ValueError(cls.ERR_EXTRACT_ERROR)
+
+        try:
+            text = decompressor.read(files[0].filename)
+        except:
+            raise ValueError(cls.ERR_EXTRACT_ERROR)
 
         if len(text) != files[0].file_size:
             raise ValueError(cls.ERR_SIZE_MISMATCH)
