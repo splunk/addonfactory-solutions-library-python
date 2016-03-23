@@ -43,12 +43,19 @@ class ServerInfo(object):
         self._scheme = scheme
         self._host = host
         self._port = port
+        service = client.Service(scheme=scheme, host=host, port=port,
+                                 token=session_key, autologin=True)
+        self._server_info = service.info
 
-    def _get_server_info(self):
-        service = client.Service(
-            scheme=self._scheme, host=self._host, port=self._port,
-            token=self._session_key, autologin=True)
-        return service.info
+    @property
+    def server_name(self):
+        '''Get server name.
+
+        :returns: Server name.
+        :rtype: ``string``
+        '''
+
+        return self._server_info['serverName']
 
     def is_captain(self):
         '''Check if this server is SHC captain.
@@ -57,7 +64,7 @@ class ServerInfo(object):
         :rtype: ``bool``
         '''
 
-        return 'shc_captain' in self._get_server_info()['server_roles']
+        return 'shc_captain' in self._server_info['server_roles']
 
     def is_cloud_instance(self):
         '''Check if this server is a cloud instance.
@@ -67,7 +74,7 @@ class ServerInfo(object):
         '''
 
         try:
-            return self._get_server_info()['instance_type'] == 'cloud'
+            return self._server_info['instance_type'] == 'cloud'
         except KeyError:
             return False
 
@@ -78,7 +85,7 @@ class ServerInfo(object):
         :rtype: ``bool``
         '''
 
-        server_info = self._get_server_info()
+        server_info = self._server_info
         for sh in ('search_head', 'cluster_search_head'):
             if sh in server_info['server_roles']:
                 return True
@@ -92,7 +99,7 @@ class ServerInfo(object):
         :rtype: ``bool``
         '''
 
-        return 'cluster_search_head' in self._get_server_info()['server_roles']
+        return 'cluster_search_head' in self._server_info['server_roles']
 
     def get_shc_members(self):
         '''Get SHC members.
@@ -116,6 +123,7 @@ class ServerInfo(object):
 
         return members
 
+    @property
     def version(self):
         '''Get splunk server version.
 
@@ -123,4 +131,4 @@ class ServerInfo(object):
         :rtype: ``string``
         '''
 
-        return self._get_server_info()['version']
+        return self._server_info['version']

@@ -20,6 +20,7 @@ from splunksolutionlib import common
 from splunksolutionlib import acl
 from splunksolutionlib import credentials
 from splunksolutionlib import metadata
+from splunksolutionlib import app_permissions
 from splunksolutionlib import server_info
 from splunksolutionlib import splunkenv
 from splunksolutionlib import http_request
@@ -28,6 +29,7 @@ __all__ = ['common',
            'acl',
            'credentials',
            'metadata',
+           'app_permissions',
            'server_info',
            'splunkenv',
            'http_request']

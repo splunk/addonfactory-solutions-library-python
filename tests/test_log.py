@@ -10,11 +10,9 @@ from splunksolutionlib.common import log
 
 
 def test_enter_exit():
-    logger1 = log.Logs().get_logger(
-        'enter_exit1', directory='/tmp/', namespace='unittest')
-    logger2 = log.Logs().get_logger(
-        'enter_exit2', directory='/tmp/', namespace='unittest',
-        level=log.logging.DEBUG)
+    log.Logs.set_context(directory='/tmp/', namespace='unittest')
+    logger1 = log.Logs().get_logger('enter_exit1')
+    logger2 = log.Logs().get_logger('enter_exit2')
 
     @log.log_enter_exit(logger1)
     def test1():
@@ -34,8 +32,8 @@ def test_enter_exit():
 class TestLogs(object):
 
     def test_get_logger(self):
-        logger = log.Logs().get_logger(
-            'logging', directory='/tmp/', namespace='unittest')
+        log.Logs.set_context(directory='/tmp/', namespace='unittest')
+        logger = log.Logs().get_logger('logging')
 
         logger.debug('this is a test log')
         logger.warn('this is a test log that can show')
@@ -43,31 +41,28 @@ class TestLogs(object):
         os.remove('/tmp/unittest_logging.log')
 
     def test_set_level(self):
-        logger = log.Logs().get_logger(
-            'set_level', directory='/tmp/', namespace='unittest')
+        log.Logs.set_context(directory='/tmp/', namespace='unittest')
+        logger = log.Logs().get_logger('set_level')
 
         logger.debug('this is a test log')
 
         log.Logs().set_level(log.logging.DEBUG)
         logger.warn('this is a test log that can show')
 
-        log.Logs().set_level(log.logging.ERROR, name='set_level',
-                             directory='/tmp/', namespace='unittest')
+        log.Logs().set_level(log.logging.ERROR, name='set_level')
         logger.warn('this is a test log that can not show')
 
         os.remove('/tmp/unittest_set_level.log')
 
     def test_multi_thread(self):
-        logger = log.Logs().get_logger(
-            'test_multi_thread', directory='/tmp/',
-            namespace='unittest', level=log.logging.DEBUG)
+        log.Logs.set_context(directory='/tmp/', namespace='unittest')
+        logger = log.Logs().get_logger('test_multi_thread')
 
         logger.debug('Log info from main thread')
 
         def worker(logger_ref):
             native_logger = log.Logs().get_logger(
-                'test_multi_thread', directory='/tmp/',
-                namespace='unittest', level=log.logging.DEBUG)
+                'test_multi_thread')
 
             for i in range(100):
                 logger_ref.debug('Log info from child thread')
@@ -83,16 +78,13 @@ class TestLogs(object):
         os.remove('/tmp/unittest_test_multi_thread.log')
 
     def test_multi_process(self):
-        logger = log.Logs().get_logger(
-            'test_multi_process', directory='/tmp/',
-            namespace='unittest', level=log.logging.DEBUG)
+        log.Logs.set_context(directory='/tmp/', namespace='unittest')
+        logger = log.Logs().get_logger('test_multi_process')
 
         logger.debug('Log info from main process')
 
         def worker(logger_ref):
-            native_logger = log.Logs().get_logger(
-                'test_multi_process', directory='/tmp/',
-                namespace='unittest', level=log.logging.DEBUG)
+            native_logger = log.Logs().get_logger('test_multi_process')
 
             for i in range(100):
                 logger_ref.debug('Log info from child process')

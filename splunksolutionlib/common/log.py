@@ -56,28 +56,57 @@ def log_enter_exit(logger):
 class Logs(object):
     '''A singleton class that manage all kinds of logger.
 
-    All loggers created by this singleton class with different name
-    and will be written to `log_dir`.
-
-    :param default_level: (optional) Default logging level, default value
-        is logging.INFO.
-
     Usage::
 
       >>> from splunksolutionlib.common import log
+      >>> log.Logs.set_context(directory='/var/log/test',
+                               namespace='test')
       >>> logger = log.Logs().get_logger('mymodule')
-      >>> Logs.set_level(logging.DEBUG)
+      >>> logger.set_level(logging.DEBUG)
       >>> logger.debug('a debug log')
     '''
 
     __metaclass__ = Singleton
 
-    def __init__(self, default_level=logging.INFO):
-        self._default_level = default_level
+    _default_directory = None
+    _default_namespace = None
+    _default_log_level = logging.INFO
+    _default_max_bytes = 25000000
+    _default_backup_count = 5
+
+    def __init__(self):
         self._loggers = {}
 
-    def get_logger(self, name, directory=None, namespace=None,
-                   level=None, max_bytes=25000000, backup_count=5):
+    @classmethod
+    def set_context(cls, **context):
+        """set log context.
+
+        :param directory: (optional) Logger directory to write. If `log_dir` is
+            None, log will be written to current directory.
+        :type log_dir: ``string``
+        :param namespace: (optional) Logger namespace.
+        :type namespace: ``string``
+        :param default_level: (optional) Default logging level, default value
+            is logging.INFO.
+        :type default_level: ``integer``
+        :param max_bytes: (optional) The maximum log file size before rollover.
+        :type max_bytes: ``integer``
+        :param backup_count: (optional) The number of log files to retain.
+        :type backup_count: ``integer``
+        """
+
+        if 'directory' in context:
+            cls._default_directory = context['directory']
+        if 'namespace' in context:
+            cls._default_namespace = context['namespace']
+        if 'log_level' in context:
+            cls._default_log_level = context['log_level']
+        if 'max_bytes' in context:
+            cls._default_max_bytes = context['max_bytes']
+        if 'backup_count' in context:
+            cls._default_backup_count = context['backup_count']
+
+    def get_logger(self, name):
         ''' Get logger with the name of `name`.
 
         If logger with the name of `name` exists just return else create a new
@@ -85,22 +114,11 @@ class Logs(object):
 
         :param name: Logger name, it will be used as log file name too.
         :type name: ``string``
-        :param directory: (optional) Logger directory to write. If `log_dir` is
-            None, log will be written to current directory.
-        :type log_dir: ``string``
-        :param namespace: (optional) Logger namespace.
-        :type namespace: ``string``
-        :param level: (optional) The logging level.
-        :type level: ``(logging.DEBUG, logging.INFO, logging.ERROR)``
-        :param max_bytes: (optional) The maximum log file size before rollover.
-        :type max_bytes: ``integer``
-        :param backup_count: (optional) The number of log files to retain.
-        :type backup_count: ``integer``
         :returns: Instance of logging.Logger.
         :rtype: ``logging.Logger``
         '''
 
-        logfile = self._get_logfile(name, directory, namespace)
+        logfile = self._get_logfile(name)
         if logfile in self._loggers:
             return self._loggers[logfile]
 
@@ -111,20 +129,20 @@ class Logs(object):
             file_handler = handlers.RotatingFileHandler(
                 logfile,
                 mode='a',
-                maxBytes=max_bytes,
-                backupCount=backup_count)
+                maxBytes=self._default_max_bytes,
+                backupCount=self._default_backup_count)
             formatter = logging.Formatter(
                 '%(asctime)s %(levelname)s pid=%(process)d tid=%(threadName)s '
                 'file=%(filename)s:%(funcName)s:%(lineno)d | %(message)s')
             file_handler.setFormatter(formatter)
             logger.addHandler(file_handler)
-            logger.setLevel(level or self._default_level)
+            logger.setLevel(self._default_log_level)
             logger.propagate = False
 
         self._loggers[logfile] = logger
         return logger
 
-    def set_level(self, level, name=None, directory=None, namespace=None):
+    def set_level(self, level, name=None):
         '''Set log level of logger.
 
         Set log level of all logger if `name` is None else of
@@ -133,29 +151,25 @@ class Logs(object):
         :param level: Log level to set.
         :param name: (optional) The name of logger.
         :type name: ``string``
-        :param directory: (optional) Logger directory.
-        :type log_dir: ``string``
-        :param namespace: (optional) Logger namespace.
-        :type namespace: ``string``
         '''
 
         if name:
-            logfile = self._get_logfile(name, directory, namespace)
+            logfile = self._get_logfile(name)
             logger = self._loggers.get(logfile)
             if logger:
                 logger.setLevel(level)
         else:
-            self._default_level = level
+            self._default_log_level = level
             for logger in self._loggers.itervalues():
                 logger.setLevel(level)
 
-    def _get_logfile(self, name, directory, namespace):
-        if namespace:
-            name = '{}_{}.log'.format(namespace, name)
+    def _get_logfile(self, name):
+        if self._default_namespace:
+            name = '{}_{}.log'.format(self._default_namespace, name)
         else:
             name = '{}.log'.format(name)
 
-        directory = op.abspath(directory or os.curdir)
+        directory = op.abspath(self._default_directory or os.curdir)
         logfile = op.sep.join([directory, name])
 
         return logfile
