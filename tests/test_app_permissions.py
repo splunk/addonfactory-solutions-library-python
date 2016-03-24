@@ -48,7 +48,7 @@ def test_app_permissions_request_queue(monkeypatch):
     monkeypatch.setattr(client.KVStoreCollectionData, 'insert', _mock_kvstore_data_insert)
     monkeypatch.setattr(client.KVStoreCollectionData, 'query', _mock_kvstore_data_query)
 
-    aprq = app_permissions.AppPermissionsRequestQueue('test_queue', common.SESSION_KEY, 'Splunk_TA_test')
+    aprq = app_permissions.AppPermissionsRequestQueue('test_queue', common.SESSION_KEY, 'unittest')
     txn_id = aprq.create('data1')
     assert aprq.acknowledge(txn_id, 'data2') == txn_id
     assert aprq.get()['txn_id'] == txn_id

@@ -104,8 +104,12 @@ class AppPermissionsRequestQueue(object):
         query = {'category': self.CATEGORY,
                  'action': self.REQUEST_COMPLETE}
 
-        return self._collection_data.query(limit=1, query=json.dumps(query),
-                                           sort='time:-1')[0]
+        records = self._collection_data.query(limit=1, query=json.dumps(query),
+                                              sort='time:-1')
+        if records:
+            return records[0]
+        else:
+            return None
 
     def create(self, data):
         txn_id = uuid.uuid4().hex

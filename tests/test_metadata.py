@@ -18,7 +18,7 @@ class TestMetadataReader(object):
         monkeypatch.setattr(splunkenv, 'make_splunkhome_path',
                             _mock_make_splunkhome_path)
 
-        mr = metadata.MetadataReader('Splunk_TA_test')
+        mr = metadata.MetadataReader('unittest')
 
         assert mr.get('conf1', 'stanza1', 'modtime') == '1453272423.443622000'
 
@@ -35,7 +35,7 @@ class TestMetadataReader(object):
                             _mock_make_splunkhome_path)
 
         from splunksolutionlib import metadata
-        mr = metadata.MetadataReader('Splunk_TA_test')
+        mr = metadata.MetadataReader('unittest')
 
         assert mr.get_float('conf1', 'stanza1', 'modtime') == 1453272423.443622000
 

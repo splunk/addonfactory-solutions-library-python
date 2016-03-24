@@ -35,7 +35,7 @@ class TestHTTPRequest(object):
 
 
         hq = http_request.HTTPRequest(
-            common.SESSION_KEY, 'Splunk_TA_test', realm='realm_test',
+            common.SESSION_KEY, 'unittest', realm='realm_test',
             api_user='api_user', proxy_server='192.168.1.120', proxy_port=8000,
             proxy_user='proxy_user', timeout=20)
 
@@ -49,6 +49,6 @@ class TestHTTPRequest(object):
 
         with pytest.raises(credentials.CredNotExistException):
             hq = http_request.HTTPRequest(
-                common.SESSION_KEY, 'Splunk_TA_test', realm='realm_test',
+                common.SESSION_KEY, 'unittest', realm='realm_test',
                 api_user='api_user', proxy_server='192.168.1.120', proxy_port=8000,
                 proxy_user='proxy_user', timeout=20)

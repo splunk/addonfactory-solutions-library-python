@@ -49,7 +49,7 @@ def test_credential_manager(monkeypatch):
                         _mock_credential_list)
 
     cm = credentials.CredentialManager(common.SESSION_KEY,
-                                       'Splunk_TA_test',
+                                       'unittest',
                                        realm='realm_test')
 
     cm.set_password('testuser1', 'password1')

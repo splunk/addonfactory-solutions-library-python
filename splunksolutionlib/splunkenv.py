@@ -19,7 +19,6 @@ Splunk platform related utilities.
 import os
 import os.path as op
 import subprocess
-import logging
 import socket
 from ConfigParser import ConfigParser
 from cStringIO import StringIO
@@ -48,7 +47,7 @@ on_shared_storage = [os.path.join(ETC_LEAF, 'apps'),
 
 
 def _splunk_home():
-    return os.path.normpath(os.environ["SPLUNK_HOME"])
+    return os.path.normpath(os.environ['SPLUNK_HOME'])
 
 
 def _splunk_etc():
@@ -56,7 +55,6 @@ def _splunk_etc():
         result = os.environ['SPLUNK_ETC']
     except KeyError:
         result = op.join(_splunk_home(), ETC_LEAF)
-        logging.warn('SPLUNK_ETC is not defined; falling back to %s' % result)
 
     return os.path.normpath(result)
 

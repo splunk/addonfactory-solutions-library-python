@@ -141,8 +141,6 @@ class ACLManager(object):
         postargs['sharing'] = curr_acl['sharing']
 
         content = self._binding_context.post(path,
-                                             owner=curr_acl['owner'],
-                                             app=curr_acl['app'],
                                              body=binding._encode(**postargs),
                                              output_mode='json').body.read()
 
