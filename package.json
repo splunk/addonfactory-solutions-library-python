@@ -10,6 +10,6 @@
     "int_test": "PYTHONPATH=./pypi_modules python examples/main.py",
     "cov": "PYTHONPATH=./pypi_modules python setup.py cov",
     "cov_html": "PYTHONPATH=./pypi_modules python setup.py cov_html",
-    "docs": "cd docs; make html"
+    "docs": "cd docs; PYTHONPATH=../pypi_modules make html"
   }
 }
