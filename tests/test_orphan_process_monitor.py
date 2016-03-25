@@ -17,13 +17,13 @@ class TestOrphanProcessChecker(object):
     def setup(self):
         self._called = False
 
-    def orphan_callback(self):
-        self._called = True
-
     def test_is_orphan(self, monkeypatch):
         monkeypatch.setattr(os, 'getppid', _mock_getppid)
 
-        checker = opm.OrphanProcessChecker(callback=self.orphan_callback)
+        def orphan_callback():
+            self._called = True
+
+        checker = opm.OrphanProcessChecker(callback=orphan_callback)
         res = checker.is_orphan()
         assert res
         res = checker.check_orphan()
@@ -36,13 +36,13 @@ class TestOrphanProcessMonitor(object):
     def setup(self):
         self._called = False
 
-    def orphan_callback(self):
-        self._called = True
-
     def test_monitor(self, monkeypatch):
         monkeypatch.setattr(os, 'getppid', _mock_getppid)
 
-        monitor = opm.OrphanProcessMonitor(callback=self.orphan_callback)
+        def orphan_callback():
+            self._called = True
+
+        monitor = opm.OrphanProcessMonitor(callback=orphan_callback)
         monitor.start()
 
         time.sleep(1)

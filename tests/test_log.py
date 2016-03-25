@@ -4,13 +4,22 @@ import os.path as op
 import threading
 import multiprocessing
 import time
+import shutil
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 from splunksolutionlib.common import log
 
 
-def test_enter_exit():
-    log.Logs.set_context(directory='/tmp/', namespace='unittest')
+def setup_module(module):
+    os.mkdir('./.log')
+    log.Logs.set_context(directory='./.log', namespace='unittest')
+
+
+def teardown_module(module):
+    shutil.rmtree('./.log')
+
+
+def test_log_enter_exit():
     logger1 = log.Logs().get_logger('enter_exit1')
     logger2 = log.Logs().get_logger('enter_exit2')
 
@@ -25,23 +34,16 @@ def test_enter_exit():
     test1()
     test2()
 
-    os.remove('/tmp/unittest_enter_exit1.log')
-    os.remove('/tmp/unittest_enter_exit2.log')
-
 
 class TestLogs(object):
 
     def test_get_logger(self):
-        log.Logs.set_context(directory='/tmp/', namespace='unittest')
         logger = log.Logs().get_logger('logging')
 
         logger.debug('this is a test log')
         logger.warn('this is a test log that can show')
 
-        os.remove('/tmp/unittest_logging.log')
-
     def test_set_level(self):
-        log.Logs.set_context(directory='/tmp/', namespace='unittest')
         logger = log.Logs().get_logger('set_level')
 
         logger.debug('this is a test log')
@@ -51,8 +53,6 @@ class TestLogs(object):
 
         log.Logs().set_level(log.logging.ERROR, name='set_level')
         logger.warn('this is a test log that can not show')
-
-        os.remove('/tmp/unittest_set_level.log')
 
     def test_multi_thread(self):
         log.Logs.set_context(directory='/tmp/', namespace='unittest')
@@ -68,14 +68,12 @@ class TestLogs(object):
                 logger_ref.debug('Log info from child thread')
                 native_logger.debug(
                     'Log info from child thread on native logger')
-                time.sleep(0.01)
 
         for i in range(20):
             t = threading.Thread(target=worker, args=(logger,))
             t.start()
 
         time.sleep(1)
-        os.remove('/tmp/unittest_test_multi_thread.log')
 
     def test_multi_process(self):
         log.Logs.set_context(directory='/tmp/', namespace='unittest')
@@ -90,11 +88,9 @@ class TestLogs(object):
                 logger_ref.debug('Log info from child process')
                 native_logger.debug(
                     'Log info from child process on native logger')
-                time.sleep(0.01)
 
         for _ in range(20):
             p = multiprocessing.Process(target=worker, args=(logger,))
             p.start()
 
         time.sleep(1)
-        os.remove('/tmp/unittest_test_multi_process.log')

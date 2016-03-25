@@ -20,7 +20,7 @@ import os
 import re
 import ConfigParser
 
-from splunksolutionlib import splunkenv
+from splunksolutionlib.splunkenv import make_splunkhome_path
 
 
 class MetadataReader(object):
@@ -33,7 +33,7 @@ class MetadataReader(object):
     '''
 
     def __init__(self, app):
-        local_meta = splunkenv.make_splunkhome_path(
+        local_meta = make_splunkhome_path(
             ['etc', 'apps', app, 'metadata', 'local.meta'])
 
         self._cfg = ConfigParser.SafeConfigParser()

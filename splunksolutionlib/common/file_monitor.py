@@ -96,7 +96,7 @@ class FileMonitor(object):
       >>> fm.start()
     '''
 
-    def __init__(self, callback, files, interval=10):
+    def __init__(self, callback, files, interval=1):
         self._checker = FileChangesChecker(callback, files)
         self._thr = threading.Thread(target=self._do_monitor)
         self._thr.daemon = True

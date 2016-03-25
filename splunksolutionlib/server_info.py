@@ -57,6 +57,16 @@ class ServerInfo(object):
 
         return self._server_info['serverName']
 
+    @property
+    def version(self):
+        '''Get splunk server version.
+
+        :returns: Splunk server version.
+        :rtype: ``string``
+        '''
+
+        return self._server_info['version']
+
     def is_captain(self):
         '''Check if this server is SHC captain.
 
@@ -122,13 +132,3 @@ class ServerInfo(object):
                             content['peer_scheme_host_port']))
 
         return members
-
-    @property
-    def version(self):
-        '''Get splunk server version.
-
-        :returns: Splunk server version.
-        :rtype: ``string``
-        '''
-
-        return self._server_info['version']

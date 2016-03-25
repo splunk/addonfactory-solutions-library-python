@@ -6,65 +6,55 @@ import time
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 from splunksolutionlib.common import file_monitor
 
+_monitor_file = './.test_monitor_file'
+
+
+def setup_module(module):
+    with open(_monitor_file, 'w') as fp:
+        fp.write('abc')
+
+
+def teardown_module(module):
+    os.remove(_monitor_file)
+
 
 class TestFileChangesChecker(object):
-
-    def setup(self):
-        self._filename = '/tmp/test.log'
-        with open(self._filename, 'w') as fp:
-            fp.write('abc')
-
+    def test_check_changes(self):
         self._called = False
 
-    def teardown(self):
-        os.remove(self._filename)
+        def _callback_when_file_changes(changed):
+            self._called = True
 
-    def callback_when_file_changes(self, changed):
-        self._called = True
-
-    def test_check_changes(self):
-        checker = file_monitor.FileChangesChecker(
-            self.callback_when_file_changes,
-            [self._filename])
+        checker = file_monitor.FileChangesChecker(_callback_when_file_changes,
+                                                  [_monitor_file])
         res = checker.check_changes()
-        assert not res
-        assert not self._called
+        assert res is False
+        assert self._called is False
 
         time.sleep(1)
-        with open(self._filename, 'a') as fp:
+        with open(_monitor_file, 'a') as fp:
             fp.write('efg')
         res = checker.check_changes()
-        assert res
-        assert self._called
+        assert res is True
+        assert self._called is True
 
 
 class TestFileMonitor(object):
-
-    def setup(self):
-        self._filename = '/tmp/test.log'
-        with open(self._filename, 'w') as fp:
-            fp.write('abc')
-
+    def test_check_monitor(self):
         self._called = False
 
-    def teardown(self):
-        os.remove(self._filename)
+        def _callback_when_file_changes(changed):
+            self._called = True
 
-    def callback_when_file_changes(self, changed):
-        self._called = True
-
-    def test_check_monitor(self):
-        monitor = file_monitor.FileMonitor(
-            self.callback_when_file_changes,
-            [self._filename], interval=1)
+        monitor = file_monitor.FileMonitor(_callback_when_file_changes,
+                                           [_monitor_file], interval=1)
         monitor.start()
-
-        assert not self._called
+        assert self._called is False
 
         time.sleep(1)
-        with open(self._filename, 'w') as fp:
+        with open(_monitor_file, 'w') as fp:
             fp.write('efg')
         time.sleep(2)
-        assert self._called
+        assert self._called is True
 
         monitor.stop()

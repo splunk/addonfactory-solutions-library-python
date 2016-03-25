@@ -1,58 +1,31 @@
 import sys
 import os
 import os.path as op
-import subprocess
-import socket
+
+import common
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 from splunksolutionlib import splunkenv
 
 
-class _MockPopen(object):
-    def __init__(self, args, bufsize=0, executable=None,
-                 stdin=None, stdout=None, stderr=None,
-                 preexec_fn=None, close_fds=False, shell=False,
-                 cwd=None, env=None, universal_newlines=False,
-                 startupinfo=None, creationflags=0):
-        self._conf = args[1]
-
-    def communicate(self, input=None):
-        cur_dir = op.dirname(op.abspath(__file__))
-        if self._conf == 'server':
-            file_path = op.sep.join(
-                [cur_dir, 'data', 'unittest/server.conf'])
-        else:
-            file_path = op.sep.join(
-                [cur_dir, 'data', 'unittest/web.conf'])
-
-        with open(file_path) as fp:
-            return fp.read(), None
-
-
 def test_splunkhome_path(monkeypatch):
-    monkeypatch.setenv('SPLUNK_HOME', '/opt/splunk/')
-    monkeypatch.setattr(subprocess, 'Popen', _MockPopen)
+    common.mock_splunkhome(monkeypatch)
 
     splunkhome_path = splunkenv.make_splunkhome_path(['etc', 'apps'])
     assert splunkhome_path == os.environ['SPLUNK_HOME'] + 'etc/apps'
 
 
 def test_get_splunk_host_info(monkeypatch):
-    def _mock_gethostname():
-        return 'testServer'
-
-    monkeypatch.setenv('SPLUNK_HOME', '/opt/splunk/')
-    monkeypatch.setattr(subprocess, 'Popen', _MockPopen)
-    monkeypatch.setattr(socket, 'gethostname', _mock_gethostname)
+    common.mock_splunkhome(monkeypatch)
+    common.mock_gethostname(monkeypatch)
 
     server_name, host_name = splunkenv.get_splunk_host_info()
-    assert server_name == 'testServer'
-    assert host_name == 'testServer'
+    assert server_name == 'unittestServer'
+    assert host_name == 'unittestServer'
 
 
 def test_splunk_bin(monkeypatch):
-    monkeypatch.setenv('SPLUNK_HOME', '/opt/splunk/')
-    monkeypatch.setattr(subprocess, 'Popen', _MockPopen)
+    common.mock_splunkhome(monkeypatch)
 
     splunk_bin = splunkenv.get_splunk_bin()
     assert splunk_bin in (os.environ['SPLUNK_HOME'] + 'bin/splunk',
@@ -60,8 +33,7 @@ def test_splunk_bin(monkeypatch):
 
 
 def test_get_splunkd_access_info(monkeypatch):
-    monkeypatch.setenv('SPLUNK_HOME', '/opt/splunk/')
-    monkeypatch.setattr(subprocess, 'Popen', _MockPopen)
+    common.mock_splunkhome(monkeypatch)
 
     scheme, host, port = splunkenv.get_splunkd_access_info()
     assert scheme == 'https'
@@ -70,8 +42,7 @@ def test_get_splunkd_access_info(monkeypatch):
 
 
 def test_splunkd_uri(monkeypatch):
-    monkeypatch.setenv('SPLUNK_HOME', '/opt/splunk/')
-    monkeypatch.setattr(subprocess, 'Popen', _MockPopen)
+    common.mock_splunkhome(monkeypatch)
 
     uri = splunkenv.get_splunkd_uri()
     assert uri == 'https://127.0.0.1:8089'
