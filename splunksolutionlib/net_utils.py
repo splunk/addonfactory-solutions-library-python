@@ -18,7 +18,7 @@ Net utilities.
 
 import socket
 
-from splunksolutionlib.common import ip_math
+from splunksolutionlib import ip_math
 
 __all__ = ['resolve_hostname']
 

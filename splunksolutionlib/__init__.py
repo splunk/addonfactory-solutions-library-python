@@ -16,7 +16,13 @@
 The Splunk Software Development Kit for Solutions.
 '''
 
-from splunksolutionlib import common
+from splunksolutionlib import pattern
+from splunksolutionlib import log
+from splunksolutionlib import utils
+from splunksolutionlib import net_utils
+from splunksolutionlib import ip_math
+from splunksolutionlib import codecs
+from splunksolutionlib import orphan_process_monitor
 from splunksolutionlib import acl
 from splunksolutionlib import credentials
 from splunksolutionlib import metadata
@@ -25,7 +31,13 @@ from splunksolutionlib import server_info
 from splunksolutionlib import splunkenv
 from splunksolutionlib import http_request
 
-__all__ = ['common',
+__all__ = ['pattern',
+           'log',
+           'utils',
+           'net_utils',
+           'ip_math',
+           'codecs',
+           'orphan_process_monitor',
            'acl',
            'credentials',
            'metadata',

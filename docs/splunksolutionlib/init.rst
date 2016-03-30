@@ -7,10 +7,16 @@ splunksolutionlib
 .. toctree::
    :maxdepth: 2
 
-   common/init
-   credentials
+   pattern
+   log
+   utils
+   net_utils
+   ip_math
+   codecs
+   orphan_process_monitor
    acl
+   credentials
    metadata
    server_info
-   http_request
    splunkenv
+   http_request

@@ -23,7 +23,7 @@ import logging
 
 from splunksolutionlib.credentials import CredentialManager
 from splunksolutionlib.credentials import CredNotExistException
-from splunksolutionlib.common.codecs import GzipHandler, ZipHandler
+from splunksolutionlib.codecs import GzipHandler, ZipHandler
 
 __all__ = ['HTTPRequest']
 

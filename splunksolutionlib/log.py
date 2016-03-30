@@ -18,10 +18,11 @@ This module provides log functionalities.
 
 import os
 import logging
-import logging.handlers as handlers
+import logging.handlers
 import os.path as op
+from threading import Lock
 
-from splunksolutionlib.common.pattern import Singleton
+from splunksolutionlib.pattern import Singleton
 
 __all__ = ['log_enter_exit',
            'Logs']
@@ -58,7 +59,7 @@ class Logs(object):
 
     Usage::
 
-      >>> from splunksolutionlib.common import log
+      >>> from splunksolutionlib.import log
       >>> log.Logs.set_context(directory='/var/log/test',
                                namespace='test')
       >>> logger = log.Logs().get_logger('mymodule')
@@ -75,6 +76,7 @@ class Logs(object):
     _default_backup_count = 5
 
     def __init__(self):
+        self._lock = Lock()
         self._loggers = {}
 
     @classmethod
@@ -118,29 +120,30 @@ class Logs(object):
         :rtype: ``logging.Logger``
         '''
 
-        logfile = self._get_logfile(name)
-        if logfile in self._loggers:
-            return self._loggers[logfile]
+        with self._lock:
+            log_file = self._get_log_file(name)
+            if log_file in self._loggers:
+                return self._loggers[log_file]
 
-        logger = logging.getLogger(logfile)
-        handler_exists = any(
-            [True for h in logger.handlers if h.baseFilename == logfile])
-        if not handler_exists:
-            file_handler = handlers.RotatingFileHandler(
-                logfile,
-                mode='a',
-                maxBytes=self._default_max_bytes,
-                backupCount=self._default_backup_count)
-            formatter = logging.Formatter(
-                '%(asctime)s %(levelname)s pid=%(process)d tid=%(threadName)s '
-                'file=%(filename)s:%(funcName)s:%(lineno)d | %(message)s')
-            file_handler.setFormatter(formatter)
-            logger.addHandler(file_handler)
-            logger.setLevel(self._default_log_level)
-            logger.propagate = False
+            logger = logging.getLogger(log_file)
+            handler_exists = any(
+                [True for h in logger.handlers if h.baseFilename == log_file])
+            if not handler_exists:
+                file_handler = logging.handlers.RotatingFileHandler(
+                    log_file,
+                    mode='a',
+                    maxBytes=self._default_max_bytes,
+                    backupCount=self._default_backup_count)
+                formatter = logging.Formatter(
+                    '%(asctime)s %(levelname)s pid=%(process)d tid=%(threadName)s '
+                    'file=%(filename)s:%(funcName)s:%(lineno)d | %(message)s')
+                file_handler.setFormatter(formatter)
+                logger.addHandler(file_handler)
+                logger.setLevel(self._default_log_level)
+                logger.propagate = False
 
-        self._loggers[logfile] = logger
-        return logger
+            self._loggers[log_file] = logger
+            return logger
 
     def set_level(self, level, name=None):
         '''Set log level of logger.
@@ -153,23 +156,24 @@ class Logs(object):
         :type name: ``string``
         '''
 
-        if name:
-            logfile = self._get_logfile(name)
-            logger = self._loggers.get(logfile)
-            if logger:
-                logger.setLevel(level)
-        else:
-            self._default_log_level = level
-            for logger in self._loggers.itervalues():
-                logger.setLevel(level)
+        with self._lock:
+            if name:
+                log_file = self._get_log_file(name)
+                logger = self._loggers.get(log_file)
+                if logger:
+                    logger.setLevel(level)
+            else:
+                self._default_log_level = level
+                for logger in self._loggers.itervalues():
+                    logger.setLevel(level)
 
-    def _get_logfile(self, name):
+    def _get_log_file(self, name):
         if self._default_namespace:
             name = '{}_{}.log'.format(self._default_namespace, name)
         else:
             name = '{}.log'.format(name)
 
         directory = op.abspath(self._default_directory or os.curdir)
-        logfile = op.sep.join([directory, name])
+        log_file = op.sep.join([directory, name])
 
-        return logfile
+        return log_file

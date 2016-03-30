@@ -3,7 +3,7 @@ import os.path as op
 import pytest
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-from splunksolutionlib.common import ip_math
+from splunksolutionlib import ip_math
 
 
 def test_ip2long():

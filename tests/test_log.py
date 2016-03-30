@@ -7,7 +7,7 @@ import time
 import shutil
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-from splunksolutionlib.common import log
+from splunksolutionlib import log
 
 
 def setup_module(module):

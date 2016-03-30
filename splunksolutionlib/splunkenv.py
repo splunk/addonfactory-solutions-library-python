@@ -23,7 +23,7 @@ import socket
 from ConfigParser import ConfigParser
 from cStringIO import StringIO
 
-from splunksolutionlib.common import utils
+from splunksolutionlib import utils
 
 __all__ = ['make_splunkhome_path',
            'get_splunk_host_info',

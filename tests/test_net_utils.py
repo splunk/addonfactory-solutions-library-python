@@ -4,7 +4,7 @@ import socket
 import pytest
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-from splunksolutionlib.common import net_utils
+from splunksolutionlib import net_utils
 
 
 def test_resolve_hostname(monkeypatch):

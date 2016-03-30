@@ -91,7 +91,7 @@ class FileMonitor(object):
 
     Usage::
 
-      >>> import splunksolutionlib.common.file_monitor as fm
+      >>> import splunksolutionlib.file_monitor as fm
       >>> fm = fm.FileMonitor(fm_callback, files_list, 5)
       >>> fm.start()
     '''

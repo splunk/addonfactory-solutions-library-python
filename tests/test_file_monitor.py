@@ -4,7 +4,7 @@ import os.path as op
 import time
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-from splunksolutionlib.common import file_monitor
+from splunksolutionlib import file_monitor
 
 _monitor_file = './.test_monitor_file'
 

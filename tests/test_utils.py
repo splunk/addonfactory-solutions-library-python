@@ -5,7 +5,7 @@ import datetime
 import os.path as op
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-from splunksolutionlib.common import utils
+from splunksolutionlib import utils
 
 
 def test_handle_tear_down_signals():
