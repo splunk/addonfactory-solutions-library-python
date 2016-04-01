@@ -69,31 +69,33 @@ class Logs(object):
 
     __metaclass__ = Singleton
 
+    ROOT_LOGGER_LOG_FILE = 'splunksolutionlib'
+
     _default_directory = None
     _default_namespace = None
+    _default_log_format = '%(asctime)s %(levelname)s pid=%(process)d tid=%(threadName)s file=%(filename)s:%(funcName)s:%(lineno)d | %(message)s'
     _default_log_level = logging.INFO
     _default_max_bytes = 25000000
     _default_backup_count = 5
-
-    def __init__(self):
-        self._lock = Lock()
-        self._loggers = {}
 
     @classmethod
     def set_context(cls, **context):
         """set log context.
 
-        :param directory: (optional) Logger directory to write. If `log_dir` is
-            None, log will be written to current directory.
-        :type log_dir: ``string``
-        :param namespace: (optional) Logger namespace.
+        :param directory: (optional) Log directory. default is current
+            directory.
+        :type directory: ``string``
+        :param namespace: (optional) Logger namespace, default is None.
         :type namespace: ``string``
-        :param default_level: (optional) Default logging level, default value
-            is logging.INFO.
-        :type default_level: ``integer``
-        :param max_bytes: (optional) The maximum log file size before rollover.
+        :param log_format: (optional) Log format.
+        :type log_format: ``string``
+        :param log_level: (optional) Log level, default is logging.INFO.
+        :type log_level: ``integer``
+        :param max_bytes: (optional) The maximum log file size before
+            rollover, default is 25000000.
         :type max_bytes: ``integer``
-        :param backup_count: (optional) The number of log files to retain.
+        :param backup_count: (optional) The number of log files to retain,
+            default is 5.
         :type backup_count: ``integer``
         """
 
@@ -101,12 +103,45 @@ class Logs(object):
             cls._default_directory = context['directory']
         if 'namespace' in context:
             cls._default_namespace = context['namespace']
+        if 'log_format' in context:
+            cls._default_log_format = context['log_format']
         if 'log_level' in context:
             cls._default_log_level = context['log_level']
         if 'max_bytes' in context:
             cls._default_max_bytes = context['max_bytes']
         if 'backup_count' in context:
             cls._default_backup_count = context['backup_count']
+
+        cls._reset_root_logger()
+
+    @classmethod
+    def _reset_root_logger(cls):
+        logger = logging.getLogger()
+        log_file = cls._get_log_file(cls.ROOT_LOGGER_LOG_FILE)
+        file_handler = logging.handlers.RotatingFileHandler(
+            log_file,
+            mode='a',
+            maxBytes=cls._default_max_bytes,
+            backupCount=cls._default_backup_count)
+        file_handler.setFormatter(logging.Formatter(cls._default_log_format))
+        logger.addHandler(file_handler)
+        logger.setLevel(cls._default_log_level)
+
+    @classmethod
+    def _get_log_file(cls, name):
+        if cls._default_namespace:
+            name = '{}_{}.log'.format(cls._default_namespace, name)
+        else:
+            name = '{}.log'.format(name)
+
+        directory = op.abspath(cls._default_directory or os.curdir)
+        log_file = op.sep.join([directory, name])
+
+        return log_file
+
+    def __init__(self):
+        self._lock = Lock()
+        self._loggers = {}
 
     def get_logger(self, name):
         ''' Get logger with the name of `name`.
@@ -134,10 +169,7 @@ class Logs(object):
                     mode='a',
                     maxBytes=self._default_max_bytes,
                     backupCount=self._default_backup_count)
-                formatter = logging.Formatter(
-                    '%(asctime)s %(levelname)s pid=%(process)d tid=%(threadName)s '
-                    'file=%(filename)s:%(funcName)s:%(lineno)d | %(message)s')
-                file_handler.setFormatter(formatter)
+                file_handler.setFormatter(logging.Formatter(self._default_log_format))
                 logger.addHandler(file_handler)
                 logger.setLevel(self._default_log_level)
                 logger.propagate = False
@@ -166,14 +198,4 @@ class Logs(object):
                 self._default_log_level = level
                 for logger in self._loggers.itervalues():
                     logger.setLevel(level)
-
-    def _get_log_file(self, name):
-        if self._default_namespace:
-            name = '{}_{}.log'.format(self._default_namespace, name)
-        else:
-            name = '{}.log'.format(name)
-
-        directory = op.abspath(self._default_directory or os.curdir)
-        log_file = op.sep.join([directory, name])
-
-        return log_file
+                logging.getLogger().setLevel(level)

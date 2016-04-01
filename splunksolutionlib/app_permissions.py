@@ -89,8 +89,8 @@ class AppPermissionsRequestQueue(object):
                       'user': 'string'}
             kvstore.create(queue, fields=fields)
 
-        collections = kvstore.list()
         self._collection_data = None
+        collections = kvstore.list()
         for collection in collections:
             if collection.name == queue:
                 self._collection_data = collection.data
