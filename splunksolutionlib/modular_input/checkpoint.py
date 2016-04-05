@@ -33,7 +33,7 @@ class Checkpoint(object):
 
 
 class KVStoreCheckpoint(Checkpoint):
-    CHECKPOINT_COLLECTION = 'modularinput_checkpoint'
+    CHECKPOINT_COLLECTION = 'splunksolutionlib_checkpoint'
 
     def __init__(self, session_key, app, owner='nobody',
                  scheme='https', host='localhost', port=8089):

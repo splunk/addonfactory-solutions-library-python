@@ -11,17 +11,23 @@ import context
 splunk_bin = get_splunk_bin()
 source_dir = op.join(op.dirname(op.abspath(__file__)), 'data', context.app)
 target_dir = make_splunkhome_path(['etc', 'apps', context.app])
+splunksolutionlib_lib_dir = op.join(
+    op.dirname(op.dirname(op.abspath(__file__))), 'splunksolutionlib')
+splunksolutionlib_lib_target_dir = make_splunkhome_path(
+    ['etc', 'apps', context.app, 'bin', 'splunksolutionlib'])
 
 
 def setup_environment():
-    print 'Setup environment...'
+    print 'Setup splunksolutionlib demo environment...'
     print 'Copying %s to %s' % (source_dir, target_dir)
     shutil.copytree(source_dir, target_dir)
+    shutil.copytree(splunksolutionlib_lib_dir,
+                    splunksolutionlib_lib_target_dir)
     os.system(splunk_bin + ' start')
 
 
 def teardown_environment():
-    print 'Teardown environment...'
+    print 'Teardown splunksolutionlib demo environment...'
     os.system(splunk_bin + ' stop')
     print 'Removing %s' % target_dir
     if op.exists(target_dir):
@@ -33,7 +39,6 @@ def run_test():
     import test_server_info
     import test_kvstore
     import test_metadata
-    import test_app_permissions
     import test_acl
     import test_credentials
     import test_http_request
@@ -46,8 +51,6 @@ def run_test():
     test_kvstore.test_kvstore()
     print 'test metadata reader...'
     test_metadata.test_metadata_reader()
-    print 'test app permissions request queue...'
-    test_app_permissions.test_app_permissions_request_queue()
     print 'test acl manager...'
     test_acl.test_acl_manager()
     print 'test credential manager...'

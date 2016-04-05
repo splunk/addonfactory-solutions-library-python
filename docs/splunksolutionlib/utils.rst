@@ -6,7 +6,7 @@ utils
 APIs
 ----
 
-:func:`~splunksolutionlib.utils.handle_tear_down_signals` function
+:func:`~splunksolutionlib.utils.handle_teardown_signals` function
 
 :func:`~splunksolutionlib.utils.datetime_to_seconds` function
 
@@ -19,7 +19,7 @@ APIs
 Detail Info
 -----------
 
-.. autofunction:: handle_tear_down_signals
+.. autofunction:: handle_teardown_signals
 
 .. autofunction:: datetime_to_seconds
 

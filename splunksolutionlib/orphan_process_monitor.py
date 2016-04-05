@@ -19,7 +19,6 @@ Orphan process monitor.
 import os
 import threading
 import time
-import logging
 
 __all__ = ['OrphanProcessChecker',
            'OrphanProcessMonitor']
@@ -103,12 +102,15 @@ class OrphanProcessMonitor(object):
         '''
         Stop orphan process monitor.
         '''
+
+        joinable = self._started
         self._started = False
+        if joinable:
+            self._thr.join(timeout=1)
 
     def _do_monitor(self):
         while self._started:
             if self._checker.check_orphan():
-                logging.warn('Process=%s has become orphan', os.getpid())
                 break
 
             for _ in xrange(self._interval):

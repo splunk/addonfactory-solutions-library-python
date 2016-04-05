@@ -8,15 +8,15 @@ sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 from splunksolutionlib import utils
 
 
-def test_handle_tear_down_signals():
-    test_handle_tear_down_signals.should_tear_down = False
+def test_handle_teardown_signals():
+    test_handle_teardown_signals.should_teardown = False
 
     def sig_handler(signum, frame):
-        test_handle_tear_down_signals.should_tear_down = True
+        test_handle_teardown_signals.should_teardown = True
 
-    utils.handle_tear_down_signals(sig_handler)
+    utils.handle_teardown_signals(sig_handler)
     os.kill(os.getpid(), signal.SIGINT)
-    assert test_handle_tear_down_signals.should_tear_down
+    assert test_handle_teardown_signals.should_teardown
 
 
 def test_datatime_to_seconds():

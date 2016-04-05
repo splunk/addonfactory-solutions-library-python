@@ -13,7 +13,7 @@ def test_credential_manager():
         host=context.host, port=context.port)
 
     cm = credentials.CredentialManager(session_key, context.app, owner=context.owner,
-                                       realm='splunksolutionlib', scheme=context.scheme,
+                                       realm=context.app, scheme=context.scheme,
                                        host=context.host, port=context.port)
 
     cm.set_password('testuser1', 'password1')

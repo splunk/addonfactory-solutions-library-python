@@ -20,14 +20,14 @@ import os
 import datetime
 import signal
 
-__all__ = ['handle_tear_down_signals',
+__all__ = ['handle_teardown_signals',
            'datetime_to_seconds',
            'is_true',
            'is_false',
            'escape_json_control_chars']
 
 
-def handle_tear_down_signals(callback):
+def handle_teardown_signals(callback):
     '''Register handler for SIGTERM/SIGINT/SIGBREAK signal.
 
     Catch SIGTERM/SIGINT/SIGBREAK signals, and invoke callback
@@ -96,6 +96,22 @@ def escape_json_control_chars(json_str):
     control_chars = ((r'\n', '\\\\n'),
                      (r'\r', '\\\\r'),
                      (r'\r\n', '\\\\r\\\\n'))
+    for ch, replace in control_chars:
+        json_str = json_str.replace(ch, replace)
+    return json_str
+
+
+def unescape_json_control_chars(json_str):
+    '''Unescape json control chars in `json_str`.
+
+    :param json_str: Json string to unescape.
+    :returns: Unescaped string.
+    :rtype: ``string``
+    '''
+
+    control_chars = (("\\\\n", r"\n"),
+                     ("\\\\r", r"\r"),
+                     ("\\\\r\\\\n", r"\r\n"))
     for ch, replace in control_chars:
         json_str = json_str.replace(ch, replace)
     return json_str

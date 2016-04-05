@@ -14,7 +14,7 @@ def test_http_request():
 
     hq = http_request.HTTPRequest(session_key, context.app, owner=context.owner,
                                   scheme=context.scheme, host=context.host,
-                                  port=context.port, realm='splunksolutionlib',
+                                  port=context.port, realm=context.app,
                                   api_user='admin', timeout=20)
 
     url = '{scheme}://{host}:{port}/servicesNS/{owner}/{app}/storage/collections/config/sessions/acl?output_mode=json'
