@@ -88,6 +88,8 @@ class ModularInput(object):
     use_single_instance = False
     # Use kvstore for checkpoint, default is True
     use_kvstore_checkpoint = True
+    # Collection name of kvstore checkpoint, default is 'kvstore_checkpoint'
+    kvstore_checkpoint_collection_name = 'kvstore_checkpoint'
     # Use hec event writer
     use_hec_event_writer = True
 
@@ -193,8 +195,9 @@ class ModularInput(object):
             if self.use_kvstore_checkpoint:
                 splunkd = urlparse.urlparse(self._server_uri)
                 self._checkpoint = checkpoint.KVStoreCheckpoint(
-                    self._session_key, self.app, owner='nobody',
-                    scheme=splunkd.scheme, host=splunkd.hostname, port=splunkd.port)
+                    self.kvstore_checkpoint_collection_name, self._session_key,
+                    self.app, owner='nobody', scheme=splunkd.scheme,
+                    host=splunkd.hostname, port=splunkd.port)
             else:
                 self._checkpoint = checkpoint.FileCheckpoint(self._checkpoint_dir)
 

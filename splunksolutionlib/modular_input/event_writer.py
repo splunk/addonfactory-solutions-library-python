@@ -101,6 +101,34 @@ class ClassicEventWriter(EventWriter):
 
     description = 'ClassicEventWriter'
 
+    def _event_to_xml(self, event):
+        _event = ET.Element('event')
+        if event.stanza:
+            _event.set('stanza', event.stanza)
+        if event.unbroken:
+            _event.set('unbroken', str(int(event.unbroken)))
+
+        if event.time:
+            ET.SubElement(_event, 'time').text = event.time
+
+        sub_elements = [('index', event.index),
+                        ('host', event.host),
+                        ('source', event.source),
+                        ('sourcetype', event.sourcetype)]
+        for node, value in sub_elements:
+            if value:
+                ET.SubElement(_event, node).text = value
+
+        if isinstance(event.data, (unicode, basestring)):
+            ET.SubElement(_event, 'data').text = event.data
+        else:
+            ET.SubElement(_event, 'data').text = json.dumps(event.data)
+
+        if event.done:
+            ET.SubElement(_event, 'done')
+
+        return _event
+
     def _format_events(self, events):
         '''Output:
                ['<stream>
@@ -128,7 +156,7 @@ class ClassicEventWriter(EventWriter):
 
         stream = ET.Element("stream")
         for event in events:
-            stream.append(event.to_xml())
+            stream.append(self._event_to_xml(event))
 
         return [ET.tostring(stream)]
 
@@ -199,13 +227,29 @@ class HECEventWriter(EventWriter):
 
         return (port, token)
 
+    def _event_to_str(self, event):
+        _event = {}
+        _event['event'] = event.data
+        if event.time:
+            _event['time'] = float(event.time)
+        if event.index:
+            _event['index'] = event.index
+        if event.host:
+            _event['host'] = event.host
+        if event.source:
+            _event['source'] = event.source
+        if event.sourcetype:
+            _event['sourcetype'] = event.sourcetype
+
+        return json.dumps(_event)
+
     def _format_events(self, events):
         '''Output:
                ['{"index": "main", ... "event": {"kk": [1, 2, 3]}}\n'
                 '{"index": "main", ... "event": {"kk": [3, 2, 3]}}',
                 '...']
         '''
-        events = [event.to_string() for event in events]
+        events = [self._event_to_str(event) for event in events]
 
         size = 0
         new_events, batched_events = [], []

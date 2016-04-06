@@ -17,10 +17,6 @@ This module provides Splunk modular input event encapsulation.
 '''
 
 import json
-try:
-    import xml.etree.cElementTree as ET
-except ImportError:
-    import xml.etree.ElementTree as ET
 
 __all__ = ['Event']
 
@@ -79,52 +75,52 @@ class Event(object):
         self._unbroken = unbroken
         self._done = done
 
-    def to_xml(self):
-        '''Get an xml representation of event.
+    @property
+    def data(self):
+        return self._data
 
-        :returns: An xml object.
-        :rtype: ``xml object``
-        '''
+    @property
+    def time(self):
+        return self._time
 
-        event = ET.Element('event')
-        if self._stanza:
-            event.set('stanza', self._stanza)
-        if self._unbroken:
-            event.set('unbroken', str(int(self._unbroken)))
+    @property
+    def index(self):
+        return self._index
 
-        if self._time:
-            ET.SubElement(event, 'time').text = self._time
+    @property
+    def host(self):
+        return self._host
 
-        sub_elements = [('index', self._index),
-                        ('host', self._host),
-                        ('source', self._source),
-                        ('sourcetype', self._sourcetype)]
-        for node, value in sub_elements:
-            if value:
-                ET.SubElement(event, node).text = value
+    @property
+    def source(self):
+        return self._source
 
-        if isinstance(self._data, (unicode, basestring)):
-            ET.SubElement(event, 'data').text = self._data
-        else:
-            ET.SubElement(event, 'data').text = json.dumps(self._data)
+    @property
+    def sourcetype(self):
+        return self._sourcetype
 
-        if self._done:
-            ET.SubElement(event, 'done')
+    @property
+    def stanza(self):
+        return self._stanza
 
-        return event
+    @property
+    def unbroken(self):
+        return self._unbroken
 
-    def to_string(self):
+    @property
+    def done(self):
+        return self._done
+
+    def __str__(self):
         event = {}
-        event['event'] = self._data
-        if self._time:
-            event['time'] = float(self._time)
-        if self._index:
-            event['index'] = self._index
-        if self._host:
-            event['host'] = self._host
-        if self._source:
-            event['source'] = self._source
-        if self._sourcetype:
-            event['sourcetype'] = self._sourcetype
+        event['data'] = self._data
+        event['time'] = float(self._time) if self._time else self._time
+        event['index'] = self._index
+        event['host'] = self._host
+        event['source'] = self._source
+        event['sourcetype'] = self._sourcetype
+        event['stanza'] = self._stanza
+        event['unbroken'] = self._unbroken
+        event['done'] = self._done
 
         return json.dumps(event)

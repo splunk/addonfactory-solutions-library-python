@@ -64,7 +64,7 @@ class SplunksolutionDemoCollector(ModularInput):
                            source='splunksolutionlib_demo',
                            sourcetype='splunksolutionlib_demo')
             event_writer.write_events([event1, event2])
-            state = [event1.to_string(), event2.to_string()]
+            state = [str(event1), str(event2)]
             checkpoint.update('splunksolutionlib_demo_collector_state',
                               state)
             time.sleep(5)

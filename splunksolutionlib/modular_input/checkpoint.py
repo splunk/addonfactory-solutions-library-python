@@ -55,14 +55,14 @@ class Checkpoint(object):
 
 
 class KVStoreCheckpoint(Checkpoint):
-    CHECKPOINT_COLLECTION = 'splunksolutionlib_checkpoint'
-
-    def __init__(self, session_key, app, owner='nobody',
+    def __init__(self, collection_name, session_key, app, owner='nobody',
                  scheme='https', host='localhost', port=8089):
         '''KVStore checkpoint.
 
         Use KVStore to save modular input checkpoint.
 
+        :param collection_name: Collection name of kvstore checkpoint.
+        :type collection_name: ``string``
         :param session_key: Splunk access token.
         :type session_key: ``string``
         :param app: App name of namespace.
@@ -92,15 +92,15 @@ class KVStoreCheckpoint(Checkpoint):
                           owner=owner,
                           autologin=True).kvstore
         try:
-            kvstore.get(name=self.CHECKPOINT_COLLECTION)
+            kvstore.get(name=collection_name)
         except HTTPError:
             fields = {'state': 'string'}
-            kvstore.create(self.CHECKPOINT_COLLECTION, fields=fields)
+            kvstore.create(collection_name, fields=fields)
 
         self._collection_data = None
         collections = kvstore.list()
         for collection in collections:
-            if collection.name == self.CHECKPOINT_COLLECTION:
+            if collection.name == collection_name:
                 self._collection_data = collection.data
                 break
 
