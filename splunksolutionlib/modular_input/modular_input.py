@@ -12,6 +12,10 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+'''
+This module provides a base class of Splunk modular input.
+'''
+
 import sys
 import urllib2
 import logging
@@ -38,6 +42,36 @@ __all__ = ['ModularInput']
 
 
 class ModularInput(object):
+    '''Base class of Splunk modular input.
+
+    It's a base modular input, it should be inherited by sub modular
+    input. For sub modular input, some class properties must be overriden,
+    like: app, name, title and description, also there are some other
+    optional properties can be overriden like: use_external_validation,
+    use_single_instance, use_kvstore_checkpoint, use_hec_event_writer etc..
+
+    Usage::
+
+       >>> Class TestModularInput(ModularInput):
+       >>>     app = 'TestApp'
+       >>>     name = 'TestModularInput'
+       >>>     title = 'Test modular input'
+       >>>     description = 'This is a test modular input'
+       >>>
+       >>>     def extra_arguments(self):
+       >>>         ... .. .
+       >>>
+       >>>     def do_validation(self, parameters):
+       >>>         ... .. .
+       >>>
+       >>>     def do_run(self, inputs):
+       >>>         ... .. .
+       >>>
+       >>> if __name__ == '__main__':
+       >>>     md = TestModularInput()
+       >>>     md.execute()
+    '''
+
     __metaclass__ = ABCMeta
 
     # App name, must be overriden
@@ -59,8 +93,11 @@ class ModularInput(object):
 
     def __init__(self):
         # Metadata
-        self._server_host = None
+        self._server_host_name = None
         self._server_uri = None
+        self._server_scheme = None
+        self._server_host = None
+        self._server_port = None
         self._session_key = None
         self._checkpoint_dir = None
         # Checkpoint
@@ -71,25 +108,87 @@ class ModularInput(object):
         self._event_writer = None
 
     def _update_metadata(self, metadata):
-        self._server_host = metadata['server_host']
-        self._server_uri = metadata['server_uri']
+        self._server_host_name = metadata['server_host']
+        splunkd = urllib2.urlparse.urlsplit(metadata['server_uri'])
+        self._server_uri = splunkd.geturl()
+        self._server_scheme = splunkd.scheme
+        self._server_host = splunkd.hostname
+        self._server_port = splunkd.port
         self._session_key = metadata['session_key']
         self._checkpoint_dir = metadata['checkpoint_dir']
 
     @property
-    def server_host(self):
-        return self._server_host
+    def server_host_name(self):
+        '''Get splunk server host name.
+
+        :returns: splunk server host name.
+        :rtype: ``string``
+        '''
+
+        return self._server_host_name
 
     @property
     def server_uri(self):
+        '''Get splunk server uri.
+
+        :returns: splunk server uri.
+        :rtype: ``string``
+        '''
+
         return self._server_uri
 
     @property
+    def server_scheme(self):
+        '''Get splunk server scheme.
+
+        :returns: splunk server scheme.
+        :rtype: ``string``
+        '''
+
+        return self._server_scheme
+
+    @property
+    def server_host(self):
+        '''Get splunk server host.
+
+        :returns: splunk server host.
+        :rtype: ``string``
+        '''
+
+        return self._server_host
+
+    @property
+    def server_port(self):
+        '''Get splunk server port.
+
+        :returns: splunk server port.
+        :rtype: ``integer``
+        '''
+
+        return self._server_port
+
+    @property
     def session_key(self):
+        '''Get splunkd session key.
+
+        :returns: splunkd session key.
+        :rtype: ``string``
+        '''
+
         return self._session_key
 
     @property
     def checkpoint(self):
+        '''Get checkpoint instance.
+
+        The checkpoint returned depends on use_kvstore_checkpoint flag,
+        if use_kvstore_checkpoint is true will return an KVStoreCheckpoint
+        instance else an FileCheckpoint instance.
+
+        :returns: An checkpoint instance.
+        :rtype: ``Checkpoint object``
+        '''
+
         if self._checkpoint is None:
             if self.use_kvstore_checkpoint:
                 splunkd = urlparse.urlparse(self._server_uri)
@@ -103,16 +202,27 @@ class ModularInput(object):
 
     @property
     def event_writer(self):
+        '''Get event writer instance.
+
+        The event writer returned depends on use_hec_event_writer flag,
+        if use_hec_event_writer is true will return an HECEventWriter
+        instance else an ClassicEventWriter instance.
+
+        :returns: Event writer instance.
+        :rtype: ``EventWriter object``
+        '''
+
         if self._event_writer:
             return self._event_writer
 
         if self.use_hec_event_writer:
-            splunkd = urllib2.urlparse.urlsplit(self._server_uri)
             try:
                 self._event_writer = event_writer.HECEventWriter(
-                    self._session_key, scheme=splunkd.scheme, host=splunkd.hostname, port=splunkd.port)
+                    self._session_key, scheme=self.server_scheme,
+                    host=self.server_host, port=self.server_port)
             except binding.HTTPError:
-                logging.error('Failed to init HECEventWriter, will use ClassicEventWriter instead.')
+                logging.error(
+                    'Failed to init HECEventWriter, will use ClassicEventWriter instead.')
                 self._event_writer = event_writer.ClassicEventWriter()
         else:
             self._event_writer = event_writer.ClassicEventWriter()
@@ -144,7 +254,7 @@ class ModularInput(object):
         return ET.tostring(scheme.to_xml())
 
     def extra_arguments(self):
-        '''Extra arguments.
+        '''Extra arguments for modular input.
 
         Default implementation is returning an empty list.
 
@@ -155,8 +265,8 @@ class ModularInput(object):
                                             'data_type': Argument.data_type_string,
                                             'required_on_edit': False,
                                             'required_on_create': False},
-                                           {...},
-                                           {...}]
+                                            {...},
+                                            {...}]
         :rtype: ``list``
         '''
 
@@ -172,7 +282,7 @@ class ModularInput(object):
         the validation is assumed to succeed. Otherwise any errors thrown will
         be turned into a string and logged back to Splunk.
 
-        :param parameters: The parameters for the proposed input passed by splunkd.
+        :param parameters: The parameters of input passed by splunkd.
 
         :raises Exception: If validation is failed.
         '''
@@ -186,6 +296,13 @@ class ModularInput(object):
 
     @abstractmethod
     def do_run(self, inputs):
+        '''Runs this modular input
+
+        :param inputs: Dict of command line arguments passed to this script,
+           like: {'stanza_name': {'arg1': 'arg1_value', 'arg2': 'arg2_value', ...}}.
+        :type inputs: ``dict``
+        '''
+
         pass
 
     def register_teardown_handler(self, handler, *args):
@@ -224,6 +341,17 @@ class ModularInput(object):
         self._orphan_monitor.start()
 
     def execute(self):
+        '''Modular input entry.
+
+        Usage::
+           >>> Class TestModularInput(ModularInput):
+           >>>         ... .. .
+           >>>
+           >>> if __name__ == '__main__':
+           >>>     md = TestModularInput()
+           >>>     md.execute()
+        '''
+
         if len(sys.argv) == 1:
             try:
                 input_definition = InputDefinition.parse(sys.stdin)

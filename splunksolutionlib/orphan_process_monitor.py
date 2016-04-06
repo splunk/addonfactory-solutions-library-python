@@ -32,6 +32,7 @@ class OrphanProcessChecker(object):
     Windows.
 
     :param callback: (optional) Callback for orphan process.
+    :type callback: ``function``
     '''
 
     def __init__(self, callback=None):
@@ -77,7 +78,9 @@ class OrphanProcessMonitor(object):
     iterval and call callback if process become orphan.
 
     :param callback: Callback for orphan process monitor.
+    :type callback: ``function``
     :param interval: (optional) Interval to monitor.
+    :type interval: ``integer``
     '''
 
     def __init__(self, callback, interval=1):

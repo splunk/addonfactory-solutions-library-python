@@ -50,8 +50,11 @@ class MetadataReader(object):
         '''Return the metadata value of option in [conf/stanza] section.
 
         :param conf: Conf name.
+        :type conf: ``string``
         :param stanza: Stanza name.
+        :type stanza: ``string``
         :param option: Option name in section [conf/stanza].
+        :type option: ``string``
         :returns: Value of option in section [conf/stanza].
         :rtype: ``string``
 
@@ -71,8 +74,11 @@ class MetadataReader(object):
         '''Return the metadata value of option in [conf/stanza] section as a float.
 
         :param conf: Conf name.
+        :type conf: ``string``
         :param stanza: Stanza name.
+        :type stanza: ``string``
         :param option: Option name in section [conf/stanza].
+        :type option: ``string``
         :returns: A float value.
         :rtype: ``float``
 

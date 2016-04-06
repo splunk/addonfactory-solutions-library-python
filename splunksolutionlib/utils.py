@@ -35,6 +35,7 @@ def handle_teardown_signals(callback):
     signals in main thread.
 
     :param callback: Callback for tear down signals.
+    :type callback: ``function``
     '''
 
     signal.signal(signal.SIGTERM, callback)
@@ -61,6 +62,7 @@ def is_true(val):
     '''Decide if `val` is true.
 
     :param val: Value to check.
+    :type val: ``(integer, string)``
     :returns: True or False.
     :rtype: ``bool``
     '''
@@ -75,6 +77,7 @@ def is_false(val):
     '''Decide if `val` is false.
 
     :param val: Value to check.
+    :type val: ``(integer, string)``
     :returns: True or False.
     :rtype: ``bool``
     '''
@@ -89,6 +92,7 @@ def escape_json_control_chars(json_str):
     '''Escape json control chars in `json_str`.
 
     :param json_str: Json string to escape.
+    :type json_str: ``string``
     :returns: Escaped string.
     :rtype: ``string``
     '''
@@ -105,6 +109,7 @@ def unescape_json_control_chars(json_str):
     '''Unescape json control chars in `json_str`.
 
     :param json_str: Json string to unescape.
+    :type json_str: ``string``
     :returns: Unescaped string.
     :rtype: ``string``
     '''

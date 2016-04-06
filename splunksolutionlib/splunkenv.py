@@ -99,7 +99,7 @@ def make_splunkhome_path(parts):
     :returns: Absolute path.
     :rtype: ``string``
 
-    :raises ValueError: Escape from intended parent directories
+    :raises ValueError: Escape from intended parent directories.
     '''
 
     relpath = os.path.normpath(os.path.join(*parts))
@@ -141,7 +141,7 @@ def make_splunkhome_path(parts):
 def get_splunk_host_info():
     '''Get splunk host info.
 
-    :returns: (server_name, host_name)
+    :returns: Tuple of (server_name, host_name).
     :rtype: ``tuple``
     '''
 
@@ -167,7 +167,7 @@ def get_splunk_bin():
 def get_splunkd_access_info():
     '''Get splunkd server access info.
 
-    :returns: (scheme, host, port)
+    :returns: Tuple of (scheme, host, port).
     :rtype: ``tuple``
     '''
 
@@ -193,7 +193,7 @@ def get_splunkd_access_info():
 def get_splunkd_uri():
     '''Get splunkd uri.
 
-    :returns: Splunkd uri
+    :returns: Splunkd uri.
     :rtype: ``string``
     '''
 
@@ -217,7 +217,7 @@ def get_conf_key_value(conf_name, stanza, key):
     :returns: Config value.
     :rtype: ``(string, list, dict)``
 
-    :Raises KeyError: If `stanza` or `key` doesn't exist.
+    :raises KeyError: If `stanza` or `key` doesn't exist.
     '''
 
     stanzas = get_conf_stanzas(conf_name)
@@ -234,7 +234,7 @@ def get_conf_stanza(conf_name, stanza):
     :returns: Config stanza.
     :rtype: ``dict``
 
-    :Raises KeyError: If stanza doesn't exist.
+    :raises KeyError: If stanza doesn't exist.
     '''
 
     stanzas = get_conf_stanzas(conf_name)

@@ -19,10 +19,7 @@ This module contains a http request wrapper.
 import ssl
 import urllib
 import urllib2
-import logging
 
-from splunksolutionlib.credentials import CredentialManager
-from splunksolutionlib.credentials import CredNotExistException
 from splunksolutionlib.codecs import GzipHandler, ZipHandler
 
 __all__ = ['HTTPRequest']
@@ -32,108 +29,63 @@ class HTTPRequest(object):
     '''A wrapper of http request.
 
     This class provides an easy interface to set http authentication
-    and http proxy for http request (should be noticed that the http
-    authentication and proxy credential need to be fetched from splunk
-    password storage, need to provide the user names of http authentication
-    and proxy).
+    and http proxy for http request.
 
-    :param session_key: Splunk access token.
-    :type session_key: ``string``
-    :param app: App name of namespace.
-    :type app: ``string``
-    :param owner: (optional) Owner of namespace.
-    :type owner: ``string``
-    :param scheme: (optional) The access scheme, default is `https`.
-    :type scheme: ``string``
-    :param host: (optional) The host name, default is `localhost`.
-    :type host: ``string``
-    :param port: (optional) The port number, default is 8089.
-    :type port: ``integer``
-    :param realm: (optional) Realm for `api_user` and `proxy_user` if
-        credentials stored in splunk with realm.
-    :type realm: ``string``
-    :param api_user: (optional) User for http authentication, make sure
-        the password has been stored in splunk password storage.
+    :param api_user: (optional) API user for http authentication, default
+        is None.
     :type api_user: ``string``
-    :param proxy_server: (optional) Proxy server ip.
+    :param api_password: (optional) API password for http authentication,
+        default is None.
+    :type api_password: ``string``
+    :param proxy_server: (optional) Proxy server ip, default is None.
     :type proxy_server: ``string``
-    :param proxy_port: (optional) Proxy server port.
+    :param proxy_port: (optional) Proxy server port, default is None.
     :type proxy_port: ``integer``
-    :param proxy_user: (optional) User for http proxy authentication.
+    :param proxy_user: (optional) User for http proxy authentication,
+        default is None.
     :type proxy_user: ``string``
-    :param timeout: (optional) Http request timeout.
+    :param proxy_password: (optional) Password for http proxy authentication,
+        default is None.
+    :param timeout: (optional) Http request timeout, default is 30.
     :type timeout: ``integer``
 
     Usage::
 
        >>> from splunksolutionlib import http_request
-       >>> hq = http_request.HTTPRequest(session_key, 'Splunk_TA_test',
-                                         realm='realm_test', api_user='admin',
-                                         proxy_server='192.168.1.120',
-                                         proxy_port=8000, proxy_user='user1',
+       >>> hq = http_request.HTTPRequest(api_user='admin', api_password='admin',
+                                         proxy_server='192.168.1.120', proxy_port=8000,
+                                         proxy_user='admin', proxy_password='amdin',
                                          timeout=20)
        >>> content = hq.open('http://host:port/namespace/endpoint',
                              body={'key1': kv1},
                              headers={'h1': hv1})
     '''
 
-    DEFAULT_TIMEOUT = 30
-
-    def __init__(self, session_key, app, owner='nobody',
-                 scheme='https', host='localhost', port=8089, **options):
-        # Splunk credential realm
-        realm = options.get('realm')
-
-        cred_manager = CredentialManager(session_key, app, owner, realm,
-                                         scheme, host, port)
-
-        # Http authentication args
-        self._api_user = options.get('api_user')
-        if self._api_user:
-            try:
-                self._api_password = cred_manager.get_password(self._api_user)
-            except CredNotExistException:
-                logging.error('API user: %s credential could not be found.' %
-                              self._api_user)
-                raise
-        else:
-            self._api_password = None
-
-        # Http proxy handler
-        proxy_server = options.get('proxy_server')
-        proxy_port = options.get('proxy_port')
-        proxy_user = options.get('proxy_user')
-        if proxy_user:
-            try:
-                proxy_password = cred_manager.get_password(proxy_user)
-            except CredNotExistException:
-                logging.error('Proxy user: %s credential could not be found.' %
-                              proxy_user)
-                raise
-        else:
-            proxy_password = None
+    def __init__(self, api_user=None, api_password=None,
+                 proxy_server=None, proxy_port=None,
+                 proxy_user=None, proxy_password=None, timeout=30):
+        self._api_user = api_user
+        self._api_password = api_password
+        # Proxy handler
         self._proxy_handler = self._get_proxy_handler(
             proxy_server, proxy_port, proxy_user, proxy_password)
-
-        # Https handlers
+        # Https handler
         self._https_handler = urllib2.HTTPSHandler(
             context=ssl._create_unverified_context())
 
-        # Http request timeout
-        self._timeout = options.get('timeout', self.DEFAULT_TIMEOUT)
+        self._timeout = timeout
 
-    def _get_proxy_handler(self, proxy_server, proxy_port, proxy_user,
-                           proxy_password):
+    def _get_proxy_handler(self, proxy_server, proxy_port, proxy_user, proxy_password):
         proxy_setting = None
         if proxy_server and proxy_port and proxy_user and proxy_password:
             proxy_setting = 'http://{user}:{password}@{server}:{port}'.format(
                 user=proxy_user, password=proxy_password,
                 server=proxy_server, port=proxy_port)
-        elif proxy_server is not None and proxy_port is not None:
+        elif proxy_server and proxy_port and proxy_user is None and proxy_password is None:
             proxy_server = 'http://{server}:{port}'.format(
                 server=proxy_server, port=proxy_port)
         elif proxy_server or proxy_port or proxy_user or proxy_password:
-            logging.error('Invalid proxy settings.')
+            raise ValueError('Invalid proxy settings.')
 
         if proxy_setting:
             return urllib2.ProxyHandler({'http': proxy_server,
@@ -174,12 +126,13 @@ class HTTPRequest(object):
 
         :param url: Http request url.
         :type url: ``string``
-        :param body: (optional) Http post body.
+        :param body: (optional) Http post body, default is None.
         :type body: ``(dict, string)``
-        :param headers: (optional) Http request headers
+        :param headers: (optional) Http request headers, default
+            is None.
         :type headers: ``dict``
         :returns: Http request response body.
-        :rtype: ``(bytes, string)``
+        :rtype: ``bytes``
         '''
 
         if isinstance(body, dict):

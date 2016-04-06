@@ -12,6 +12,10 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+'''
+This module provides Splunk modular input event encapsulation.
+'''
+
 import json
 try:
     import xml.etree.cElementTree as ET
@@ -62,6 +66,7 @@ class Event(object):
            >>>     unbroken=True,
            >>>     done=True)
         '''
+
         self._data = data
         self._time = '%.3f' % time if time else None
         self._index = index
@@ -75,6 +80,12 @@ class Event(object):
         self._done = done
 
     def to_xml(self):
+        '''Get an xml representation of event.
+
+        :returns: An xml object.
+        :rtype: ``xml object``
+        '''
+
         event = ET.Element('event')
         if self._stanza:
             event.set('stanza', self._stanza)
@@ -102,7 +113,7 @@ class Event(object):
 
         return event
 
-    def to_json(self):
+    def to_string(self):
         event = {}
         event['event'] = self._data
         if self._time:

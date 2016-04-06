@@ -114,10 +114,10 @@ class ServerInfo(object):
     def get_shc_members(self):
         '''Get SHC members.
 
-        :returns: SHC members list: [(label, peer_scheme_host_port) ...]
+        :returns: List of SHC members [(label, peer_scheme_host_port) ...]
         :rtype: ``list``
 
-        :Raises splunklib.binding.HTTPError: If network is down.
+        :Raises splunklib.binding.HTTPError: If endpoint doesn't exist.
         '''
         context = binding.Context(scheme=self._scheme, host=self._host,
                                   port=self._port, token=self._session_key,

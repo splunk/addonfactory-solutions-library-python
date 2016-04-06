@@ -12,6 +12,11 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+'''
+This module provides two kinds of event writers (ClassicEventWriter,
+HECEventWriter) to write Splunk modular input events.
+'''
+
 import sys
 import time
 import json
@@ -33,6 +38,9 @@ __all__ = ['ClassicEventWriter',
 
 
 class EventWriter(object):
+    '''Base class of event writer.
+    '''
+
     __metaclass__ = ABCMeta
 
     description = 'EventWriter'
@@ -44,6 +52,17 @@ class EventWriter(object):
         self._closed = False
 
     def write_events(self, events):
+        '''Write events.
+
+        :param events: List of events to write.
+        :type events: ``list``
+
+        Usage::
+           >>> from splunksolutionlib.modular_input import event_writer
+           >>> ew = event_writer.EventWriter(...)
+           >>> ew.write_events([event1, event2])
+        '''
+
         if self._closed:
             logging.error('Event writer: %s has been closed.', self.NAME)
             return
@@ -52,6 +71,9 @@ class EventWriter(object):
             self._events_queue.put(event)
 
     def close(self):
+        '''Close event writer.
+        '''
+
         self._closed = True
         self._events_queue.put(None)
         self._events_writer.join()
@@ -66,9 +88,44 @@ class EventWriter(object):
 
 
 class ClassicEventWriter(EventWriter):
+    '''Classic event writer.
+
+    Use sys.stdout as the output.
+
+    Usage::
+        >>> from splunksolutionlib.modular_input import event_writer
+        >>> ew = event_writer.ClassicEventWriter()
+        >>> ew.write_events([event1, event2])
+        >>> ew.close()
+    '''
+
     description = 'ClassicEventWriter'
 
     def _format_events(self, events):
+        '''Output:
+               ['<stream>
+                   <event stanza="test_scheme://test" unbroken="1">
+                         <time>1459919070.994</time>
+                         <index>main</index>
+                         <host>localhost</host>
+                         <source>test</source>
+                         <sourcetype>test</sourcetype>
+                         <data>{"kk": [1, 2, 3]}</data>
+                     <done />
+                   </event>
+                   <event stanza="test_scheme://test" unbroken="1">
+                         <time>1459919082.961</time>
+                         <index>main</index>
+                         <host>localhost</host>
+                         <source>test</source>
+                         <sourcetype>test</sourcetype>
+                         <data>{"kk": [3, 2, 3]}</data>
+                         <done />
+                   </event>
+                 </stream>',
+             '...']
+        '''
+
         stream = ET.Element("stream")
         for event in events:
             stream.append(event.to_xml())
@@ -86,6 +143,26 @@ class ClassicEventWriter(EventWriter):
 
 
 class HECEventWriter(EventWriter):
+    '''Classic event writer.
+
+    Use Splunk HEC as the output.
+
+    :param session_key: Splunk access token.
+    :type session_key: ``string``
+    :param scheme: (optional) The access scheme, default is `https`.
+    :type scheme: ``string``
+    :param host: (optional) The host name, default is `localhost`.
+    :type host: ``string``
+    :param port: (optional) The port number, default is 8089.
+    :type port: ``integer``
+
+    Usage::
+        >>> from splunksolutionlib.modular_input import event_writer
+        >>> ew = event_writer.HECEventWriter(session_key)
+        >>> ew.write_events([event1, event2])
+        >>> ew.close()
+    '''
+
     WRITE_RETRIES = 3
     MAX_HEC_EVENT_LENGTH = 100000
     HTTP_INPUT_TOKEN_NAME = 'splunksolutionlib_token'
@@ -102,8 +179,7 @@ class HECEventWriter(EventWriter):
         self._context = binding.Context(
             scheme=scheme, host=host, port=hec_port, token=hec_token, autologin=True)
 
-    def _get_hec_config(self, session_key,
-                        scheme='https', host='localhost', port=8089):
+    def _get_hec_config(self, session_key, scheme, host, port):
         context = binding.Context(
             scheme=scheme, host=host, port=port, token=session_key, autologin=True)
         content = context.get(op.join(self.HTTP_INPUT_CONFIG_ENDPOINT, 'http'),
@@ -124,7 +200,12 @@ class HECEventWriter(EventWriter):
         return (port, token)
 
     def _format_events(self, events):
-        events = [event.to_json() for event in events]
+        '''Output:
+               ['{"index": "main", ... "event": {"kk": [1, 2, 3]}}\n'
+                '{"index": "main", ... "event": {"kk": [3, 2, 3]}}',
+                '...']
+        '''
+        events = [event.to_string() for event in events]
 
         size = 0
         new_events, batched_events = [], []

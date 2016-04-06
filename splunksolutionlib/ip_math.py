@@ -68,11 +68,11 @@ def long2ip(addr):
 
 
 def cidr2long(addr):
-    '''Convert a CIDR to ``tupe``::(ip_range_min, ip_range_max).
+    '''Convert a CIDR to (ip_range_min, ip_range_max).
 
     :param addr: IPv4 CIDR.
     :type addr: ``string``
-    :returns: ``tuple``::(ip_range_min, ip_range_max).
+    :returns: Tuple of (ip_range_min, ip_range_max).
     :rtype: ``tuple``
     '''
 
@@ -180,9 +180,9 @@ def expand_ip_range_to_cidr(ip_range, clean_single_ips=False):
     < e.f.g.h. If this is not true, ValueError will be raised.
 
     :param ip_range: An IPv4 address range in (range_start, range_end) format.
-    :type: ``tuple``::(``long``::range_start, ``long``::range_end)
+    :type ip_range: ``tuple``
     :param clean_single_ips: (optional) If True, remove "/32" suffix from
-        single IPs.
+        single IPs, default is False.
     :type clean_single_ips: ``bool``
     :returns: A list of strings "a.b.c.d[/N]" where 0 <= N <= 32.
     :rtype: ``list``

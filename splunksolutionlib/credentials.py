@@ -45,9 +45,9 @@ class CredentialManager(object):
     :type session_key: ``string``
     :param app: App name of namespace.
     :type app: ``string``
-    :param owner: (optional) Owner of namespace.
+    :param owner: (optional) Owner of namespace, default is `nobody`.
     :type owner: ``string``
-    :param realm: (optional) Realm of credential.
+    :param realm: (optional) Realm of credential, default is None.
     :type realm: ``string``
     :param scheme: (optional) The access scheme, default is `https`.
     :type scheme: ``string``
@@ -85,12 +85,12 @@ class CredentialManager(object):
     def get_password(self, user):
         '''Get password.
 
-        :param user: User name of password.
+        :param user: User name.
         :type user: ``string``
-        :returns: Passwords: {realm:user: clear_password}.
-        :rtype: ``dict``
+        :returns: Clear user password.
+        :rtype: ``string``
 
-        :raises CredNotExistException: If passwords for realm:user
+        :raises CredNotExistException: If password for realm:user
             doesn't exist.
 
         Usage::
@@ -113,9 +113,9 @@ class CredentialManager(object):
     def set_password(self, user, password):
         '''Set password.
 
-        :param user: User name of password.
+        :param user: User name.
         :type user: ``string``
-        :param password: Password of user.
+        :param password: User password.
         :type password: ``string``
 
         Usage::
@@ -148,7 +148,7 @@ class CredentialManager(object):
     def delete_password(self, user):
         '''Delete password.
 
-        :param user: User name of password.
+        :param user: User name.
         :type user: ``string``
 
         :raises CredNotExistException: If passwords for realm:user
@@ -231,7 +231,7 @@ def get_session_key(username, password,
     :param username: The Splunk account username, which is used to
         authenticate the Splunk instance.
     :type username: ``string``
-    :param password: The password for the Splunk account.
+    :param password: The Splunk account password.
     :type password: ``string``
     :param scheme: (optional) The access scheme, default is `https`.
     :type scheme: ``string``
@@ -239,7 +239,7 @@ def get_session_key(username, password,
     :type host: ``string``
     :param port: (optional) The port number, default is `8089`.
     :type port: ``integer``
-    :returns: Splunk access token.
+    :returns: Splunk session key.
     :rtype: ``string``
 
     Usage::

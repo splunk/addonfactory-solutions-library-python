@@ -37,7 +37,7 @@ class ACLManager(object):
     :type session_key: ``string``
     :param app: App name of namespace.
     :type app: ``string``
-    :param owner: (optional) Owner of namespace.
+    :param owner: (optional) Owner of namespace, default is `nobody`.
     :type owner: ``string``
     :param scheme: (optional) The access scheme, default is `https`.
     :type scheme: ``string``
@@ -66,7 +66,7 @@ class ACLManager(object):
                                                 autologin=True)
 
     def get(self, path):
-        '''Get ACL of  /servicesNS/owner/app/{`path`}.
+        '''Get ACL of  /servicesNS/{`owner`}/{`app`}/{`path`}.
 
         :param path: Path of ACL relative to /servicesNS/{`owner`}/{`app`}
         :type path: ``string``
@@ -78,8 +78,7 @@ class ACLManager(object):
            >>> perms = aclm.get('data/transforms/extractions/_acl')
         '''
 
-        content = self._binding_context.get(path,
-                                            output_mode='json').body.read()
+        content = self._binding_context.get(path, output_mode='json').body.read()
 
         return json.loads(content)['entry'][0]['acl']
 
@@ -91,21 +90,23 @@ class ACLManager(object):
         "sharing" setting is always retrieved from the current.
 
         :param path: Path of ACL relative to /servicesNS/{owner}/{app}. MUST
-            contain /acl or /_acl indicating whether the permission is applied
-            at the per-entity level or endpoint level, respectively.
+            end with /acl or /_acl indicating whether the permission is applied
+            at the per-entity level or endpoint level respectively.
         :type path: ``string``
-        :param owner: (optional) New owner of ACL.
+        :param owner: (optional) New owner of ACL, default is `nobody`.
         :type owner: ``string``
-        :param perms_read: list of roles (['*'] for all roles).
-            If unspecified we will POST with current (if available) perms.read.
+        :param perms_read: (optional) List of roles (['*'] for all roles). If
+            unspecified we will POST with current (if available) perms.read,
+            default is None.
         :type perms_read: ``list``
-        :param perms_write: list of roles (['*'] for all roles).
-            If unspecified we will POST with current (if available) perms.write
+        :param perms_write: (optional) List of roles (['*'] for all roles). If
+            unspecified we will POST with current (if available) perms.write,
+            default is None.
         :type perms_write: ``list``
         :returns: A dict contains ACL after update.
         :rtype: ``dict``
 
-        :raises ACLException: If `path` doesn't end by 'acl/_acl'.
+        :raises ACLException: If `path` doesn't end with 'acl/_acl'.
 
         Usage::
            >>> aclm = acl.ACLManager(session_key, 'Splunk_TA_test')
@@ -140,8 +141,7 @@ class ACLManager(object):
 
         postargs['sharing'] = curr_acl['sharing']
 
-        content = self._binding_context.post(path,
-                                             body=binding._encode(**postargs),
-                                             output_mode='json').body.read()
+        content = self._binding_context.post(
+            path, body=binding._encode(**postargs), output_mode='json').body.read()
 
         return json.loads(content)['entry'][0]['acl']

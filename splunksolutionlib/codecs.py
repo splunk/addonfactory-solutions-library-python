@@ -40,6 +40,7 @@ class GzipHandler(object):
         data[0] = 31 (0x1f), data[1] = 139 (0x8b).
 
         :param data: data to check.
+        :type data: ``bytes``
         :returns: True if it is in gzip format else False.
         :rtype: ``bool``
         '''
@@ -54,6 +55,7 @@ class GzipHandler(object):
         data or raises ValueError exception for invalid `data`.
 
         :param data: gzip-compressed data to decompress.
+        :type data: ``bytes``
         :returns: decompressed data.
         :rtype: ``string``
 
@@ -84,6 +86,7 @@ class ZipHandler(object):
         '''Validate `data` whether it is in zip format.
 
         :param data: data to check.
+        :type data: ``bytes``
         :returns: True if it is in zip format else False.
         :rtype: ``bool``
         '''
@@ -98,6 +101,7 @@ class ZipHandler(object):
         data or raises ValueError exception with error message.
 
         :param data: zip-compressed data to decompress.
+        :type data: ``bytes``
         :returns: decompressed data.
         :rtype: ``string``
 

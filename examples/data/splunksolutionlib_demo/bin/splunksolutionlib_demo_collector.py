@@ -31,22 +31,17 @@ class SplunksolutionDemoCollector(ModularInput):
         self._should_exit = False
 
     def extra_arguments(self):
-        return [{'name': 'hec_scheme',
-                 'description': 'Splunksolutionlib demo hec scheme',
+        return [{'name': 'state',
+                 'description': 'Splunksolutionlib demo collector state',
                  'data_type': Argument.data_type_string,
                  'required_on_create': True},
-                {'name': 'hec_host',
-                 'description': 'Splunksolutionlib demo hec host',
-                 'data_type': Argument.data_type_string,
-                 'required_on_create': True},
-                {'name': 'hec_port',
-                 'description': 'Splunksolutionlib demo hec port',
+                {'name': 'timeout',
+                 'description': 'Splunksolutionlib demo collector collect data timeout',
                  'data_type': Argument.data_type_number,
                  'required_on_create': True},
-                {'name': 'hec_token',
-                 'description': 'Splunksolutionlib demo hec port',
-                 'data_type': Argument.data_type_string,
-                 'required_on_edit': True,
+                {'name': 'do_check',
+                 'description': 'Splunksolutionlib demo collector check collected data flag',
+                 'data_type': Argument.data_type_boolean,
                  'required_on_create': True}]
 
     def do_run(self, inputs):
@@ -69,7 +64,7 @@ class SplunksolutionDemoCollector(ModularInput):
                            source='splunksolutionlib_demo',
                            sourcetype='splunksolutionlib_demo')
             event_writer.write_events([event1, event2])
-            state = [event1.to_json(), event2.to_json()]
+            state = [event1.to_string(), event2.to_string()]
             checkpoint.update('splunksolutionlib_demo_collector_state',
                               state)
             time.sleep(5)

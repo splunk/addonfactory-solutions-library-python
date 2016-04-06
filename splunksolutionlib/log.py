@@ -35,6 +35,7 @@ def log_enter_exit(logger):
     only when it is required.
 
     :param logger: logger to decorate.
+    :type logger: ``logging.Logger``
 
     Usage::
       >>> @log_enter_exit
@@ -80,14 +81,16 @@ class Logs(object):
 
     @classmethod
     def set_context(cls, **context):
-        """set log context.
+        '''set log context.
 
-        :param directory: (optional) Log directory. default is current
-            directory.
+        :param directory: (optional) Log directory. if doesn't exist will use
+            current directory.
         :type directory: ``string``
         :param namespace: (optional) Logger namespace, default is None.
         :type namespace: ``string``
-        :param log_format: (optional) Log format.
+        :param log_format: (optional) Log format, default is:
+            %(asctime)s %(levelname)s pid=%(process)d tid=%(threadName)s
+            file=%(filename)s:%(funcName)s:%(lineno)d | %(message)s.
         :type log_format: ``string``
         :param log_level: (optional) Log level, default is logging.INFO.
         :type log_level: ``integer``
@@ -97,7 +100,7 @@ class Logs(object):
         :param backup_count: (optional) The number of log files to retain,
             default is 5.
         :type backup_count: ``integer``
-        """
+        '''
 
         if 'directory' in context:
             cls._default_directory = context['directory']
@@ -151,7 +154,7 @@ class Logs(object):
 
         :param name: Logger name, it will be used as log file name too.
         :type name: ``string``
-        :returns: Instance of logging.Logger.
+        :returns: A named logger.
         :rtype: ``logging.Logger``
         '''
 
@@ -184,7 +187,8 @@ class Logs(object):
         logger with the name of `name`.
 
         :param level: Log level to set.
-        :param name: (optional) The name of logger.
+        :type level: ``integer``
+        :param name: (optional) The name of logger, default is None.
         :type name: ``string``
         '''
 

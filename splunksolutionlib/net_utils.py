@@ -28,6 +28,7 @@ def resolve_hostname(addr):
     on common failures.
 
     :param addr: IP address to resolve.
+    :type addr: ``string``
     :returns: host name if success else None.
     :rtype: ``string``
 
