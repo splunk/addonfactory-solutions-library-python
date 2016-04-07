@@ -26,12 +26,10 @@ import traceback
 import Queue
 import os.path as op
 from abc import ABCMeta, abstractmethod
-try:
-    import xml.etree.cElementTree as ET
-except ImportError:
-    import xml.etree.ElementTree as ET
 
 from splunklib import binding
+
+from splunksolutionlib.modular_input.event import XMLEvent, HECEvent
 
 __all__ = ['ClassicEventWriter',
            'HECEventWriter']
@@ -45,12 +43,56 @@ class EventWriter(object):
 
     description = 'EventWriter'
 
-    def __init__(self):
-        self._events_queue = Queue.Queue(1000)
-        self._events_writer = threading.Thread(target=self._write_events)
-        self._events_writer.start()
-        self._closed = False
+    def close(self):
+        '''Close event writer.
+        '''
 
+        pass
+
+    @abstractmethod
+    def create_event(self, data, time=None, index=None, host=None, source=None,
+                     sourcetype=None, stanza=None, unbroken=False, done=False):
+        '''Create a new event.
+
+        :param data: Event data.
+        :type data: ``json object``
+        :param time: (optional) Event timestamp, default is None.
+        :type time: ``float``
+        :param index: (optional) The index event will be written to, default
+            is None
+        :type index: ``string``
+        :param host: (optional) Event host, default is None.
+        :type host: ``string``
+        :param source: (optional) Event source, default is None.
+        :type source: ``string``
+        :param sourcetype: (optional) Event sourcetype, default is None.
+        :type sourcetype: ``string``
+        :param stanza: (optional) Event stanza name, default is None.
+        :type stanza: ``string``
+        :param unbroken: (optional) Event unbroken flag, default is False.
+        :type unbroken: ``bool``
+        :param done: (optional) The last unbroken event, default is False.
+        :returns: ``bool``
+        :returns: A new event object.
+        :rtype: ``(XMLEvent, HECEvent)``
+
+        Usage::
+           >>> ew = event_writer.HECEventWriter(...)
+           >>> event = ew.create_event(
+           >>>     data='This is a test data.',
+           >>>     time='%.3f' % 1372274622.493,
+           >>>     index='main',
+           >>>     host='localhost',
+           >>>     source='Splunk',
+           >>>     sourcetype='misc',
+           >>>     stanza='test_scheme://test',
+           >>>     unbroken=True,
+           >>>     done=True)
+        '''
+
+        pass
+
+    @abstractmethod
     def write_events(self, events):
         '''Write events.
 
@@ -63,27 +105,6 @@ class EventWriter(object):
            >>> ew.write_events([event1, event2])
         '''
 
-        if self._closed:
-            logging.error('Event writer: %s has been closed.', self.NAME)
-            return
-
-        for event in self._format_events(events):
-            self._events_queue.put(event)
-
-    def close(self):
-        '''Close event writer.
-        '''
-
-        self._closed = True
-        self._events_queue.put(None)
-        self._events_writer.join()
-
-    @abstractmethod
-    def _format_events(self, events):
-        pass
-
-    @abstractmethod
-    def _write_events(self):
         pass
 
 
@@ -101,72 +122,44 @@ class ClassicEventWriter(EventWriter):
 
     description = 'ClassicEventWriter'
 
-    def _event_to_xml(self, event):
-        _event = ET.Element('event')
-        if event.stanza:
-            _event.set('stanza', event.stanza)
-        if event.unbroken:
-            _event.set('unbroken', str(int(event.unbroken)))
+    def __init__(self):
+        self._events_queue = Queue.Queue(10)
+        self._events_writer = threading.Thread(target=self._write_events)
+        self._events_writer.start()
+        self._closed = False
 
-        if event.time:
-            ET.SubElement(_event, 'time').text = event.time
+    def close(self):
+        self._closed = True
+        self._events_queue.put(None)
+        self._events_writer.join()
 
-        sub_elements = [('index', event.index),
-                        ('host', event.host),
-                        ('source', event.source),
-                        ('sourcetype', event.sourcetype)]
-        for node, value in sub_elements:
-            if value:
-                ET.SubElement(_event, node).text = value
-
-        if isinstance(event.data, (unicode, basestring)):
-            ET.SubElement(_event, 'data').text = event.data
-        else:
-            ET.SubElement(_event, 'data').text = json.dumps(event.data)
-
-        if event.done:
-            ET.SubElement(_event, 'done')
-
-        return _event
-
-    def _format_events(self, events):
-        '''Output:
-               ['<stream>
-                   <event stanza="test_scheme://test" unbroken="1">
-                         <time>1459919070.994</time>
-                         <index>main</index>
-                         <host>localhost</host>
-                         <source>test</source>
-                         <sourcetype>test</sourcetype>
-                         <data>{"kk": [1, 2, 3]}</data>
-                     <done />
-                   </event>
-                   <event stanza="test_scheme://test" unbroken="1">
-                         <time>1459919082.961</time>
-                         <index>main</index>
-                         <host>localhost</host>
-                         <source>test</source>
-                         <sourcetype>test</sourcetype>
-                         <data>{"kk": [3, 2, 3]}</data>
-                         <done />
-                   </event>
-                 </stream>',
-             '...']
+    def create_event(self, data, time=None, index=None, host=None, source=None,
+                     sourcetype=None, stanza=None, unbroken=False, done=False):
+        '''Create a new XMLEvent object.
         '''
 
-        stream = ET.Element("stream")
-        for event in events:
-            stream.append(self._event_to_xml(event))
+        return XMLEvent(
+            data, time=time, index=index, host=host, source=source,
+            sourcetype=sourcetype, stanza=stanza, unbroken=unbroken, done=done)
 
-        return [ET.tostring(stream)]
+    def write_events(self, events):
+        if not events:
+            return
+
+        if self._closed:
+            logging.error('Event writer: %s has been closed.', self.NAME)
+            return
+
+        for _event in XMLEvent.format_events(events):
+            self._events_queue.put(_event)
 
     def _write_events(self):
         while 1:
-            event = self._events_queue.get()
-            if event is None:
+            _event = self._events_queue.get()
+            if _event is None:
                 break
-
-            sys.stdout.write(event)
+            logging.info('stream: %s', _event)
+            sys.stdout.write(_event)
             sys.stdout.flush()
 
 
@@ -175,6 +168,8 @@ class HECEventWriter(EventWriter):
 
     Use Splunk HEC as the output.
 
+    :param token_name: Splunk HEC token name.
+    :type token_name: ``string``
     :param session_key: Splunk access token.
     :type session_key: ``string``
     :param scheme: (optional) The access scheme, default is `https`.
@@ -186,28 +181,26 @@ class HECEventWriter(EventWriter):
 
     Usage::
         >>> from splunksolutionlib.modular_input import event_writer
-        >>> ew = event_writer.HECEventWriter(session_key)
+        >>> ew = event_writer.HECEventWriter(token_name, session_key)
         >>> ew.write_events([event1, event2])
         >>> ew.close()
     '''
 
-    WRITE_RETRIES = 3
-    MAX_HEC_EVENT_LENGTH = 100000
-    HTTP_INPUT_TOKEN_NAME = 'splunksolutionlib_token'
+    WRITE_EVENT_RETRIES = 3
     HTTP_INPUT_CONFIG_ENDPOINT = '/services/data/inputs/http'
     HTTP_EVENT_COLLECTOR_ENDPOINT = '/services/collector'
 
     description = 'HECEventWriter'
 
-    def __init__(self, session_key,
+    def __init__(self, token_name, session_key,
                  scheme='https', host='localhost', port=8089):
         super(HECEventWriter, self).__init__()
         hec_port, hec_token = self._get_hec_config(
-            session_key, scheme=scheme, host=host, port=port)
+            token_name, session_key, scheme=scheme, host=host, port=port)
         self._context = binding.Context(
             scheme=scheme, host=host, port=hec_port, token=hec_token, autologin=True)
 
-    def _get_hec_config(self, session_key, scheme, host, port):
+    def _get_hec_config(self, token_name, session_key, scheme, host, port):
         context = binding.Context(
             scheme=scheme, host=host, port=port, token=session_key, autologin=True)
         content = context.get(op.join(self.HTTP_INPUT_CONFIG_ENDPOINT, 'http'),
@@ -216,66 +209,35 @@ class HECEventWriter(EventWriter):
 
         try:
             content = context.get(
-                op.join(self.HTTP_INPUT_CONFIG_ENDPOINT, self.HTTP_INPUT_TOKEN_NAME),
+                op.join(self.HTTP_INPUT_CONFIG_ENDPOINT, token_name),
                 output_mode='json').body.read()
             token = json.loads(content)['entry'][0]['content']['token']
         except binding.HTTPError:
             content = context.post(self.HTTP_INPUT_CONFIG_ENDPOINT,
-                                   name=self.HTTP_INPUT_TOKEN_NAME,
+                                   name=token_name,
                                    output_mode='json').body.read()
             token = json.loads(content)['entry'][0]['content']['token']
 
         return (port, token)
 
-    def _event_to_str(self, event):
-        _event = {}
-        _event['event'] = event.data
-        if event.time:
-            _event['time'] = float(event.time)
-        if event.index:
-            _event['index'] = event.index
-        if event.host:
-            _event['host'] = event.host
-        if event.source:
-            _event['source'] = event.source
-        if event.sourcetype:
-            _event['sourcetype'] = event.sourcetype
-
-        return json.dumps(_event)
-
-    def _format_events(self, events):
-        '''Output:
-               ['{"index": "main", ... "event": {"kk": [1, 2, 3]}}\n'
-                '{"index": "main", ... "event": {"kk": [3, 2, 3]}}',
-                '...']
+    def create_event(self, data, time=None, index=None, host=None, source=None,
+                     sourcetype=None, stanza=None, unbroken=False, done=False):
+        '''Create a new HECEvent object.
         '''
-        events = [self._event_to_str(event) for event in events]
 
-        size = 0
-        new_events, batched_events = [], []
-        for event in events:
-            new_length = size + len(event) + len(batched_events) - 1
-            if new_length >= self.MAX_HEC_EVENT_LENGTH:
-                new_events.append("\n".join(batched_events))
-                del batched_events[:]
-                size = 0
-            batched_events.append(event)
-            size = size + len(event)
-        if len(batched_events):
-            new_events.append("\n".join(batched_events))
-        return new_events
+        return HECEvent(
+            data, time=time, index=index, host=host, source=source, sourcetype=sourcetype)
 
-    def _write_events(self):
-        while 1:
-            event = self._events_queue.get()
-            if event is None:
-                break
+    def write_events(self, events):
+        if not events:
+            return
 
-            retries = self.WRITE_RETRIES
+        for _event in HECEvent.format_events(events):
+            retries = self.WRITE_EVENT_RETRIES
             while retries:
                 try:
                     self._context.post(
-                        self.HTTP_EVENT_COLLECTOR_ENDPOINT, body=event,
+                        self.HTTP_EVENT_COLLECTOR_ENDPOINT, body=_event,
                         headers=[('Content-Type', 'application/json')])
                     break
                 except binding.HTTPError as e:

@@ -16,13 +16,15 @@
 Splunk modular input.
 '''
 
-from splunksolutionlib.modular_input.event import Event
+from splunksolutionlib.modular_input.event import XMLEvent
+from splunksolutionlib.modular_input.event import HECEvent
 from splunksolutionlib.modular_input.event_writer import ClassicEventWriter
 from splunksolutionlib.modular_input.event_writer import HECEventWriter
 from splunklib.modularinput.argument import Argument
 from splunksolutionlib.modular_input.modular_input import ModularInput
 
-__all__ = ['Event',
+__all__ = ['XMLEvent',
+           'HECEvent',
            'ClassicEventWriter',
            'HECEventWriter',
            'Argument',

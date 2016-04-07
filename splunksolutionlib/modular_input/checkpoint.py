@@ -39,18 +39,76 @@ class Checkpoint(object):
 
     @abstractmethod
     def update(self, key, state):
+        '''Update checkpoint.
+
+        :param key: Checkpoint key.
+        :type key: ``string``
+        :param state: Checkpoint sate.
+        :type state: ``json object``
+
+        Usage::
+           >>> from splunksolutionlib.modular_input import checkpoint
+           >>> ck = checkpoint.KVStoreCheckpoint(session_key,
+                                                'Splunk_TA_test')
+           >>> ck.update('checkpoint_name1', {'k1': 'v1', 'k2': 'v2'})
+           >>> ck.update('checkpoint_name2', 'checkpoint_value2')
+        '''
+
         pass
 
     @abstractmethod
     def batch_update(self, states):
+        '''Batch update checkpoint.
+
+        :param records: List of checkpoint.
+        :type state: ``list``
+
+        Usage::
+           >>> from splunksolutionlib.modular_input import checkpoint
+           >>> ck = checkpoint.KVStoreCheckpoint(session_key,
+                                                'Splunk_TA_test')
+           >>> ck.batch_update([{'_key': 'checkpoint_name1',
+                                 'state': {'k1': 'v1', 'k2': 'v2'}},
+                                {'_key': 'checkpoint_name2',
+                                 'state': 'checkpoint_value2'},
+                                {...}])
+        '''
+
         pass
 
     @abstractmethod
     def get(self, key):
+        '''Get checkpoint.
+
+        :param key: Checkpoint key.
+        :type key: ``string``
+        :returns: Checkpoint state if exists else None.
+        :rtype: ``json object``
+
+        Usage::
+           >>> from splunksolutionlib.modular_input import checkpoint
+           >>> ck = checkpoint.KVStoreCheckpoint(session_key,
+                                                'Splunk_TA_test')
+           >>> ck.get('checkpoint_name1')
+           >>> returns: {'k1': 'v1', 'k2': 'v2'}
+        '''
+
         pass
 
     @abstractmethod
     def delete(self, key):
+        '''Delete checkpoint.
+
+        :param key: Checkpoint key.
+        :type key: ``string``
+
+        Usage::
+           >>> from splunksolutionlib.modular_input import checkpoint
+           >>> ck = checkpoint.KVStoreCheckpoint(session_key,
+                                                'Splunk_TA_test')
+           >>> ck.delete('checkpoint_name1')
+        '''
+
         pass
 
 
@@ -109,61 +167,15 @@ class KVStoreCheckpoint(Checkpoint):
                 'Get modular input kvstore checkpoint failed.')
 
     def update(self, key, state):
-        '''Update checkpoint.
-
-        :param key: Checkpoint key.
-        :type key: ``string``
-        :param state: Checkpoint sate.
-        :type state: ``json object``
-
-        Usage::
-           >>> from splunksolutionlib.modular_input import checkpoint
-           >>> ck = checkpoint.KVStoreCheckpoint(session_key,
-                                                'Splunk_TA_test')
-           >>> ck.update('checkpoint_name1', {'k1': 'v1', 'k2': 'v2'})
-           >>> ck.update('checkpoint_name2', 'checkpoint_value2')
-        '''
-
         record = {'_key': key, 'state': json.dumps(state)}
         self._collection_data.batch_save(record)
 
     def batch_update(self, records):
-        '''Batch update checkpoint.
-
-        :param records: List of checkpoint.
-        :type state: ``list``
-
-        Usage::
-           >>> from splunksolutionlib.modular_input import checkpoint
-           >>> ck = checkpoint.KVStoreCheckpoint(session_key,
-                                                'Splunk_TA_test')
-           >>> ck.batch_update([{'_key': 'checkpoint_name1',
-                                 'state': {'k1': 'v1', 'k2': 'v2'}},
-                                {'_key': 'checkpoint_name2',
-                                 'state': 'checkpoint_value2'},
-                                {...}])
-        '''
-
         for record in records:
             record['state'] = json.dumps(record['state'])
         self._collection_data.batch_save(*records)
 
     def get(self, key):
-        '''Get checkpoint.
-
-        :param key: Checkpoint key.
-        :type key: ``string``
-        :returns: Checkpoint state if exists else None.
-        :rtype: ``json object``
-
-        Usage::
-           >>> from splunksolutionlib.modular_input import checkpoint
-           >>> ck = checkpoint.KVStoreCheckpoint(session_key,
-                                                'Splunk_TA_test')
-           >>> ck.get('checkpoint_name1')
-           >>> returns: {'k1': 'v1', 'k2': 'v2'}
-        '''
-
         try:
             record = self._collection_data.query_by_id(key)
         except HTTPError:
@@ -172,18 +184,6 @@ class KVStoreCheckpoint(Checkpoint):
         return json.loads(record['state'])
 
     def delete(self, key):
-        '''Delete checkpoint.
-
-        :param key: Checkpoint key.
-        :type key: ``string``
-
-        Usage::
-           >>> from splunksolutionlib.modular_input import checkpoint
-           >>> ck = checkpoint.KVStoreCheckpoint(session_key,
-                                                'Splunk_TA_test')
-           >>> ck.delete('checkpoint_name1')
-        '''
-
         try:
             self._collection_data.delete_by_id(key)
         except HTTPError:
@@ -209,21 +209,6 @@ class FileCheckpoint(Checkpoint):
         self._checkpoint_dir = checkpoint_dir
 
     def update(self, key, state):
-        '''Update checkpoint.
-
-        :param key: Checkpoint key.
-        :type key: ``string``
-        :param state: Checkpoint sate.
-        :type state: ``json object``
-
-        Usage::
-           >>> from splunksolutionlib.modular_input import checkpoint
-           >>> ck = checkpoint.KVStoreCheckpoint(session_key,
-                                                'Splunk_TA_test')
-           >>> ck.update('checkpoint_name1', {'k1': 'v1', 'k2': 'v2'})
-           >>> ck.update('checkpoint_name2', 'checkpoint_value2')
-        '''
-
         file_name = op.join(self._checkpoint_dir, base64.b64encode(key))
         with open(file_name + '_new', 'w') as fp:
             json.dump(state, fp)
@@ -237,41 +222,10 @@ class FileCheckpoint(Checkpoint):
         os.rename(file_name + '_new', file_name)
 
     def batch_update(self, records):
-        '''Batch update checkpoint.
-
-        :param records: List of checkpoint.
-        :type state: ``list``
-
-        Usage::
-           >>> from splunksolutionlib.modular_input import checkpoint
-           >>> ck = checkpoint.KVStoreCheckpoint(session_key,
-                                                'Splunk_TA_test')
-           >>> ck.batch_update([{'_key': 'checkpoint_name1',
-                                 'state': {'k1': 'v1', 'k2': 'v2'}},
-                                {'_key': 'checkpoint_name2',
-                                 'state': 'checkpoint_value2'},
-                                {...}])
-        '''
-
         for record in records:
             self.update(record['_key'], record['state'])
 
     def get(self, key):
-        '''Get checkpoint.
-
-        :param key: Checkpoint key.
-        :type key: ``string``
-        :returns: Checkpoint state if exists else None.
-        :rtype: ``json object``
-
-        Usage::
-           >>> from splunksolutionlib.modular_input import checkpoint
-           >>> ck = checkpoint.KVStoreCheckpoint(session_key,
-                                                'Splunk_TA_test')
-           >>> ck.get('checkpoint_name1')
-           >>> returns: {'k1': 'v1', 'k2': 'v2'}
-        '''
-
         file_name = op.join(self._checkpoint_dir, base64.b64encode(key))
         try:
             with open(file_name, 'r') as fp:
@@ -280,18 +234,6 @@ class FileCheckpoint(Checkpoint):
             return None
 
     def delete(self, key):
-        '''Delete checkpoint.
-
-        :param key: Checkpoint key.
-        :type key: ``string``
-
-        Usage::
-           >>> from splunksolutionlib.modular_input import checkpoint
-           >>> ck = checkpoint.KVStoreCheckpoint(session_key,
-                                                'Splunk_TA_test')
-           >>> ck.delete('checkpoint_name1')
-        '''
-
         file_name = op.join(self._checkpoint_dir, base64.b64encode(key))
         try:
             os.remove(file_name)

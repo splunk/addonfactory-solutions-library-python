@@ -89,9 +89,11 @@ class ModularInput(object):
     # Use kvstore for checkpoint, default is True
     use_kvstore_checkpoint = True
     # Collection name of kvstore checkpoint, default is 'kvstore_checkpoint'
-    kvstore_checkpoint_collection_name = 'kvstore_checkpoint'
+    kvstore_checkpoint_collection_name = 'splunksolutionlib_kvstore_checkpoint'
     # Use hec event writer
     use_hec_event_writer = True
+    # Token name of Splunk HEC.
+    hec_token_name = 'splunksolutionlib_hec_token'
 
     def __init__(self):
         # Metadata
@@ -221,8 +223,8 @@ class ModularInput(object):
         if self.use_hec_event_writer:
             try:
                 self._event_writer = event_writer.HECEventWriter(
-                    self._session_key, scheme=self.server_scheme,
-                    host=self.server_host, port=self.server_port)
+                    self.hec_token_name, self._session_key,
+                    scheme=self.server_scheme, host=self.server_host, port=self.server_port)
             except binding.HTTPError:
                 logging.error(
                     'Failed to init HECEventWriter, will use ClassicEventWriter instead.')

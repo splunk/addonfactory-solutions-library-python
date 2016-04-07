@@ -17,6 +17,10 @@ This module provides Splunk modular input event encapsulation.
 '''
 
 import json
+try:
+    import xml.etree.cElementTree as ET
+except ImportError:
+    import xml.etree.ElementTree as ET
 
 __all__ = ['Event']
 
@@ -26,6 +30,9 @@ class EventException(Exception):
 
 
 class Event(object):
+    '''Base class of event.
+    '''
+
     def __init__(self, data, time=None, index=None, host=None, source=None,
                  sourcetype=None, stanza=None, unbroken=False, done=False):
         '''Modular input event.
@@ -75,52 +82,138 @@ class Event(object):
         self._unbroken = unbroken
         self._done = done
 
-    @property
-    def data(self):
-        return self._data
-
-    @property
-    def time(self):
-        return self._time
-
-    @property
-    def index(self):
-        return self._index
-
-    @property
-    def host(self):
-        return self._host
-
-    @property
-    def source(self):
-        return self._source
-
-    @property
-    def sourcetype(self):
-        return self._sourcetype
-
-    @property
-    def stanza(self):
-        return self._stanza
-
-    @property
-    def unbroken(self):
-        return self._unbroken
-
-    @property
-    def done(self):
-        return self._done
-
     def __str__(self):
-        event = {}
-        event['data'] = self._data
-        event['time'] = float(self._time) if self._time else self._time
-        event['index'] = self._index
-        event['host'] = self._host
-        event['source'] = self._source
-        event['sourcetype'] = self._sourcetype
-        event['stanza'] = self._stanza
-        event['unbroken'] = self._unbroken
-        event['done'] = self._done
+        return json.dumps(
+            {'data': self._data,
+             'time': float(self._time) if self._time else self._time,
+             'index': self._index,
+             'host': self._host,
+             'source': self._source,
+             'sourcetype': self._sourcetype,
+             'stanza': self._stanza,
+             'unbroken': self._unbroken,
+             'done': self._done})
 
-        return json.dumps(event)
+    @classmethod
+    def format_events(cls, events):
+        '''Format events to list of string.
+
+        :param events: List of events to format.
+        :type events: ``list``
+        :returns: List of formated events string.
+        :rtype: ``list``
+        '''
+
+        raise EventException('Unimplemented format_events.')
+
+
+class XMLEvent(Event):
+    '''XML event.
+    '''
+
+    def _to_xml(self):
+        _event = ET.Element('event')
+        if self._stanza:
+            _event.set('stanza', self._stanza)
+        if self._unbroken:
+            _event.set('unbroken', str(int(self._unbroken)))
+
+        if self._time:
+            ET.SubElement(_event, 'time').text = self._time
+
+        sub_elements = [('index', self._index),
+                        ('host', self._host),
+                        ('source', self._source),
+                        ('sourcetype', self._sourcetype)]
+        for node, value in sub_elements:
+            if value:
+                ET.SubElement(_event, node).text = value
+
+        if isinstance(self._data, (unicode, basestring)):
+            ET.SubElement(_event, 'data').text = self._data
+        else:
+            ET.SubElement(_event, 'data').text = json.dumps(self._data)
+
+        if self._done:
+            ET.SubElement(_event, 'done')
+
+        return _event
+
+    @classmethod
+    def format_events(cls, events):
+        '''Output:
+               ['<stream>
+                   <event stanza="test_scheme://test" unbroken="1">
+                         <time>1459919070.994</time>
+                         <index>main</index>
+                         <host>localhost</host>
+                         <source>test</source>
+                         <sourcetype>test</sourcetype>
+                         <data>{"kk": [1, 2, 3]}</data>
+                     <done />
+                   </event>
+                   <event stanza="test_scheme://test" unbroken="1">
+                         <time>1459919082.961</time>
+                         <index>main</index>
+                         <host>localhost</host>
+                         <source>test</source>
+                         <sourcetype>test</sourcetype>
+                         <data>{"kk": [3, 2, 3]}</data>
+                         <done />
+                   </event>
+                 </stream>',
+             '...']
+        '''
+
+        stream = ET.Element("stream")
+        for event in events:
+            stream.append(event._to_xml())
+
+        return [ET.tostring(stream)]
+
+
+class HECEvent(Event):
+    '''HEC event.
+    '''
+
+    MAX_HEC_EVENT_LENGTH = 100000
+
+    def _to_hec(self):
+        _event = {}
+        _event['event'] = self._data
+        if self._time:
+            _event['time'] = float(self._time)
+        if self._index:
+            _event['index'] = self._index
+        if self._host:
+            _event['host'] = self._host
+        if self._source:
+            _event['source'] = self._source
+        if self._sourcetype:
+            _event['sourcetype'] = self._sourcetype
+
+        return json.dumps(_event)
+
+    @classmethod
+    def format_events(cls, events):
+        '''Output:
+               ['{"index": "main", ... "event": {"kk": [1, 2, 3]}}\n'
+                '{"index": "main", ... "event": {"kk": [3, 2, 3]}}',
+                '...']
+        '''
+
+        size = 0
+        new_events, batched_events = [], []
+        events = [event._to_hec() for event in events]
+        for event in events:
+            new_length = size + len(event) + len(batched_events) - 1
+            if new_length >= cls.MAX_HEC_EVENT_LENGTH:
+                new_events.append("\n".join(batched_events))
+                del batched_events[:]
+                size = 0
+            batched_events.append(event)
+            size = size + len(event)
+        if len(batched_events):
+            new_events.append("\n".join(batched_events))
+
+        return new_events
