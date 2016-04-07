@@ -10,6 +10,10 @@ APIs
 
 :class:`~splunksolutionlib.modular_input.event.Event` class
 
+:class:`~splunksolutionlib.modular_input.event.XMLEvent` class
+
+:class:`~splunksolutionlib.modular_input.event.HECEvent` class
+
 Detail Info
 -----------
 
@@ -17,4 +21,10 @@ Detail Info
    :members:
 
 .. autoclass:: Event
+   :members:
+
+.. autoclass:: XMLEvent
+   :members:
+
+.. autoclass:: HECEvent
    :members:

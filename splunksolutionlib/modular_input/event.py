@@ -141,28 +141,27 @@ class XMLEvent(Event):
 
     @classmethod
     def format_events(cls, events):
-        '''Output:
-               ['<stream>
-                   <event stanza="test_scheme://test" unbroken="1">
-                         <time>1459919070.994</time>
-                         <index>main</index>
-                         <host>localhost</host>
-                         <source>test</source>
-                         <sourcetype>test</sourcetype>
-                         <data>{"kk": [1, 2, 3]}</data>
-                     <done />
-                   </event>
-                   <event stanza="test_scheme://test" unbroken="1">
-                         <time>1459919082.961</time>
-                         <index>main</index>
-                         <host>localhost</host>
-                         <source>test</source>
-                         <sourcetype>test</sourcetype>
-                         <data>{"kk": [3, 2, 3]}</data>
-                         <done />
-                   </event>
-                 </stream>',
-             '...']
+        '''Output: [
+        '<stream>
+        <event stanza="test_scheme://test" unbroken="1">
+        <time>1459919070.994</time>
+        <index>main</index>
+        <host>localhost</host>
+        <source>test</source>
+        <sourcetype>test</sourcetype>
+        <data>{"kk": [1, 2, 3]}</data>
+        <done />
+        </event>
+        <event stanza="test_scheme://test" unbroken="1">
+        <time>1459919082.961</time>
+        <index>main</index>
+        <host>localhost</host>
+        <source>test</source>
+        <sourcetype>test</sourcetype>
+        <data>{"kk": [3, 2, 3]}</data>
+        <done />
+        </event>
+        </stream>']
         '''
 
         stream = ET.Element("stream")
@@ -196,10 +195,10 @@ class HECEvent(Event):
 
     @classmethod
     def format_events(cls, events):
-        '''Output:
-               ['{"index": "main", ... "event": {"kk": [1, 2, 3]}}\n'
-                '{"index": "main", ... "event": {"kk": [3, 2, 3]}}',
-                '...']
+        '''Output: [
+        '{"index": "main", ... "event": {"kk": [1, 2, 3]}}\\\\n
+        {"index": "main", ... "event": {"kk": [3, 2, 3]}}',
+        '...']
         '''
 
         size = 0

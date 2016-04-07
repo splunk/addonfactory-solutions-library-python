@@ -158,7 +158,7 @@ class ClassicEventWriter(EventWriter):
             _event = self._events_queue.get()
             if _event is None:
                 break
-            logging.info('stream: %s', _event)
+
             sys.stdout.write(_event)
             sys.stdout.flush()
 

@@ -113,35 +113,35 @@ class Checkpoint(object):
 
 
 class KVStoreCheckpoint(Checkpoint):
+    '''KVStore checkpoint.
+
+    Use KVStore to save modular input checkpoint.
+
+    :param collection_name: Collection name of kvstore checkpoint.
+    :type collection_name: ``string``
+    :param session_key: Splunk access token.
+    :type session_key: ``string``
+    :param app: App name of namespace.
+    :type app: ``string``
+    :param owner: (optional) Owner of namespace, default is `nobody`.
+    :type owner: ``string``
+    :param scheme: (optional) The access scheme, default is `https`.
+    :type scheme: ``string``
+    :param host: (optional) The host name, default is `localhost`.
+    :type host: ``string``
+    :param port: (optional) The port number, default is 8089.
+    :type port: ``integer``
+
+    Usage::
+        >>> from splunksolutionlib.modular_input import checkpoint
+        >>> ck = checkpoint.KVStoreCheckpoint(session_key,
+                                            'Splunk_TA_test')
+        >>> ck.update(...)
+        >>> ck.get(...)
+    '''
+
     def __init__(self, collection_name, session_key, app, owner='nobody',
                  scheme='https', host='localhost', port=8089):
-        '''KVStore checkpoint.
-
-        Use KVStore to save modular input checkpoint.
-
-        :param collection_name: Collection name of kvstore checkpoint.
-        :type collection_name: ``string``
-        :param session_key: Splunk access token.
-        :type session_key: ``string``
-        :param app: App name of namespace.
-        :type app: ``string``
-        :param owner: (optional) Owner of namespace, default is `nobody`.
-        :type owner: ``string``
-        :param scheme: (optional) The access scheme, default is `https`.
-        :type scheme: ``string``
-        :param host: (optional) The host name, default is `localhost`.
-        :type host: ``string``
-        :param port: (optional) The port number, default is 8089.
-        :type port: ``integer``
-
-        Usage::
-           >>> from splunksolutionlib.modular_input import checkpoint
-           >>> ck = checkpoint.KVStoreCheckpoint(session_key,
-                                                'Splunk_TA_test')
-           >>> ck.update(...)
-           >>> ck.get(...)
-        '''
-
         kvstore = Service(scheme=scheme,
                           host=host,
                           port=port,
@@ -173,7 +173,7 @@ class KVStoreCheckpoint(Checkpoint):
     def batch_update(self, records):
         for record in records:
             record['state'] = json.dumps(record['state'])
-        self._collection_data.batch_save(*records)
+            self._collection_data.batch_save(*records)
 
     def get(self, key):
         try:
@@ -191,21 +191,21 @@ class KVStoreCheckpoint(Checkpoint):
 
 
 class FileCheckpoint(Checkpoint):
+    '''File checkpoint.
+
+    Use file to save modular input checkpoint.
+
+    :param checkpoint_dir: Checkpoint directory.
+    :type checkpoint_dir: ``string``
+
+    Usage::
+        >>> from splunksolutionlib.modular_input import checkpoint
+        >>> ck = checkpoint.FileCheckpoint('/opt/splunk/var/...')
+        >>> ck.updtae(...)
+        >>> ck.get(...)
+    '''
+
     def __init__(self, checkpoint_dir):
-        '''File checkpoint.
-
-        Use file to save modular input checkpoint.
-
-        :param checkpoint_dir: Checkpoint directory.
-        :type checkpoint_dir: ``string``
-
-        Usage::
-           >>> from splunksolutionlib.modular_input import checkpoint
-           >>> ck = checkpoint.FileCheckpoint('/opt/splunk/var/...')
-           >>> ck.updtae(...)
-           >>> ck.get(...)
-        '''
-
         self._checkpoint_dir = checkpoint_dir
 
     def update(self, key, state):

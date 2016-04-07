@@ -43,7 +43,7 @@ class SplunksolutionDemoCollector(ModularInput):
     # Override kvstore_checkpoint_collection_name
     kvstore_checkpoint_collection_name = 'SplunksolutionDemoCollectorCheckpoint'
     # Override use_hec_event_writer
-    use_hec_event_writer = False
+    use_hec_event_writer = True
     # Override hec_token_name
     hec_token_name = 'SplunksolutionDemoCollectorHECToken'
 
