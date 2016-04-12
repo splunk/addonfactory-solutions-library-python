@@ -1,0 +1,16 @@
+.cache
+.eggs
+.coverage*
+*.idea
+*.DS_Store*
+build
+dist
+docs/_build
+splunksolutionlib.egg-info
+__pycache__
+*.pyc
+*.pyo
+node_modules/*
+pylint.log
+pypi_modules/*
+htmlcov
