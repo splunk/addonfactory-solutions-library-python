@@ -5,7 +5,7 @@ import pytest
 import common
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-from splunksolutionlib import metadata
+from solnlib import metadata
 
 
 class TestMetadataReader(object):

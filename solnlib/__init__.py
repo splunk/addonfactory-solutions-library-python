@@ -16,19 +16,19 @@
 The Splunk Software Development Kit for Solutions.
 '''
 
-from splunksolutionlib import pattern
-from splunksolutionlib import log
-from splunksolutionlib import utils
-from splunksolutionlib import net_utils
-from splunksolutionlib import ip_math
-from splunksolutionlib import codecs
-from splunksolutionlib import orphan_process_monitor
-from splunksolutionlib import acl
-from splunksolutionlib import credentials
-from splunksolutionlib import metadata
-from splunksolutionlib import server_info
-from splunksolutionlib import splunkenv
-from splunksolutionlib import http_request
+from solnlib import pattern
+from solnlib import log
+from solnlib import utils
+from solnlib import net_utils
+from solnlib import ip_math
+from solnlib import codecs
+from solnlib import orphan_process_monitor
+from solnlib import acl
+from solnlib import credentials
+from solnlib import metadata
+from solnlib import server_info
+from solnlib import splunkenv
+from solnlib import http_request
 
 __all__ = ['pattern',
            'log',

@@ -7,7 +7,7 @@ from splunklib import client
 import common
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-from splunksolutionlib import server_info
+from solnlib import server_info
 
 
 class TestServerInfo(object):

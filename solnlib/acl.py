@@ -48,7 +48,7 @@ class ACLManager(object):
 
     Usage::
 
-       >>> import splunksolutionlib.acl as sacl
+       >>> import solnlib.acl as sacl
        >>> saclm = sacl.ACLManager(session_key, 'Splunk_TA_test')
        >>> saclm.get('data/transforms/extractions')
        >>> saclm.update('data/transforms/extractions/_acl',

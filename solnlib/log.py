@@ -22,7 +22,7 @@ import logging.handlers
 import os.path as op
 from threading import Lock
 
-from splunksolutionlib.pattern import Singleton
+from solnlib.pattern import Singleton
 
 __all__ = ['log_enter_exit',
            'Logs']
@@ -60,7 +60,7 @@ class Logs(object):
 
     Usage::
 
-      >>> from splunksolutionlib.import log
+      >>> from solnlib.import log
       >>> log.Logs.set_context(directory='/var/log/test',
                                namespace='test')
       >>> logger = log.Logs().get_logger('mymodule')
@@ -70,7 +70,7 @@ class Logs(object):
 
     __metaclass__ = Singleton
 
-    ROOT_LOGGER_LOG_FILE = 'splunksolutionlib'
+    ROOT_LOGGER_LOG_FILE = 'solnlib'
 
     _default_directory = None
     _default_namespace = None

@@ -10,7 +10,7 @@ from splunklib.data import record
 import common
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-from splunksolutionlib import credentials
+from solnlib import credentials
 
 
 class TestCredentialManager(object):

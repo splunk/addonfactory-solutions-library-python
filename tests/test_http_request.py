@@ -8,7 +8,7 @@ import urllib2
 import common
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-from splunksolutionlib import http_request
+from solnlib import http_request
 
 
 class TestHTTPRequest(object):

@@ -5,7 +5,7 @@ import time
 import random
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-from splunksolutionlib import orphan_process_monitor as opm
+from solnlib import orphan_process_monitor as opm
 
 
 def _mock_getppid():

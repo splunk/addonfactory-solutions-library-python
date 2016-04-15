@@ -5,7 +5,7 @@ import os.path as op
 import common
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-from splunksolutionlib import splunkenv
+from solnlib import splunkenv
 
 
 def test_splunkhome_path(monkeypatch):

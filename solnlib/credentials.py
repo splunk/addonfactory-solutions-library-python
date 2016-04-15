@@ -58,7 +58,7 @@ class CredentialManager(object):
 
     Usage::
 
-       >>> from splunksolutionlib import credentials
+       >>> from solnlib import credentials
        >>> cm = credentials.CredentialManager(session_key,
                                               'Splunk_TA_test',
                                               realm='realm_test')
@@ -95,7 +95,7 @@ class CredentialManager(object):
 
         Usage::
 
-           >>> from splunksolutionlib import credentials
+           >>> from solnlib import credentials
            >>> cm = credentials.CredentialManager(session_key,
                                                   'Splunk_TA_test',
                                                   realm='realm_test')
@@ -120,7 +120,7 @@ class CredentialManager(object):
 
         Usage::
 
-           >>> from splunksolutionlib import credentials
+           >>> from solnlib import credentials
            >>> cm = credentials.CredentialManager(session_key,
                                                   'Splunk_TA_test',
                                                   realm='realm_test')
@@ -156,7 +156,7 @@ class CredentialManager(object):
 
         Usage::
 
-           >>> from splunksolutionlib import credentials
+           >>> from solnlib import credentials
            >>> cm = credentials.CredentialManager(session_key,
                                                   'Splunk_TA_test',
                                                   realm='realm_test')

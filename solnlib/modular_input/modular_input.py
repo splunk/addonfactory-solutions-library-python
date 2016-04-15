@@ -33,10 +33,10 @@ from splunklib.modularinput.scheme import Scheme
 from splunklib.modularinput.input_definition import InputDefinition
 from splunklib.modularinput.validation_definition import ValidationDefinition
 
-from splunksolutionlib import utils
-from splunksolutionlib.modular_input import checkpointer
-from splunksolutionlib.modular_input import event_writer
-from splunksolutionlib.orphan_process_monitor import OrphanProcessMonitor
+from solnlib import utils
+from solnlib.modular_input import checkpointer
+from solnlib.modular_input import event_writer
+from solnlib.orphan_process_monitor import OrphanProcessMonitor
 
 __all__ = ['ModularInput']
 
@@ -89,11 +89,11 @@ class ModularInput(object):
     # Use kvstore for checkpoint, default is True
     use_kvstore_checkpoint = True
     # Collection name of kvstore checkpoint, default is 'kvstore_checkpoint'
-    kvstore_checkpoint_collection_name = 'splunksolutionlib_kvstore_checkpoint'
+    kvstore_checkpoint_collection_name = 'solnlib_kvstore_checkpoint'
     # Use hec event writer
     use_hec_event_writer = True
     # Token name of Splunk HEC.
-    hec_token_name = 'splunksolutionlib_hec_token'
+    hec_token_name = 'solnlib_hec_token'
 
     def __init__(self):
         # Metadata

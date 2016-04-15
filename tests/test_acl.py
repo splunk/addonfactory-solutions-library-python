@@ -8,7 +8,7 @@ from splunklib import binding
 import common
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-from splunksolutionlib import acl
+from solnlib import acl
 
 
 class TestACLManager(object):

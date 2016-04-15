@@ -28,7 +28,7 @@ from abc import ABCMeta, abstractmethod
 
 from splunklib import binding
 
-from splunksolutionlib.modular_input.event import XMLEvent, HECEvent
+from solnlib.modular_input.event import XMLEvent, HECEvent
 
 __all__ = ['ClassicEventWriter',
            'HECEventWriter']
@@ -103,7 +103,7 @@ class EventWriter(object):
         :type events: ``list``
 
         Usage::
-           >>> from splunksolutionlib.modular_input import event_writer
+           >>> from solnlib.modular_input import event_writer
            >>> ew = event_writer.EventWriter(...)
            >>> ew.write_events([event1, event2])
         '''
@@ -117,7 +117,7 @@ class ClassicEventWriter(EventWriter):
     Use sys.stdout as the output.
 
     Usage::
-        >>> from splunksolutionlib.modular_input import event_writer
+        >>> from solnlib.modular_input import event_writer
         >>> ew = event_writer.ClassicEventWriter()
         >>> ew.write_events([event1, event2])
         >>> ew.close()
@@ -183,7 +183,7 @@ class HECEventWriter(EventWriter):
     :type port: ``integer``
 
     Usage::
-        >>> from splunksolutionlib.modular_input import event_writer
+        >>> from solnlib.modular_input import event_writer
         >>> ew = event_writer.HECEventWriter(token_name, session_key)
         >>> ew.write_events([event1, event2])
         >>> ew.close()

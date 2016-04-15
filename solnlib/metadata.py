@@ -20,7 +20,7 @@ import os
 import re
 import ConfigParser
 
-from splunksolutionlib.splunkenv import make_splunkhome_path
+from solnlib.splunkenv import make_splunkhome_path
 
 
 class MetadataReader(object):

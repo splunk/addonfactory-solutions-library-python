@@ -48,7 +48,7 @@ class Checkpointer(object):
         :type state: ``json object``
 
         Usage::
-           >>> from splunksolutionlib.modular_input import checkpointer
+           >>> from solnlib.modular_input import checkpointer
            >>> ck = checkpointer.KVStoreCheckpointer(session_key,
                                                 'Splunk_TA_test')
            >>> ck.update('checkpoint_name1', {'k1': 'v1', 'k2': 'v2'})
@@ -70,7 +70,7 @@ class Checkpointer(object):
         :type state: ``list``
 
         Usage::
-           >>> from splunksolutionlib.modular_input import checkpointer
+           >>> from solnlib.modular_input import checkpointer
            >>> ck = checkpointer.KVStoreCheckpointer(session_key,
                                                 'Splunk_TA_test')
            >>> ck.batch_update([{'_key': 'checkpoint_name1',
@@ -92,7 +92,7 @@ class Checkpointer(object):
         :rtype: ``json object``
 
         Usage::
-           >>> from splunksolutionlib.modular_input import checkpointer
+           >>> from solnlib.modular_input import checkpointer
            >>> ck = checkpointer.KVStoreCheckpointer(session_key,
                                                 'Splunk_TA_test')
            >>> ck.get('checkpoint_name1')
@@ -109,7 +109,7 @@ class Checkpointer(object):
         :type key: ``string``
 
         Usage::
-           >>> from splunksolutionlib.modular_input import checkpointer
+           >>> from solnlib.modular_input import checkpointer
            >>> ck = checkpointer.KVStoreCheckpointer(session_key,
                                                      'Splunk_TA_test')
            >>> ck.delete('checkpoint_name1')
@@ -139,7 +139,7 @@ class KVStoreCheckpointer(Checkpointer):
     :type port: ``integer``
 
     Usage::
-        >>> from splunksolutionlib.modular_input import checkpointer
+        >>> from solnlib.modular_input import checkpointer
         >>> ck = checkpoint.KVStoreCheckpointer(session_key,
                                                 'Splunk_TA_test')
         >>> ck.update(...)
@@ -212,7 +212,7 @@ class FileCheckpointer(Checkpointer):
     :type checkpoint_dir: ``string``
 
     Usage::
-        >>> from splunksolutionlib.modular_input import checkpointer
+        >>> from solnlib.modular_input import checkpointer
         >>> ck = checkpointer.FileCheckpointer('/opt/splunk/var/...')
         >>> ck.update(...)
         >>> ck.get(...)

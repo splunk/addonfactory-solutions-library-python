@@ -20,7 +20,7 @@ import ssl
 import urllib
 import urllib2
 
-from splunksolutionlib.codecs import GzipHandler, ZipHandler
+from solnlib.codecs import GzipHandler, ZipHandler
 
 __all__ = ['HTTPRequest']
 
@@ -51,7 +51,7 @@ class HTTPRequest(object):
 
     Usage::
 
-       >>> from splunksolutionlib import http_request
+       >>> from solnlib import http_request
        >>> hq = http_request.HTTPRequest(api_user='admin', api_password='admin',
                                          proxy_server='192.168.1.120', proxy_port=8000,
                                          proxy_user='admin', proxy_password='amdin',

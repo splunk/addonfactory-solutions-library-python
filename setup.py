@@ -18,7 +18,7 @@ import re
 import os.path as op
 from setuptools import setup, Command
 
-with open('splunksolutionlib/__init__.py', 'r') as fd:
+with open('solnlib/__init__.py', 'r') as fd:
     version = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]',
                         fd.read(), re.MULTILINE).group(1)
 
@@ -62,7 +62,7 @@ class CoverageCommand(Command):
         import pytest
 
         tests_dir = op.sep.join([op.dirname(op.abspath(__file__)), 'tests'])
-        pytest.main(['-v', '--cov=splunksolutionlib', tests_dir])
+        pytest.main(['-v', '--cov=solnlib', tests_dir])
 
 
 class CoverageHtmlCommand(Command):
@@ -82,11 +82,11 @@ class CoverageHtmlCommand(Command):
         import pytest
 
         tests_dir = op.sep.join([op.dirname(op.abspath(__file__)), 'tests'])
-        pytest.main(['-v', '--cov=splunksolutionlib', '--cov-report=html', tests_dir])
+        pytest.main(['-v', '--cov=solnlib', '--cov-report=html', tests_dir])
 
 
 setup(
-    name='splunksolutionlib',
+    name='solnlib',
 
     description='The Splunk Software Development Kit for Splunk Solutions',
 
@@ -100,8 +100,8 @@ setup(
 
     url='https://git.splunk.com/scm/solnsc/lib-solutions-python.git',
 
-    packages=['splunksolutionlib',
-              'splunksolutionlib.common'],
+    packages=['solnlib',
+              'solnlib.common'],
 
     install_requires=['splunk-sdk==1.5.0'],
 
