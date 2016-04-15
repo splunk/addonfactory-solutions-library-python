@@ -13,7 +13,7 @@
 # under the License.
 
 '''
-This module provides two kinds of checkpoint (KVStoreCheckpoint, FileCheckpoint)
+This module provides two kinds of checkpoint (KVStoreCheckpointer, FileCheckpointer)
 for modular input.
 '''
 
@@ -21,6 +21,7 @@ import os
 import json
 import base64
 import os.path as op
+import logging
 from abc import ABCMeta, abstractmethod
 
 from splunklib.binding import HTTPError
@@ -31,8 +32,8 @@ class CheckpointException(Exception):
     pass
 
 
-class Checkpoint(object):
-    '''Base class of checkpoint.
+class Checkpointer(object):
+    '''Base class of checkpointer.
     '''
 
     __metaclass__ = ABCMeta
@@ -43,12 +44,12 @@ class Checkpoint(object):
 
         :param key: Checkpoint key.
         :type key: ``string``
-        :param state: Checkpoint sate.
+        :param state: Checkpoint state.
         :type state: ``json object``
 
         Usage::
-           >>> from splunksolutionlib.modular_input import checkpoint
-           >>> ck = checkpoint.KVStoreCheckpoint(session_key,
+           >>> from splunksolutionlib.modular_input import checkpointer
+           >>> ck = checkpointer.KVStoreCheckpointer(session_key,
                                                 'Splunk_TA_test')
            >>> ck.update('checkpoint_name1', {'k1': 'v1', 'k2': 'v2'})
            >>> ck.update('checkpoint_name2', 'checkpoint_value2')
@@ -60,12 +61,17 @@ class Checkpoint(object):
     def batch_update(self, states):
         '''Batch update checkpoint.
 
-        :param records: List of checkpoint.
+        :param states: List of checkpoint. Each state in the list is a json
+            dict which should contain "_key" and "state" keys. For instance
+            {
+                "_key": ckpt key which is a string,
+                "state": ckpt which is a json object,
+            }
         :type state: ``list``
 
         Usage::
-           >>> from splunksolutionlib.modular_input import checkpoint
-           >>> ck = checkpoint.KVStoreCheckpoint(session_key,
+           >>> from splunksolutionlib.modular_input import checkpointer
+           >>> ck = checkpointer.KVStoreCheckpointer(session_key,
                                                 'Splunk_TA_test')
            >>> ck.batch_update([{'_key': 'checkpoint_name1',
                                  'state': {'k1': 'v1', 'k2': 'v2'}},
@@ -86,8 +92,8 @@ class Checkpoint(object):
         :rtype: ``json object``
 
         Usage::
-           >>> from splunksolutionlib.modular_input import checkpoint
-           >>> ck = checkpoint.KVStoreCheckpoint(session_key,
+           >>> from splunksolutionlib.modular_input import checkpointer
+           >>> ck = checkpointer.KVStoreCheckpointer(session_key,
                                                 'Splunk_TA_test')
            >>> ck.get('checkpoint_name1')
            >>> returns: {'k1': 'v1', 'k2': 'v2'}
@@ -103,16 +109,16 @@ class Checkpoint(object):
         :type key: ``string``
 
         Usage::
-           >>> from splunksolutionlib.modular_input import checkpoint
-           >>> ck = checkpoint.KVStoreCheckpoint(session_key,
-                                                'Splunk_TA_test')
+           >>> from splunksolutionlib.modular_input import checkpointer
+           >>> ck = checkpointer.KVStoreCheckpointer(session_key,
+                                                     'Splunk_TA_test')
            >>> ck.delete('checkpoint_name1')
         '''
 
         pass
 
 
-class KVStoreCheckpoint(Checkpoint):
+class KVStoreCheckpointer(Checkpointer):
     '''KVStore checkpoint.
 
     Use KVStore to save modular input checkpoint.
@@ -133,9 +139,9 @@ class KVStoreCheckpoint(Checkpoint):
     :type port: ``integer``
 
     Usage::
-        >>> from splunksolutionlib.modular_input import checkpoint
-        >>> ck = checkpoint.KVStoreCheckpoint(session_key,
-                                            'Splunk_TA_test')
+        >>> from splunksolutionlib.modular_input import checkpointer
+        >>> ck = checkpoint.KVStoreCheckpointer(session_key,
+                                                'Splunk_TA_test')
         >>> ck.update(...)
         >>> ck.get(...)
     '''
@@ -151,18 +157,22 @@ class KVStoreCheckpoint(Checkpoint):
                           autologin=True).kvstore
         try:
             kvstore.get(name=collection_name)
-        except HTTPError:
-            fields = {'state': 'string'}
-            kvstore.create(collection_name, fields=fields)
+        except HTTPError as e:
+            if e.status == 404:
+                logging.info(
+                    "collection_name=%s in app=%s doesn't exist, create it",
+                    collection_name, app)
+                fields = {'state': 'string'}
+                kvstore.create(collection_name, fields=fields)
+            else:
+                raise
 
-        self._collection_data = None
-        collections = kvstore.list()
+        collections = kvstore.list(search=collection_name)
         for collection in collections:
             if collection.name == collection_name:
                 self._collection_data = collection.data
                 break
-
-        if self._collection_data is None:
+        else:
             raise CheckpointException(
                 'Get modular input kvstore checkpoint failed.')
 
@@ -170,16 +180,19 @@ class KVStoreCheckpoint(Checkpoint):
         record = {'_key': key, 'state': json.dumps(state)}
         self._collection_data.batch_save(record)
 
-    def batch_update(self, records):
-        for record in records:
-            record['state'] = json.dumps(record['state'])
-            self._collection_data.batch_save(*records)
+    def batch_update(self, states):
+        for state in states:
+            state['state'] = json.dumps(state['state'])
+        self._collection_data.batch_save(*states)
 
     def get(self, key):
         try:
             record = self._collection_data.query_by_id(key)
-        except HTTPError:
-            return None
+        except HTTPError as e:
+            if e.status == 404:
+                return None
+            else:
+                raise
 
         return json.loads(record['state'])
 
@@ -190,7 +203,7 @@ class KVStoreCheckpoint(Checkpoint):
             pass
 
 
-class FileCheckpoint(Checkpoint):
+class FileCheckpointer(Checkpointer):
     '''File checkpoint.
 
     Use file to save modular input checkpoint.
@@ -199,9 +212,9 @@ class FileCheckpoint(Checkpoint):
     :type checkpoint_dir: ``string``
 
     Usage::
-        >>> from splunksolutionlib.modular_input import checkpoint
-        >>> ck = checkpoint.FileCheckpoint('/opt/splunk/var/...')
-        >>> ck.updtae(...)
+        >>> from splunksolutionlib.modular_input import checkpointer
+        >>> ck = checkpointer.FileCheckpointer('/opt/splunk/var/...')
+        >>> ck.update(...)
         >>> ck.get(...)
     '''
 
@@ -221,9 +234,9 @@ class FileCheckpoint(Checkpoint):
 
         os.rename(file_name + '_new', file_name)
 
-    def batch_update(self, records):
-        for record in records:
-            self.update(record['_key'], record['state'])
+    def batch_update(self, states):
+        for state in states:
+            self.update(state['_key'], state['state'])
 
     def get(self, key):
         file_name = op.join(self._checkpoint_dir, base64.b64encode(key))
@@ -237,5 +250,5 @@ class FileCheckpoint(Checkpoint):
         file_name = op.join(self._checkpoint_dir, base64.b64encode(key))
         try:
             os.remove(file_name)
-        except (OSError):
+        except OSError:
             pass

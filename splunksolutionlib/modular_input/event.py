@@ -175,23 +175,23 @@ class HECEvent(Event):
     '''HEC event.
     '''
 
-    MAX_HEC_EVENT_LENGTH = 100000
+    MAX_HEC_EVENT_LENGTH = 1000000
 
     def _to_hec(self):
-        _event = {}
-        _event['event'] = self._data
+        event = {}
+        event['event'] = self._data
         if self._time:
-            _event['time'] = float(self._time)
+            event['time'] = float(self._time)
         if self._index:
-            _event['index'] = self._index
+            event['index'] = self._index
         if self._host:
-            _event['host'] = self._host
+            event['host'] = self._host
         if self._source:
-            _event['source'] = self._source
+            event['source'] = self._source
         if self._sourcetype:
-            _event['sourcetype'] = self._sourcetype
+            event['sourcetype'] = self._sourcetype
 
-        return json.dumps(_event)
+        return json.dumps(event)
 
     @classmethod
     def format_events(cls, events):
@@ -212,7 +212,7 @@ class HECEvent(Event):
                 size = 0
             batched_events.append(event)
             size = size + len(event)
-        if len(batched_events):
+        if batched_events:
             new_events.append("\n".join(batched_events))
 
         return new_events

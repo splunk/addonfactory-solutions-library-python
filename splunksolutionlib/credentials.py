@@ -163,24 +163,23 @@ class CredentialManager(object):
            >>> cm.delete_password('testuser1')
         '''
 
-        deleted = False
         try:
-            self._storage_passwords.delete(user, self._realm)
-            deleted = True
+            return self._storage_passwords.delete(user, self._realm)
         except (binding.HTTPError, KeyError):
             ent_pattern = re.compile('.*:(%s%s\d+):' % (user, self.SEP))
             all_passwords = self._storage_passwords.list()
 
+            deleted = False
             for password in all_passwords:
                 match = ent_pattern.match(password.name)
                 if match and password.realm == self._realm:
                     self._storage_passwords.delete(match.group(1), self._realm)
                     deleted = True
 
-        if not deleted:
-            raise CredNotExistException(
-                'Failed to delete password of realm=%s, user=%s' % (
-                    self._realm, user))
+            if not deleted:
+                raise CredNotExistException(
+                    'Failed to delete password of realm=%s, user=%s' % (
+                        self._realm, user))
 
     def _get_all_passwords(self):
         all_passwords = self._storage_passwords.list()

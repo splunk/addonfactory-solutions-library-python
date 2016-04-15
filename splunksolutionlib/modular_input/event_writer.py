@@ -24,7 +24,6 @@ import threading
 import logging
 import traceback
 import Queue
-import os.path as op
 from abc import ABCMeta, abstractmethod
 
 from splunklib import binding
@@ -70,8 +69,12 @@ class EventWriter(object):
         :param stanza: (optional) Event stanza name, default is None.
         :type stanza: ``string``
         :param unbroken: (optional) Event unbroken flag, default is False.
+            It is only meaningful when for XMLEvent when using
+            ClassicEventWriter
         :type unbroken: ``bool``
         :param done: (optional) The last unbroken event, default is False.
+            It is only meaningful when for XMLEvent when using
+            ClassicEventWriter
         :returns: ``bool``
         :returns: A new event object.
         :rtype: ``(XMLEvent, HECEvent)``
@@ -147,19 +150,19 @@ class ClassicEventWriter(EventWriter):
             return
 
         if self._closed:
-            logging.error('Event writer: %s has been closed.', self.NAME)
+            logging.error('Event writer: %s has been closed.', self.description)
             return
 
-        for _event in XMLEvent.format_events(events):
-            self._events_queue.put(_event)
+        for event in XMLEvent.format_events(events):
+            self._events_queue.put(event)
 
     def _write_events(self):
         while 1:
-            _event = self._events_queue.get()
-            if _event is None:
+            event = self._events_queue.get()
+            if event is None:
                 break
 
-            sys.stdout.write(_event)
+            sys.stdout.write(event)
             sys.stdout.flush()
 
 
@@ -198,18 +201,20 @@ class HECEventWriter(EventWriter):
         hec_port, hec_token = self._get_hec_config(
             token_name, session_key, scheme=scheme, host=host, port=port)
         self._context = binding.Context(
-            scheme=scheme, host=host, port=hec_port, token=hec_token, autologin=True)
+            scheme=scheme, host=host, port=hec_port, token=hec_token,
+            autologin=True)
 
     def _get_hec_config(self, token_name, session_key, scheme, host, port):
         context = binding.Context(
-            scheme=scheme, host=host, port=port, token=session_key, autologin=True)
-        content = context.get(op.join(self.HTTP_INPUT_CONFIG_ENDPOINT, 'http'),
+            scheme=scheme, host=host, port=port, token=session_key,
+            autologin=True)
+        content = context.get(self.HTTP_INPUT_CONFIG_ENDPOINT + '/http',
                               output_mode='json').body.read()
         port = int(json.loads(content)['entry'][0]['content']['port'])
 
         try:
             content = context.get(
-                op.join(self.HTTP_INPUT_CONFIG_ENDPOINT, token_name),
+                self.HTTP_INPUT_CONFIG_ENDPOINT + '/' + token_name,
                 output_mode='json').body.read()
             token = json.loads(content)['entry'][0]['content']['token']
         except binding.HTTPError:
@@ -226,22 +231,23 @@ class HECEventWriter(EventWriter):
         '''
 
         return HECEvent(
-            data, time=time, index=index, host=host, source=source, sourcetype=sourcetype)
+            data, time=time, index=index, host=host, source=source,
+            sourcetype=sourcetype)
 
     def write_events(self, events):
         if not events:
             return
 
-        for _event in HECEvent.format_events(events):
+        for event in HECEvent.format_events(events):
             retries = self.WRITE_EVENT_RETRIES
             while retries:
                 try:
-                    self._context.post(
-                        self.HTTP_EVENT_COLLECTOR_ENDPOINT, body=_event,
+                    return self._context.post(
+                        self.HTTP_EVENT_COLLECTOR_ENDPOINT, body=event,
                         headers=[('Content-Type', 'application/json')])
-                    break
                 except binding.HTTPError as e:
+                    # FIXME, handle 1000,000+ events
                     logging.error('Failed to write events through HEC: %s.',
                                   traceback.format_exc(e))
-                    time.sleep(1)
+                    time.sleep(2 ** (self.WRITE_EVENT_RETRIES - retries + 1))
                     retries -= 1

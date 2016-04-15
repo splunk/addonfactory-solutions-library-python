@@ -34,7 +34,7 @@ from splunklib.modularinput.input_definition import InputDefinition
 from splunklib.modularinput.validation_definition import ValidationDefinition
 
 from splunksolutionlib import utils
-from splunksolutionlib.modular_input import checkpoint
+from splunksolutionlib.modular_input import checkpointer
 from splunksolutionlib.modular_input import event_writer
 from splunksolutionlib.orphan_process_monitor import OrphanProcessMonitor
 
@@ -105,7 +105,7 @@ class ModularInput(object):
         self._session_key = None
         self._checkpoint_dir = None
         # Checkpoint
-        self._checkpoint = None
+        self._checkpointer = None
         # Orphan process monitor
         self._orphan_monitor = None
         # Event writer
@@ -182,28 +182,29 @@ class ModularInput(object):
         return self._session_key
 
     @property
-    def checkpoint(self):
-        '''Get checkpoint instance.
+    def checkpointer(self):
+        '''Get checkpointer instance.
 
-        The checkpoint returned depends on use_kvstore_checkpoint flag,
+        The checkpointer returned depends on use_kvstore_checkpoint flag,
         if use_kvstore_checkpoint is true will return an KVStoreCheckpoint
         instance else an FileCheckpoint instance.
 
-        :returns: An checkpoint instance.
-        :rtype: ``Checkpoint object``
+        :returns: An checkpointer instance.
+        :rtype: ``Checkpointer object``
         '''
 
-        if self._checkpoint is None:
+        if self._checkpointer is None:
             if self.use_kvstore_checkpoint:
                 splunkd = urlparse.urlparse(self._server_uri)
-                self._checkpoint = checkpoint.KVStoreCheckpoint(
+                self._checkpointer = checkpointer.KVStoreCheckpointer(
                     self.kvstore_checkpoint_collection_name, self._session_key,
                     self.app, owner='nobody', scheme=splunkd.scheme,
                     host=splunkd.hostname, port=splunkd.port)
             else:
-                self._checkpoint = checkpoint.FileCheckpoint(self._checkpoint_dir)
+                self._checkpointer = checkpointer.FileCheckpointer(
+                    self._checkpoint_dir)
 
-        return self._checkpoint
+        return self._checkpointer
 
     @property
     def event_writer(self):
@@ -224,7 +225,8 @@ class ModularInput(object):
             try:
                 self._event_writer = event_writer.HECEventWriter(
                     self.hec_token_name, self._session_key,
-                    scheme=self.server_scheme, host=self.server_host, port=self.server_port)
+                    scheme=self.server_scheme, host=self.server_host,
+                    port=self.server_port)
             except binding.HTTPError:
                 logging.error(
                     'Failed to init HECEventWriter, will use ClassicEventWriter instead.')
@@ -295,8 +297,6 @@ class ModularInput(object):
         pass
 
     def _do_run(self, inputs):
-        if not self.use_single_instance:
-            self.name = inputs.items()[0][0]
         self.do_run(inputs)
 
     @abstractmethod
@@ -342,8 +342,9 @@ class ModularInput(object):
         def _orphan_handler():
             handler(*args)
 
-        self._orphan_monitor = OrphanProcessMonitor(_orphan_handler)
-        self._orphan_monitor.start()
+        if self._orphan_monitor is None:
+            self._orphan_monitor = OrphanProcessMonitor(_orphan_handler)
+            self._orphan_monitor.start()
 
     def execute(self):
         '''Modular input entry.
@@ -365,8 +366,8 @@ class ModularInput(object):
                 logging.info('Modular input: %s exit normally.', self.title)
                 return 0
             except Exception as e:
-                logging.critical('Modular input: %s exit with exception: %s.',
-                                 self.name, traceback.format_exc(e))
+                logging.error('Modular input: %s exit with exception: %s.',
+                              self.name, traceback.format_exc(e))
                 return 1
             finally:
                 # Stop event writer if any
@@ -388,14 +389,16 @@ class ModularInput(object):
                 self.do_validation(validation_definition.parameters)
                 return 0
             except Exception as e:
-                logging.critical('Modular input: %s validate arguments with exception: %s.',
-                                 self.name, traceback.format_exc(e))
+                logging.error(
+                    'Modular input: %s validate arguments with exception: %s.',
+                    self.name, traceback.format_exc(e))
                 root = ET.Element('error')
                 ET.SubElement(root, 'message').text = str(e)
                 sys.stderr.write(ET.tostring(root))
                 sys.stderr.flush()
                 return 1
         else:
-            logging.critical('Modular input: %s run with invalid arguments: \"%s\".',
-                             self.name, ' '.join(sys.argv[1:]))
+            logging.error(
+                'Modular input: %s run with invalid arguments: "%s".',
+                self.name, ' '.join(sys.argv[1:]))
             return 1
