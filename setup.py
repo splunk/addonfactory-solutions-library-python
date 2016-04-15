@@ -101,7 +101,7 @@ setup(
     url='https://git.splunk.com/scm/solnsc/lib-solutions-python.git',
 
     packages=['solnlib',
-              'solnlib.common'],
+              'solnlib.modular_input'],
 
     install_requires=['splunk-sdk==1.5.0'],
 
