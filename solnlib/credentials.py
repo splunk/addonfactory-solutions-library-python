@@ -143,7 +143,8 @@ class CredentialManager(object):
 
                 partial_user = self.SEP.join(
                     [user, str(length/self.SPLUNK_CRED_LEN_LIMIT)])
-                self._storage_passwords.create(curr_str, partial_user, self._realm)
+                self._storage_passwords.create(
+                    curr_str, partial_user, self._realm)
 
     def delete_password(self, user):
         '''Delete password.
@@ -249,7 +250,7 @@ def get_session_key(username, password,
     uri = '{scheme}://{host}:{port}/{endpoint}'.format(
         scheme=scheme, host=host, port=port, endpoint='services/auth/login')
     service = rest_proxy.SplunkRestProxy(session_key=None, app=None)
-    response = service.post(
+    response = service.http.post(
         uri, username=username, password=password, output_mode='json')
 
     return json.loads(response.body.read())['sessionKey']
