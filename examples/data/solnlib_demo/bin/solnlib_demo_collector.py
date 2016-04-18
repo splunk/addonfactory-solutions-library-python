@@ -46,7 +46,7 @@ class SolnlibDemoCollector(ModularInput):
     # Override use_hec_event_writer
     use_hec_event_writer = True
     # Override hec_token_name
-    hec_token_name = 'SolnlibDemoCollectorHECToken'
+    hec_input_name = 'SolnlibDemoCollectorHECToken'
 
     # Custom init function
     # Notice: base modular input init function must be called.

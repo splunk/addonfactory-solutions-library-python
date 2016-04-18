@@ -191,7 +191,7 @@ class HECEventWriter(EventWriter):
     '''
 
     WRITE_EVENT_RETRIES = 3
-    HTTP_INPUT_CONFIG_ENDPOINT = '/services/data/inputs/http'
+    HTTP_INPUT_CONFIG_ENDPOINT = '/servicesNS/nobody/splunk_httpinput/data/inputs/http'
     HTTP_EVENT_COLLECTOR_ENDPOINT = '/services/collector'
 
     description = 'HECEventWriter'
