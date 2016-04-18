@@ -19,7 +19,7 @@ This module contains interfaces that support CRUD operations on ACL.
 import json
 
 from splunklib import binding
-import solnlib._rest_proxy as rest_proxy
+import solnlib.splunk_rest_proxy as rest_proxy
 
 __all__ = ['ACLException',
            'ACLManager']

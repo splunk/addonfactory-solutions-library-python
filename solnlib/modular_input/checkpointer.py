@@ -25,7 +25,7 @@ import logging
 from abc import ABCMeta, abstractmethod
 
 from splunklib.binding import HTTPError
-import solnlib._rest_proxy as rest_proxy
+import solnlib.splunk_rest_proxy as rest_proxy
 
 
 class CheckpointerException(Exception):

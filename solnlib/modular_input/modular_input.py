@@ -198,9 +198,10 @@ class ModularInput(object):
             if self.use_kvstore_checkpointer:
                 splunkd = urlparse.urlparse(self._server_uri)
                 self._checkpointer = checkpointer.KVStoreCheckpointer(
-                    self.kvstore_checkpointer_collection_name, self._session_key,
-                    self.app, owner='nobody', scheme=splunkd.scheme,
-                    host=splunkd.hostname, port=splunkd.port)
+                    self.kvstore_checkpointer_collection_name,
+                    self._session_key, self.app, owner='nobody',
+                    scheme=splunkd.scheme, host=splunkd.hostname,
+                    port=splunkd.port)
             else:
                 self._checkpointer = checkpointer.FileCheckpointer(
                     self._checkpoint_dir)
@@ -219,13 +220,17 @@ class ModularInput(object):
         :rtype: ``EventWriter object``
         '''
 
-        if self._event_writer:
+        if self._event_writer is not None:
             return self._event_writer
 
+        self._event_writer = self.create_event_writer()
+        return self._event_writer
+
+    def create_event_writer(self):
         if self.use_hec_event_writer:
             assert self.hec_input_name, "hec_input_name is not set"
             try:
-                self._event_writer = event_writer.HECEventWriter(
+                return event_writer.HECEventWriter(
                     self.hec_input_name, self._session_key,
                     scheme=self.server_scheme, host=self.server_host,
                     port=self.server_port)
@@ -233,11 +238,9 @@ class ModularInput(object):
                 logging.error(
                     'Failed to init HECEventWriter, will use '
                     'ClassicEventWriter instead.')
-                self._event_writer = event_writer.ClassicEventWriter()
+                return event_writer.ClassicEventWriter()
         else:
-            self._event_writer = event_writer.ClassicEventWriter()
-
-        return self._event_writer
+            return event_writer.ClassicEventWriter()
 
     def _do_scheme(self):
         scheme = Scheme(self.title)

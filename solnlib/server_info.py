@@ -18,7 +18,7 @@ This module contains splunk server info related functionalities.
 
 import json
 
-import solnlib._rest_proxy as rest_proxy
+import solnlib.splunk_rest_proxy as rest_proxy
 
 
 class ServerInfo(object):

@@ -24,9 +24,10 @@ import threading
 import logging
 import traceback
 import Queue
+import multiprocessing
 from abc import ABCMeta, abstractmethod
 
-import solnlib._rest_proxy as rest_proxy
+import solnlib.splunk_rest_proxy as rest_proxy
 from splunklib import binding
 
 from solnlib.modular_input.event import XMLEvent, HECEvent
@@ -127,7 +128,12 @@ class ClassicEventWriter(EventWriter):
     description = 'ClassicEventWriter'
 
     def __init__(self, **context):
-        self._events_queue = Queue.Queue(10)
+        self._mgr = None
+        if context.get("process_safe"):
+            self._mgr = multiprocessing.Manager()
+            self._event_queue = self._mgr.Queue(100)
+        else:
+            self._events_queue = Queue.Queue(100)
         self._events_writer = threading.Thread(target=self._write_events)
         self._events_writer.start()
         self._closed = False
@@ -135,6 +141,8 @@ class ClassicEventWriter(EventWriter):
     def close(self):
         self._closed = True
         self._events_queue.put(None)
+        if self._mgr is not None:
+            self._mgr.shutdown()
         self._events_writer.join()
 
     def create_event(self, data, time=None, index=None, host=None, source=None,
