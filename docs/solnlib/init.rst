@@ -13,7 +13,7 @@ solnlib
    utils.rst
    net_utils.rst
    ip_math.rst
-   codecs.rst
+   compression.rst
    orphan_process_monitor.rst
    acl.rst
    credentials.rst
