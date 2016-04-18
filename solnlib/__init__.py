@@ -21,7 +21,7 @@ from solnlib import log
 from solnlib import utils
 from solnlib import net_utils
 from solnlib import ip_math
-from solnlib import codecs
+from solnlib import compression
 from solnlib import orphan_process_monitor
 from solnlib import acl
 from solnlib import credentials
@@ -35,7 +35,7 @@ __all__ = ['pattern',
            'utils',
            'net_utils',
            'ip_math',
-           'codecs',
+           'compression',
            'orphan_process_monitor',
            'acl',
            'credentials',

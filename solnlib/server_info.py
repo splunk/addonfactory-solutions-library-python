@@ -18,8 +18,7 @@ This module contains splunk server info related functionalities.
 
 import json
 
-from splunklib import binding
-from splunklib import client
+import solnlib._rest_proxy as rest_proxy
 
 
 class ServerInfo(object):
@@ -43,8 +42,9 @@ class ServerInfo(object):
         self._scheme = scheme
         self._host = host
         self._port = port
-        service = client.Service(scheme=scheme, host=host, port=port,
-                                 token=session_key, autologin=True)
+        service = rest_proxy.SplunkRestProxy(
+            scheme=scheme, host=host, port=port,
+            session_key=session_key, app="-")
         self._server_info = service.info
 
     @property
@@ -119,9 +119,10 @@ class ServerInfo(object):
 
         :Raises splunklib.binding.HTTPError: If endpoint doesn't exist.
         '''
-        context = binding.Context(scheme=self._scheme, host=self._host,
-                                  port=self._port, token=self._session_key,
-                                  autologin=True)
+        context = rest_proxy.SplunkRestProxy(
+            scheme=self._scheme, host=self._host,
+            port=self._port, session_key=self._session_key,
+            app="-")
 
         content = context.get(self.SHC_MEMBER_ENDPOINT,
                               output_mode='json').body.read()

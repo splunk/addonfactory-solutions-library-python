@@ -20,7 +20,7 @@ import ssl
 import urllib
 import urllib2
 
-from solnlib.codecs import GzipHandler, ZipHandler
+from solnlib.compression import GzipHandler, ZipHandler
 
 __all__ = ['HTTPRequest']
 

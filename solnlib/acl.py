@@ -19,6 +19,7 @@ This module contains interfaces that support CRUD operations on ACL.
 import json
 
 from splunklib import binding
+import solnlib._rest_proxy as rest_proxy
 
 __all__ = ['ACLException',
            'ACLManager']
@@ -56,14 +57,15 @@ class ACLManager(object):
     '''
 
     def __init__(self, session_key, app, owner='nobody',
-                 scheme='https', host='localhost', port=8089):
-        self._binding_context = binding.Context(scheme=scheme,
-                                                host=host,
-                                                port=port,
-                                                token=session_key,
-                                                app=app,
-                                                owner=owner,
-                                                autologin=True)
+                 scheme='https', host='localhost', port=8089, **context):
+        self._binding_context = rest_proxy.SplunkRestProxy(
+            scheme=scheme,
+            host=host,
+            port=port,
+            session_key=session_key,
+            app=app,
+            owner=owner,
+            **context)
 
     def get(self, path):
         '''Get ACL of  /servicesNS/{`owner`}/{`app`}/{`path`}.
@@ -78,7 +80,8 @@ class ACLManager(object):
            >>> perms = aclm.get('data/transforms/extractions/_acl')
         '''
 
-        content = self._binding_context.get(path, output_mode='json').body.read()
+        content = self._binding_context.get(
+            path, output_mode='json').body.read()
 
         return json.loads(content)['entry'][0]['acl']
 
@@ -142,6 +145,7 @@ class ACLManager(object):
         postargs['sharing'] = curr_acl['sharing']
 
         content = self._binding_context.post(
-            path, body=binding._encode(**postargs), output_mode='json').body.read()
+            path, body=binding._encode(**postargs),
+            output_mode='json').body.read()
 
         return json.loads(content)['entry'][0]['acl']

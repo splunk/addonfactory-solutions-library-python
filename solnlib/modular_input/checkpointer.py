@@ -25,7 +25,7 @@ import logging
 from abc import ABCMeta, abstractmethod
 
 from splunklib.binding import HTTPError
-from splunklib.client import Service
+import solnlib._rest_proxy as rest_proxy
 
 
 class CheckpointException(Exception):
@@ -147,14 +147,16 @@ class KVStoreCheckpointer(Checkpointer):
     '''
 
     def __init__(self, collection_name, session_key, app, owner='nobody',
-                 scheme='https', host='localhost', port=8089):
-        kvstore = Service(scheme=scheme,
-                          host=host,
-                          port=port,
-                          token=session_key,
-                          app=app,
-                          owner=owner,
-                          autologin=True).kvstore
+                 scheme='https', host='localhost', port=8089, **context):
+        kvstore = rest_proxy.SplunkRestProxy(
+            scheme=scheme,
+            host=host,
+            port=port,
+            session_key=session_key,
+            app=app,
+            owner=owner,
+            **context).kvstore
+
         try:
             kvstore.get(name=collection_name)
         except HTTPError as e:

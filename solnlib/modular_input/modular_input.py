@@ -92,8 +92,8 @@ class ModularInput(object):
     kvstore_checkpoint_collection_name = 'solnlib_kvstore_checkpoint'
     # Use hec event writer
     use_hec_event_writer = True
-    # Token name of Splunk HEC.
-    hec_token_name = 'solnlib_hec_token'
+    # Input name of Splunk HEC. Must override if use HEC to do data injection
+    hec_input_name = ''
 
     def __init__(self):
         # Metadata
@@ -222,14 +222,16 @@ class ModularInput(object):
             return self._event_writer
 
         if self.use_hec_event_writer:
+            assert self.hec_input_name, "hec_input_name is not set"
             try:
                 self._event_writer = event_writer.HECEventWriter(
-                    self.hec_token_name, self._session_key,
+                    self.hec_input_name, self._session_key,
                     scheme=self.server_scheme, host=self.server_host,
                     port=self.server_port)
             except binding.HTTPError:
                 logging.error(
-                    'Failed to init HECEventWriter, will use ClassicEventWriter instead.')
+                    'Failed to init HECEventWriter, will use '
+                    'ClassicEventWriter instead.')
                 self._event_writer = event_writer.ClassicEventWriter()
         else:
             self._event_writer = event_writer.ClassicEventWriter()

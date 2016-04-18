@@ -26,6 +26,7 @@ import traceback
 import Queue
 from abc import ABCMeta, abstractmethod
 
+import solnlib._rest_proxy as rest_proxy
 from splunklib import binding
 
 from solnlib.modular_input.event import XMLEvent, HECEvent
@@ -125,7 +126,7 @@ class ClassicEventWriter(EventWriter):
 
     description = 'ClassicEventWriter'
 
-    def __init__(self):
+    def __init__(self, **context):
         self._events_queue = Queue.Queue(10)
         self._events_writer = threading.Thread(target=self._write_events)
         self._events_writer.start()
@@ -171,8 +172,8 @@ class HECEventWriter(EventWriter):
 
     Use Splunk HEC as the output.
 
-    :param token_name: Splunk HEC token name.
-    :type token_name: ``string``
+    :param hec_input_name: Splunk HEC input name.
+    :type hec_input_name: ``string``
     :param session_key: Splunk access token.
     :type session_key: ``string``
     :param scheme: (optional) The access scheme, default is `https`.
@@ -184,7 +185,7 @@ class HECEventWriter(EventWriter):
 
     Usage::
         >>> from solnlib.modular_input import event_writer
-        >>> ew = event_writer.HECEventWriter(token_name, session_key)
+        >>> ew = event_writer.HECEventWriter(hec_input_name, session_key)
         >>> ew.write_events([event1, event2])
         >>> ew.close()
     '''
@@ -195,31 +196,31 @@ class HECEventWriter(EventWriter):
 
     description = 'HECEventWriter'
 
-    def __init__(self, token_name, session_key,
-                 scheme='https', host='localhost', port=8089):
+    def __init__(self, hec_input_name, session_key,
+                 scheme='https', host='localhost', port=8089, **context):
         super(HECEventWriter, self).__init__()
         hec_port, hec_token = self._get_hec_config(
-            token_name, session_key, scheme=scheme, host=host, port=port)
-        self._context = binding.Context(
-            scheme=scheme, host=host, port=hec_port, token=hec_token,
-            autologin=True)
+            hec_input_name, session_key, scheme=scheme, host=host, port=port)
+        self._context = rest_proxy.SplunkRestProxy(
+            session_key=hec_token, app="-", scheme=scheme, host=host,
+            port=hec_port, **context)
 
-    def _get_hec_config(self, token_name, session_key, scheme, host, port):
-        context = binding.Context(
-            scheme=scheme, host=host, port=port, token=session_key,
-            autologin=True)
+    def _get_hec_config(self, hec_input_name, session_key, scheme, host, port):
+        context = rest_proxy.SplunkRestProxy(
+            scheme=scheme, host=host, port=port, session_key=session_key,
+            app="-")
         content = context.get(self.HTTP_INPUT_CONFIG_ENDPOINT + '/http',
                               output_mode='json').body.read()
         port = int(json.loads(content)['entry'][0]['content']['port'])
 
         try:
             content = context.get(
-                self.HTTP_INPUT_CONFIG_ENDPOINT + '/' + token_name,
+                self.HTTP_INPUT_CONFIG_ENDPOINT + '/' + hec_input_name,
                 output_mode='json').body.read()
             token = json.loads(content)['entry'][0]['content']['token']
         except binding.HTTPError:
             content = context.post(self.HTTP_INPUT_CONFIG_ENDPOINT,
-                                   name=token_name,
+                                   name=hec_input_name,
                                    output_mode='json').body.read()
             token = json.loads(content)['entry'][0]['content']['token']
 

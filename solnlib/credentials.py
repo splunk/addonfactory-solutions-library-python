@@ -19,8 +19,7 @@ This module contains Splunk credential related interfaces.
 import re
 import json
 
-import splunklib.binding as binding
-import splunklib.client as client
+import solnlib._rest_proxy as rest_proxy
 
 __all__ = ['CredException',
            'CredNotExistException',
@@ -71,16 +70,16 @@ class CredentialManager(object):
     SEP = '``splunk_cred_sep``'
 
     def __init__(self, session_key, app, owner='nobody', realm=None,
-                 scheme='https', host='localhost', port=8089):
+                 scheme='https', host='localhost', port=8089, **context):
         self._realm = realm
-        self._storage_passwords = client.Service(
+        self._storage_passwords = rest_proxy.SplunkRestProxy(
             scheme=scheme,
             host=host,
             port=port,
-            token=session_key,
+            session_key=session_key,
             app=app,
             owner=owner,
-            autologin=True).storage_passwords
+            **context).storage_passwords
 
     def get_password(self, user):
         '''Get password.
@@ -246,11 +245,10 @@ def get_session_key(username, password,
        >>> credentials.get_session_key('user', 'password')
     '''
 
-    response = binding.Context().http.post(
-        '{scheme}://{host}:{port}/{endpoint}'.format(
-            scheme=scheme, host=host, port=port, endpoint='services/auth/login'),
-        username=username,
-        password=password,
-        output_mode='json')
+    uri = '{scheme}://{host}:{port}/{endpoint}'.format(
+        scheme=scheme, host=host, port=port, endpoint='services/auth/login')
+    service = rest_proxy.SplunkRestProxy(session_key=None, app=None)
+    response = service.post(
+        uri, username=username, password=password, output_mode='json')
 
     return json.loads(response.body.read())['sessionKey']

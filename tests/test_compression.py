@@ -3,7 +3,7 @@ import os.path as op
 import pytest
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-from solnlib import codecs
+from solnlib import compression
 
 
 class TestGzipHandler(object):
@@ -11,15 +11,15 @@ class TestGzipHandler(object):
     gzcomp_data = '\x1f\x8b\x08\x08\xc7I\xd5V\x02\xfftest\x00+I-.\x01\x00\x0c~\x7f\xd8\x04\x00\x00\x00'
 
     def test_check_format(self):
-        assert codecs.GzipHandler.check_format(self.normal_data) is False
+        assert compression.GzipHandler.check_format(self.normal_data) is False
 
-        assert codecs.GzipHandler.check_format(self.gzcomp_data) is True
+        assert compression.GzipHandler.check_format(self.gzcomp_data) is True
 
     def test_decompress(self):
         with pytest.raises(ValueError):
-            codecs.GzipHandler.decompress(self.normal_data)
+            compression.GzipHandler.decompress(self.normal_data)
 
-        assert codecs.GzipHandler.decompress(self.gzcomp_data) == self.normal_data
+        assert compression.GzipHandler.decompress(self.gzcomp_data) == self.normal_data
 
 
 class TestZiphandler(object):
@@ -29,16 +29,16 @@ class TestZiphandler(object):
     zcomp_data_1files = 'PK\x03\x04\x14\x00\x00\x00\x00\x00\x03\x89aH\xc65\xb9;\x05\x00\x00\x00\x05\x00\x00\x00\t\x00\x00\x00test1.txttest\nPK\x01\x02\x14\x03\x14\x00\x00\x00\x00\x00\x03\x89aH\xc65\xb9;\x05\x00\x00\x00\x05\x00\x00\x00\t\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xa4\x81\x00\x00\x00\x00test1.txtPK\x05\x06\x00\x00\x00\x00\x01\x00\x01\x007\x00\x00\x00,\x00\x00\x00\x00\x00'
 
     def test_check_format(self):
-        assert not codecs.ZipHandler.check_format(self.normal_data)
+        assert not compression.ZipHandler.check_format(self.normal_data)
 
     def test_decompress(self):
         with pytest.raises(ValueError):
-            codecs.ZipHandler.decompress(self.normal_data)
+            compression.ZipHandler.decompress(self.normal_data)
 
         with pytest.raises(ValueError):
-            codecs.ZipHandler.decompress(self.zcomp_bad_data)
+            compression.ZipHandler.decompress(self.zcomp_bad_data)
 
         with pytest.raises(ValueError):
-            codecs.ZipHandler.decompress(self.zcomp_data_2files)
+            compression.ZipHandler.decompress(self.zcomp_data_2files)
 
-        assert codecs.ZipHandler.decompress(self.zcomp_data_1files) == 'test\n'
+        assert compression.ZipHandler.decompress(self.zcomp_data_1files) == 'test\n'
