@@ -3,7 +3,7 @@ import os
 import os.path as op
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-from splunksolutionlib import splunkenv
+from solnlib import splunkenv
 
 
 def test_splunkenv():
@@ -26,4 +26,5 @@ def test_splunkenv():
     assert port
 
     uri = splunkenv.get_splunkd_uri()
-    assert uri == '{scheme}://{host}:{port}'.format(scheme=scheme, host=host, port=port)
+    assert uri == '{scheme}://{host}:{port}'.format(
+        scheme=scheme, host=host, port=port)

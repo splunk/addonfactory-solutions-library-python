@@ -8,7 +8,7 @@ from splunklib import client
 from splunklib.binding import HTTPError
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-from splunksolutionlib.credentials import get_session_key
+from solnlib.credentials import get_session_key
 import context
 
 
@@ -38,7 +38,8 @@ def test_kvstore():
               'user': 'admin'}
     _key = collection_data.insert(json.dumps(record))['_key']
     resp_record = collection_data.query_by_id(_key)
-    resp_record = {key: resp_record[key] for key in resp_record if not key.startswith('_')}
+    resp_record = {key: resp_record[key]
+                   for key in resp_record if not key.startswith('_')}
     assert sorted(resp_record.values()) == sorted(record.values())
 
     record = {'id': uuid.uuid4().hex,
@@ -46,7 +47,8 @@ def test_kvstore():
               'user': 'test'}
     collection_data.update(_key, json.dumps(record))
     resp_record = collection_data.query_by_id(_key)
-    resp_record = {key: resp_record[key] for key in resp_record if not key.startswith('_')}
+    resp_record = {key: resp_record[key]
+                   for key in resp_record if not key.startswith('_')}
     assert sorted(resp_record.values()) == sorted(record.values())
 
     collection_data.delete_by_id(_key)

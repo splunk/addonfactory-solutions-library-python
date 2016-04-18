@@ -2,8 +2,8 @@ import sys
 import os.path as op
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-from splunksolutionlib import acl
-from splunksolutionlib.credentials import get_session_key
+from solnlib import acl
+from solnlib.credentials import get_session_key
 import context
 
 

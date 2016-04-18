@@ -13,7 +13,7 @@
 # under the License.
 
 '''
-This module provides two kinds of checkpoint (KVStoreCheckpointer, FileCheckpointer)
+This module provides two kinds of checkpointer (KVStoreCheckpointer, FileCheckpointer)
 for modular input.
 '''
 
@@ -28,7 +28,7 @@ from splunklib.binding import HTTPError
 import solnlib._rest_proxy as rest_proxy
 
 
-class CheckpointException(Exception):
+class CheckpointerException(Exception):
     pass
 
 
@@ -62,12 +62,12 @@ class Checkpointer(object):
         '''Batch update checkpoint.
 
         :param states: List of checkpoint. Each state in the list is a json
-            dict which should contain "_key" and "state" keys. For instance
+            dict which should contain "_key" and "state" keys. For instance:
             {
-                "_key": ckpt key which is a string,
-                "state": ckpt which is a json object,
+            "_key": ckpt key which is a string,
+            "state": ckpt which is a json object
             }
-        :type state: ``list``
+        :type states: ``list``
 
         Usage::
            >>> from solnlib.modular_input import checkpointer
@@ -119,11 +119,11 @@ class Checkpointer(object):
 
 
 class KVStoreCheckpointer(Checkpointer):
-    '''KVStore checkpoint.
+    '''KVStore checkpointer.
 
     Use KVStore to save modular input checkpoint.
 
-    :param collection_name: Collection name of kvstore checkpoint.
+    :param collection_name: Collection name of kvstore checkpointer.
     :type collection_name: ``string``
     :param session_key: Splunk access token.
     :type session_key: ``string``
@@ -175,8 +175,8 @@ class KVStoreCheckpointer(Checkpointer):
                 self._collection_data = collection.data
                 break
         else:
-            raise CheckpointException(
-                'Get modular input kvstore checkpoint failed.')
+            raise CheckpointerException(
+                'Get modular input kvstore checkpointer failed.')
 
     def update(self, key, state):
         record = {'_key': key, 'state': json.dumps(state)}
@@ -206,7 +206,7 @@ class KVStoreCheckpointer(Checkpointer):
 
 
 class FileCheckpointer(Checkpointer):
-    '''File checkpoint.
+    '''File checkpointer.
 
     Use file to save modular input checkpoint.
 

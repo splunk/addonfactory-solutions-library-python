@@ -1,7 +1,7 @@
-splunksolutionlib
-=================
+solnlib
+=======
 
-.. automodule:: splunksolutionlib
+.. automodule:: solnlib
    :members:
 
 .. toctree::

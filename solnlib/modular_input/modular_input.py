@@ -48,7 +48,7 @@ class ModularInput(object):
     input. For sub modular input, some class properties must be overriden,
     like: app, name, title and description, also there are some other
     optional properties can be overriden like: use_external_validation,
-    use_single_instance, use_kvstore_checkpoint, use_hec_event_writer etc..
+    use_single_instance, use_kvstore_checkpointer, use_hec_event_writer etc..
 
     Usage::
 
@@ -86,10 +86,11 @@ class ModularInput(object):
     use_external_validation = False
     # Modular input scheme use single instance mode, default is False
     use_single_instance = False
-    # Use kvstore for checkpoint, default is True
-    use_kvstore_checkpoint = True
-    # Collection name of kvstore checkpoint, default is 'kvstore_checkpoint'
-    kvstore_checkpoint_collection_name = 'solnlib_kvstore_checkpoint'
+    # Use kvstore as checkpointer, default is True
+    use_kvstore_checkpointer = True
+    # Collection name of kvstore checkpointer, default is
+    # 'solnlib_kvstore_checkpoint'
+    kvstore_checkpointer_collection_name = 'solnlib_kvstore_checkpoint'
     # Use hec event writer
     use_hec_event_writer = True
     # Input name of Splunk HEC. Must override if use HEC to do data injection
@@ -104,7 +105,7 @@ class ModularInput(object):
         self._server_port = None
         self._session_key = None
         self._checkpoint_dir = None
-        # Checkpoint
+        # Checkpointer
         self._checkpointer = None
         # Orphan process monitor
         self._orphan_monitor = None
@@ -185,19 +186,19 @@ class ModularInput(object):
     def checkpointer(self):
         '''Get checkpointer instance.
 
-        The checkpointer returned depends on use_kvstore_checkpoint flag,
-        if use_kvstore_checkpoint is true will return an KVStoreCheckpoint
-        instance else an FileCheckpoint instance.
+        The checkpointer returned depends on use_kvstore_checkpointer flag,
+        if use_kvstore_checkpointer is true will return an KVStoreCheckpointer
+        instance else an FileCheckpointer instance.
 
         :returns: An checkpointer instance.
         :rtype: ``Checkpointer object``
         '''
 
         if self._checkpointer is None:
-            if self.use_kvstore_checkpoint:
+            if self.use_kvstore_checkpointer:
                 splunkd = urlparse.urlparse(self._server_uri)
                 self._checkpointer = checkpointer.KVStoreCheckpointer(
-                    self.kvstore_checkpoint_collection_name, self._session_key,
+                    self.kvstore_checkpointer_collection_name, self._session_key,
                     self.app, owner='nobody', scheme=splunkd.scheme,
                     host=splunkd.hostname, port=splunkd.port)
             else:

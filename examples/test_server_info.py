@@ -4,8 +4,8 @@ import os.path as op
 from splunklib.binding import HTTPError
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-from splunksolutionlib import server_info
-from splunksolutionlib.credentials import get_session_key
+from solnlib import server_info
+from solnlib.credentials import get_session_key
 import context
 
 

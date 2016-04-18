@@ -4,30 +4,30 @@ import os.path as op
 import shutil
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-from splunksolutionlib.splunkenv import make_splunkhome_path
-from splunksolutionlib.splunkenv import get_splunk_bin
+from solnlib.splunkenv import make_splunkhome_path
+from solnlib.splunkenv import get_splunk_bin
 import context
 
 splunk_bin = get_splunk_bin()
 source_dir = op.join(op.dirname(op.abspath(__file__)), 'data', context.app)
 target_dir = make_splunkhome_path(['etc', 'apps', context.app])
-splunksolutionlib_lib_dir = op.join(
-    op.dirname(op.dirname(op.abspath(__file__))), 'splunksolutionlib')
-splunksolutionlib_lib_target_dir = make_splunkhome_path(
-    ['etc', 'apps', context.app, 'bin', 'splunksolutionlib'])
+solnlib_lib_dir = op.join(
+    op.dirname(op.dirname(op.abspath(__file__))), 'solnlib')
+solnlib_lib_target_dir = make_splunkhome_path(
+    ['etc', 'apps', context.app, 'bin', 'solnlib'])
 
 
 def setup_environment():
-    print 'Setup splunksolutionlib demo environment...'
+    print 'Setup solnlib demo environment...'
     print 'Copying %s to %s' % (source_dir, target_dir)
     shutil.copytree(source_dir, target_dir)
-    shutil.copytree(splunksolutionlib_lib_dir,
-                    splunksolutionlib_lib_target_dir)
+    shutil.copytree(solnlib_lib_dir,
+                    solnlib_lib_target_dir)
     os.system(splunk_bin + ' start')
 
 
 def teardown_environment():
-    print 'Teardown splunksolutionlib demo environment...'
+    print 'Teardown solnlib demo environment...'
     os.system(splunk_bin + ' stop')
     print 'Removing %s' % target_dir
     if op.exists(target_dir):
