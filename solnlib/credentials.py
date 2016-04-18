@@ -19,6 +19,7 @@ This module contains Splunk credential related interfaces.
 import re
 import json
 
+from splunklib import binding
 import solnlib._rest_proxy as rest_proxy
 
 __all__ = ['CredException',
