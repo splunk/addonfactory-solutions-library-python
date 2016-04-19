@@ -225,7 +225,7 @@ class CredentialManager(object):
 
 
 def get_session_key(username, password,
-                    scheme='https', host='localhost', port=8089):
+                    scheme='https', host='localhost', port=8089, **context):
     '''Get splunkd access token.
 
     :param username: The Splunk account username, which is used to
@@ -249,7 +249,7 @@ def get_session_key(username, password,
 
     uri = '{scheme}://{host}:{port}/{endpoint}'.format(
         scheme=scheme, host=host, port=port, endpoint='services/auth/login')
-    service = rest_proxy.SplunkRestProxy(session_key=None, app=None)
+    service = rest_proxy.SplunkRestProxy(session_key=None, app=None, **context)
     response = service.http.post(
         uri, username=username, password=password, output_mode='json')
 
