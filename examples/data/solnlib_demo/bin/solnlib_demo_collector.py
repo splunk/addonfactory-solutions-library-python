@@ -16,13 +16,13 @@ logger = log.Logs().get_logger('collector')
 def orphan_handler(md):
     logger.info(
         'Solnlib demo collector becomes orphan process, will teardown...')
-    md._should_exit = True
+    md.should_exit = True
 
 
 # Define teardown signal handler
 def teardown_handler(md):
     logger.info('Solnlib demo collector got teardown signal, will teardown...')
-    md._should_exit = True
+    md.should_exit = True
 
 
 # Custom modular input
@@ -47,12 +47,6 @@ class SolnlibDemoCollector(ModularInput):
     use_hec_event_writer = True
     # Override hec_token_name
     hec_input_name = 'SolnlibDemoCollectorHECToken'
-
-    # Custom init function
-    # Notice: base modular input init function must be called.
-    def __init__(self):
-        super(SolnlibDemoCollector, self).__init__()
-        self._should_exit = False
 
     # Override extra_arguments function
     def extra_arguments(self):
@@ -84,7 +78,7 @@ class SolnlibDemoCollector(ModularInput):
         checkpointer = self.checkpointer
 
         # Main loop
-        while not self._should_exit:
+        while not self.should_exit:
             # Get checkpoint
             state = checkpointer.get('solnlib_demo_collector_state')
             if state:

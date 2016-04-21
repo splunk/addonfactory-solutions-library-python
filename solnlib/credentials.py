@@ -74,12 +74,12 @@ class CredentialManager(object):
                  scheme='https', host='localhost', port=8089, **context):
         self._realm = realm
         self._storage_passwords = rest_proxy.SplunkRestProxy(
-            scheme=scheme,
-            host=host,
-            port=port,
             session_key=session_key,
             app=app,
             owner=owner,
+            scheme=scheme,
+            host=host,
+            port=port,
             **context).storage_passwords
 
     def get_password(self, user):
@@ -142,7 +142,7 @@ class CredentialManager(object):
                 length += self.SPLUNK_CRED_LEN_LIMIT
 
                 partial_user = self.SEP.join(
-                    [user, str(length/self.SPLUNK_CRED_LEN_LIMIT)])
+                    [user, str(length / self.SPLUNK_CRED_LEN_LIMIT)])
                 self._storage_passwords.create(
                     curr_str, partial_user, self._realm)
 
@@ -198,7 +198,8 @@ class CredentialManager(object):
                     exist_stanza = {}
                     exist_stanza['name'] = actual_name
                     exist_stanza['realm'] = password.realm
-                    exist_stanza['username'] = password.username.split(self.SEP)[0]
+                    exist_stanza['username'] = \
+                        password.username.split(self.SEP)[0]
                     exist_stanza['clears'] = {}
                     results[actual_name] = exist_stanza
 
@@ -249,7 +250,7 @@ def get_session_key(username, password,
 
     uri = '{scheme}://{host}:{port}/{endpoint}'.format(
         scheme=scheme, host=host, port=port, endpoint='services/auth/login')
-    service = rest_proxy.SplunkRestProxy(session_key=None, app=None, **context)
+    service = rest_proxy.SplunkRestProxy(session_key=None, app='-', **context)
     response = service.http.post(
         uri, username=username, password=password, output_mode='json')
 

@@ -149,12 +149,12 @@ class KVStoreCheckpointer(Checkpointer):
     def __init__(self, collection_name, session_key, app, owner='nobody',
                  scheme='https', host='localhost', port=8089, **context):
         kvstore = rest_proxy.SplunkRestProxy(
-            scheme=scheme,
-            host=host,
-            port=port,
             session_key=session_key,
             app=app,
             owner=owner,
+            scheme=scheme,
+            host=host,
+            port=port,
             **context).kvstore
 
         try:
@@ -201,8 +201,9 @@ class KVStoreCheckpointer(Checkpointer):
     def delete(self, key):
         try:
             self._collection_data.delete_by_id(key)
-        except HTTPError:
-            pass
+        except HTTPError as e:
+            if not e.status == 404:
+                raise
 
 
 class FileCheckpointer(Checkpointer):

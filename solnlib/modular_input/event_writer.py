@@ -159,7 +159,8 @@ class ClassicEventWriter(EventWriter):
             return
 
         if self._closed:
-            logging.error('Event writer: %s has been closed.', self.description)
+            logging.error('Event writer: %s has been closed.',
+                          self.description)
             return
 
         for event in XMLEvent.format_events(events):
@@ -208,15 +209,16 @@ class HECEventWriter(EventWriter):
                  scheme='https', host='localhost', port=8089, **context):
         super(HECEventWriter, self).__init__()
         hec_port, hec_token = self._get_hec_config(
-            hec_input_name, session_key, scheme=scheme, host=host, port=port)
+            hec_input_name, session_key, scheme, host, port, **context)
         self._context = rest_proxy.SplunkRestProxy(
-            session_key=hec_token, app="-", scheme=scheme, host=host,
-            port=hec_port, **context)
+            session_key=hec_token, app='-',
+            scheme=scheme, host=host, port=hec_port, **context)
 
-    def _get_hec_config(self, hec_input_name, session_key, scheme, host, port):
+    def _get_hec_config(self, hec_input_name, session_key,
+                        scheme, host, port, **context):
         context = rest_proxy.SplunkRestProxy(
-            scheme=scheme, host=host, port=port, session_key=session_key,
-            app="-")
+            session_key=session_key, app='-',
+            scheme=scheme, host=host, port=port, **context)
         content = context.get(self.HTTP_INPUT_CONFIG_ENDPOINT + '/http',
                               output_mode='json').body.read()
         port = int(json.loads(content)['entry'][0]['content']['port'])
