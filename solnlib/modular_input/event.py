@@ -22,7 +22,9 @@ try:
 except ImportError:
     import xml.etree.ElementTree as ET
 
-__all__ = ['Event']
+__all__ = ['EventException',
+           'XMLEvent',
+           'HECEvent']
 
 
 class EventException(Exception):

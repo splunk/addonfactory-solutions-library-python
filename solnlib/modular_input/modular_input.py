@@ -38,7 +38,8 @@ from solnlib.modular_input import checkpointer
 from solnlib.modular_input import event_writer
 from solnlib.orphan_process_monitor import OrphanProcessMonitor
 
-__all__ = ['ModularInput']
+__all__ = ['ModularInputException',
+           'ModularInput']
 
 
 class ModularInputException(Exception):
@@ -101,10 +102,12 @@ class ModularInput(object):
     hec_input_name = 'solnlib_hec'
 
     def __init__(self):
-        if not (self.app and self.name and
-                self.title and self.description):
+        if not (self.app and
+                self.name and
+                self.title and
+                self.description):
             raise ModularInputException(
-                'Modular input "app", "name", "title", "description" must be overriden.')
+                'Attributes: "app", "name", "title", "description" must be overriden.')
 
         # Modular input state
         self._should_exit = False
@@ -387,7 +390,7 @@ class ModularInput(object):
                 input_definition = InputDefinition.parse(sys.stdin)
                 self._update_metadata(input_definition.metadata)
                 self._do_run(input_definition.inputs)
-                logging.info('Modular input: %s exit normally.', self.title)
+                logging.info('Modular input: %s exit normally.', self.name)
                 return 0
             except Exception as e:
                 logging.error('Modular input: %s exit with exception: %s.',

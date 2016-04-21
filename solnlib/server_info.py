@@ -20,6 +20,8 @@ import json
 
 import solnlib.splunk_rest_proxy as rest_proxy
 
+__all__ = ['ServerInfo']
+
 
 class ServerInfo(object):
     '''This class is a wrapper of splunk server info.

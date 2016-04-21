@@ -22,6 +22,8 @@ import ConfigParser
 
 from solnlib.splunkenv import make_splunkhome_path
 
+__all__ = ['MetadataReader']
+
 
 class MetadataReader(object):
     '''Metadata reader for `app`.

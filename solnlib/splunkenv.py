@@ -171,8 +171,8 @@ def get_splunkd_access_info():
     :rtype: ``tuple``
     '''
 
-    if utils.is_true(get_conf_key_value('server', 'sslConfig',
-                                        'enableSplunkdSSL')):
+    if utils.is_true(get_conf_key_value(
+            'server', 'sslConfig', 'enableSplunkdSSL')):
         scheme = 'https'
     else:
         scheme = 'http'
@@ -201,8 +201,8 @@ def get_splunkd_uri():
         return os.environ['SPLUNKD_URI']
 
     scheme, host, port = get_splunkd_access_info()
-    return '{scheme}://{host}:{port}'.format(scheme=scheme,
-                                             host=host, port=port)
+    return '{scheme}://{host}:{port}'.format(
+        scheme=scheme, host=host, port=port)
 
 
 def get_conf_key_value(conf_name, stanza, key):

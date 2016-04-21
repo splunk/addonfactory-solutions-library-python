@@ -24,6 +24,8 @@ import traceback
 import splunklib.binding as binding
 import splunklib.client as client
 
+__all__ = ['SplunkRestProxy']
+
 
 def _get_proxy_info(context):
     if not context.get("proxy_hostname") or not context.get("proxy_port"):

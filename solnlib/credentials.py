@@ -23,16 +23,11 @@ from splunklib import binding
 import solnlib.splunk_rest_proxy as rest_proxy
 
 __all__ = ['CredException',
-           'CredNotExistException',
            'CredentialManager',
            'get_session_key']
 
 
 class CredException(Exception):
-    pass
-
-
-class CredNotExistException(CredException):
     pass
 
 
@@ -90,7 +85,7 @@ class CredentialManager(object):
         :returns: Clear user password.
         :rtype: ``string``
 
-        :raises CredNotExistException: If password for realm:user
+        :raises CredException: If password for realm:user
             doesn't exist.
 
         Usage::
@@ -104,11 +99,13 @@ class CredentialManager(object):
 
         all_passwords = self._get_all_passwords()
         for password in all_passwords:
-            if password['username'] == user and password['realm'] == self._realm:
+            if password['username'] == user and \
+               password['realm'] == self._realm:
                 return password['clear_password']
 
-        raise CredNotExistException(
-            'Failed to get password of realm=%s, user=%s.' % (self._realm, user))
+        raise CredException(
+            'Failed to get password of realm=%s, user=%s.' %
+            (self._realm, user))
 
     def set_password(self, user, password):
         '''Set password.
@@ -152,7 +149,7 @@ class CredentialManager(object):
         :param user: User name.
         :type user: ``string``
 
-        :raises CredNotExistException: If passwords for realm:user
+        :raises CredException: If passwords for realm:user
             doesn't exist.
 
         Usage::
@@ -178,9 +175,9 @@ class CredentialManager(object):
                     deleted = True
 
             if not deleted:
-                raise CredNotExistException(
-                    'Failed to delete password of realm=%s, user=%s' % (
-                        self._realm, user))
+                raise CredException(
+                    'Failed to delete password of realm=%s, user=%s' %
+                    (self._realm, user))
 
     def _get_all_passwords(self):
         all_passwords = self._storage_passwords.list()

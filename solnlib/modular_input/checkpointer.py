@@ -27,6 +27,10 @@ from abc import ABCMeta, abstractmethod
 from splunklib.binding import HTTPError
 import solnlib.splunk_rest_proxy as rest_proxy
 
+__all__ = ['CheckpointerException',
+           'KVStoreCheckpointer',
+           'FileCheckpointer']
+
 
 class CheckpointerException(Exception):
     pass
