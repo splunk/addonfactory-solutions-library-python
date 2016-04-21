@@ -30,7 +30,7 @@ class ACLException(Exception):
 
 
 class ACLManager(object):
-    '''ACL Manager.
+    '''ACL manager.
 
     This class provides interfaces of CRUD operations on ACL.
 
@@ -59,12 +59,12 @@ class ACLManager(object):
     def __init__(self, session_key, app, owner='nobody',
                  scheme='https', host='localhost', port=8089, **context):
         self._binding_context = rest_proxy.SplunkRestProxy(
-            scheme=scheme,
-            host=host,
-            port=port,
             session_key=session_key,
             app=app,
             owner=owner,
+            scheme=scheme,
+            host=host,
+            port=port,
             **context)
 
     def get(self, path):
