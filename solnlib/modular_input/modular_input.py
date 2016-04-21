@@ -41,6 +41,10 @@ from solnlib.orphan_process_monitor import OrphanProcessMonitor
 __all__ = ['ModularInput']
 
 
+class ModularInputException(Exception):
+    pass
+
+
 class ModularInput(object):
     '''Base class of Splunk modular input.
 
@@ -93,10 +97,17 @@ class ModularInput(object):
     kvstore_checkpointer_collection_name = 'solnlib_kvstore_checkpoint'
     # Use hec event writer
     use_hec_event_writer = True
-    # Input name of Splunk HEC. Must override if use HEC to do data injection
-    hec_input_name = ''
+    # Input name of Splunk HEC, default is 'solnlib_hec'
+    hec_input_name = 'solnlib_hec'
 
     def __init__(self):
+        if not (self.app and self.name and
+                self.title and self.description):
+            raise ModularInputException(
+                'Modular input "app", "name", "title", "description" must be overriden.')
+
+        # Modular input state
+        self._should_exit = False
         # Metadata
         self._server_host_name = None
         self._server_uri = None
@@ -112,15 +123,13 @@ class ModularInput(object):
         # Event writer
         self._event_writer = None
 
-    def _update_metadata(self, metadata):
-        self._server_host_name = metadata['server_host']
-        splunkd = urllib2.urlparse.urlsplit(metadata['server_uri'])
-        self._server_uri = splunkd.geturl()
-        self._server_scheme = splunkd.scheme
-        self._server_host = splunkd.hostname
-        self._server_port = splunkd.port
-        self._session_key = metadata['session_key']
-        self._checkpoint_dir = metadata['checkpoint_dir']
+    @property
+    def should_exit(self):
+        return self._should_exit
+
+    @should_exit.setter
+    def should_exit(self, state):
+        self._should_exit = bool(state)
 
     @property
     def server_host_name(self):
@@ -198,7 +207,7 @@ class ModularInput(object):
             if self.use_kvstore_checkpointer:
                 splunkd = urlparse.urlparse(self._server_uri)
                 self._checkpointer = checkpointer.KVStoreCheckpointer(
-                    self.kvstore_checkpointer_collection_name,
+                    self.app + ':' + self.kvstore_checkpointer_collection_name,
                     self._session_key, self.app, owner='nobody',
                     scheme=splunkd.scheme, host=splunkd.hostname,
                     port=splunkd.port)
@@ -228,10 +237,9 @@ class ModularInput(object):
 
     def create_event_writer(self):
         if self.use_hec_event_writer:
-            assert self.hec_input_name, "hec_input_name is not set"
             try:
                 return event_writer.HECEventWriter(
-                    self.hec_input_name, self._session_key,
+                    self.app + ':' + self.hec_input_name, self._session_key,
                     scheme=self.server_scheme, host=self.server_host,
                     port=self.server_port)
             except binding.HTTPError:
@@ -241,6 +249,16 @@ class ModularInput(object):
                 return event_writer.ClassicEventWriter()
         else:
             return event_writer.ClassicEventWriter()
+
+    def _update_metadata(self, metadata):
+        self._server_host_name = metadata['server_host']
+        splunkd = urllib2.urlparse.urlsplit(metadata['server_uri'])
+        self._server_uri = splunkd.geturl()
+        self._server_scheme = splunkd.scheme
+        self._server_host = splunkd.hostname
+        self._server_port = splunkd.port
+        self._session_key = metadata['session_key']
+        self._checkpoint_dir = metadata['checkpoint_dir']
 
     def _do_scheme(self):
         scheme = Scheme(self.title)

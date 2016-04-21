@@ -43,8 +43,8 @@ class ServerInfo(object):
         self._host = host
         self._port = port
         service = rest_proxy.SplunkRestProxy(
-            scheme=scheme, host=host, port=port,
-            session_key=session_key, app="-")
+            session_key=session_key, app='-',
+            scheme=scheme, host=host, port=port)
         self._server_info = service.info
 
     @property
@@ -120,9 +120,9 @@ class ServerInfo(object):
         :Raises splunklib.binding.HTTPError: If endpoint doesn't exist.
         '''
         context = rest_proxy.SplunkRestProxy(
+            session_key=self._session_key, app='-',
             scheme=self._scheme, host=self._host,
-            port=self._port, session_key=self._session_key,
-            app="-")
+            port=self._port)
 
         content = context.get(self.SHC_MEMBER_ENDPOINT,
                               output_mode='json').body.read()
