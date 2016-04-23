@@ -62,7 +62,7 @@ class Event(object):
         Usage::
            >>> event = Event(
            >>>     data='This is a test data.',
-           >>>     time='%.3f' % 1372274622.493,
+           >>>     time=1372274622.493,
            >>>     index='main',
            >>>     host='localhost',
            >>>     source='Splunk',

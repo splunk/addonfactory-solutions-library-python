@@ -67,5 +67,5 @@ def make_response_record(body, status=200):
     return record(
         {'body': binding.ResponseReader(_MocBufReader(body)),
          'status': status,
-         'reason': None,
+         'reason': '',
          'headers': None})

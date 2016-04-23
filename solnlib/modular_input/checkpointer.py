@@ -144,7 +144,8 @@ class KVStoreCheckpointer(Checkpointer):
 
     Usage::
         >>> from solnlib.modular_input import checkpointer
-        >>> ck = checkpoint.KVStoreCheckpointer(session_key,
+        >>> ck = checkpoint.KVStoreCheckpointer('TestKVStoreCheckpointer',
+                                                session_key,
                                                 'Splunk_TA_test')
         >>> ck.update(...)
         >>> ck.get(...)
@@ -233,7 +234,7 @@ class FileCheckpointer(Checkpointer):
         with open(file_name + '_new', 'w') as fp:
             json.dump(state, fp)
 
-        if os.exists(file_name):
+        if op.exists(file_name):
             try:
                 os.remove(file_name)
             except IOError:
