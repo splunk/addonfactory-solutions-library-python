@@ -22,12 +22,12 @@ import json
 from splunklib import binding
 import solnlib.splunk_rest_proxy as rest_proxy
 
-__all__ = ['CredException',
+__all__ = ['CredNotExistException',
            'CredentialManager',
            'get_session_key']
 
 
-class CredException(Exception):
+class CredNotExistException(Exception):
     pass
 
 
@@ -85,7 +85,7 @@ class CredentialManager(object):
         :returns: Clear user password.
         :rtype: ``string``
 
-        :raises CredException: If password for realm:user
+        :raises CredNotExistException: If password for realm:user
             doesn't exist.
 
         Usage::
@@ -103,7 +103,7 @@ class CredentialManager(object):
                password['realm'] == self._realm:
                 return password['clear_password']
 
-        raise CredException(
+        raise CredNotExistException(
             'Failed to get password of realm=%s, user=%s.' %
             (self._realm, user))
 
@@ -126,7 +126,7 @@ class CredentialManager(object):
 
         try:
             self.delete_password(user)
-        except CredException:
+        except CredNotExistException:
             pass
 
         if len(password) <= self.SPLUNK_CRED_LEN_LIMIT:
@@ -149,7 +149,7 @@ class CredentialManager(object):
         :param user: User name.
         :type user: ``string``
 
-        :raises CredException: If passwords for realm:user
+        :raises CredNotExistException: If passwords for realm:user
             doesn't exist.
 
         Usage::
@@ -175,7 +175,7 @@ class CredentialManager(object):
                     deleted = True
 
             if not deleted:
-                raise CredException(
+                raise CredNotExistException(
                     'Failed to delete password of realm=%s, user=%s' %
                     (self._realm, user))
 

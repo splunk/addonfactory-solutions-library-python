@@ -121,7 +121,7 @@ def test_modular_input(monkeypatch):
     # Run modular input with '--scheme'
     sys.argv = [None, '--scheme']
     md.execute()
-    assert sys.stdout.read() == '<scheme><title>unittest app collector</title><description>Unittest app collector</description><use_external_validation>true</use_external_validation><use_single_instance>true</use_single_instance><streaming_mode>xml</streaming_mode><endpoint><args><arg name="state"><description>Unittest app collector state</description><data_type>string</data_type><required_on_edit>false</required_on_edit><required_on_create>true</required_on_create></arg></args></endpoint></scheme>'
+    assert sys.stdout.read() == '<scheme><title>unittest app collector</title><description>Unittest app collector</description><use_external_validation>true</use_external_validation><use_single_instance>false</use_single_instance><streaming_mode>xml</streaming_mode><endpoint><args><arg name="state"><description>Unittest app collector state</description><data_type>string</data_type><required_on_edit>false</required_on_edit><required_on_create>true</required_on_create></arg></args></endpoint></scheme>'
 
     sys.argv = [None, '--validate-arguments']
     validate_arugments_input = '<items><server_host>lli-mbpr.local</server_host><server_uri>https://127.0.0.1:8089</server_uri><session_key>{session_key}</session_key><checkpoint_dir>{checkpoint_dir}</checkpoint_dir><item name="unittest"><param name="state">success</param></item></items>'.format(session_key=common.SESSION_KEY, checkpoint_dir=checkpoint_dir)

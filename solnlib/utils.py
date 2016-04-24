@@ -114,9 +114,9 @@ def unescape_json_control_chars(json_str):
     :rtype: ``string``
     '''
 
-    control_chars = (("\\\\n", r"\n"),
-                     ("\\\\r", r"\r"),
-                     ("\\\\r\\\\n", r"\r\n"))
+    control_chars = (('\\\\n', r'\n'),
+                     ('\\\\r', r'\r'),
+                     ('\\\\r\\\\n', r'\r\n'))
     for ch, replace in control_chars:
         json_str = json_str.replace(ch, replace)
     return json_str

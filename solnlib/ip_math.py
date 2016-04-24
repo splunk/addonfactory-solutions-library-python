@@ -295,11 +295,11 @@ def expand_ip_range_to_cidr(ip_range, clean_single_ips=False):
         else:
             # This should never happen due to the exit condition on the above
             # while loop.
-            raise ValueError("Subnet calculation failed unexpectedly.")
+            raise ValueError('Subnet calculation failed unexpectedly.')
 
     else:
         # Invalid IP range.
         raise ValueError(
-            "Invalid IP range specified (perhaps reversed).")
+            'Invalid IP range specified (perhaps reversed).')
 
     return sorted(subnets, key=lambda x: x.split('/')[1])

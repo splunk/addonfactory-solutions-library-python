@@ -1,13 +1,12 @@
 import time
 import uuid
-from solnlib import splunkenv
 from solnlib import log
 from solnlib.modular_input import *
 
 # Set log context
 log.Logs.set_context(
-    directory=splunkenv.make_splunkhome_path(['var', 'log', 'splunk']),
-    namespace='solnlib_demo')
+    namespace='solnlib_demo',
+    root_logger_log_file='collector')
 # Get named logger
 logger = log.Logs().get_logger('collector')
 
@@ -66,7 +65,6 @@ class SolnlibDemoCollector(ModularInput):
     # Override do_run function
     def do_run(self, inputs):
         logger.info('Solnlib demo modular input start...')
-        logger.info('inputs: %s.', inputs)
         # Register orphan process handler
         self.register_orphan_handler(orphan_handler, self)
         # Register teardown signal handler

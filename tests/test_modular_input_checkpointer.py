@@ -21,7 +21,7 @@ class TestKVStoreCheckpointer(object):
     _checkpoint_states = {}
 
     def _mock_kvstore_checkpointer_collections_get(
-            self, name="", owner=None, app=None, sharing=None, **query):
+            self, name='', owner=None, app=None, sharing=None, **query):
         raise binding.HTTPError(common.make_response_record('', status=404))
 
     def _mock_kvstore_checkpointer_collections_create(

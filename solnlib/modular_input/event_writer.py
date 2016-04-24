@@ -129,7 +129,7 @@ class ClassicEventWriter(EventWriter):
 
     def __init__(self, **context):
         self._mgr = None
-        if context.get("process_safe"):
+        if context.get('process_safe'):
             self._mgr = multiprocessing.Manager()
             self._event_queue = self._mgr.Queue(100)
         else:

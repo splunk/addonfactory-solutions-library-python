@@ -167,7 +167,7 @@ class KVStoreCheckpointer(Checkpointer):
         except HTTPError as e:
             if e.status == 404:
                 logging.info(
-                    "collection_name=%s in app=%s doesn't exist, create it",
+                    'collection_name=%s in app=%s does not exist, create it',
                     collection_name, app)
                 fields = {'state': 'string'}
                 kvstore.create(collection_name, fields=fields)

@@ -28,17 +28,17 @@ __all__ = ['SplunkRestProxy']
 
 
 def _get_proxy_info(context):
-    if not context.get("proxy_hostname") or not context.get("proxy_port"):
+    if not context.get('proxy_hostname') or not context.get('proxy_port'):
         return None
 
-    user_pass = ""
+    user_pass = ''
     if context.get('proxy_username') and context.get('proxy_password'):
         user_pass = '{user}:{password}@'.format(
             user=context['proxy_username'], password=context['proxy_password'])
 
-    proxy = "http://{user_pass}{host}:{port}".format(
-        user_pass=user_pass, host=context["proxy_hostname"],
-        port=context["proxy_port"])
+    proxy = 'http://{user_pass}{host}:{port}'.format(
+        user_pass=user_pass, host=context['proxy_hostname'],
+        port=context['proxy_port'])
     proxies = {
         'http': proxy,
         'https': proxy,
@@ -74,9 +74,9 @@ def _request_handler(context):
         pass
 
     proxies = _get_proxy_info(context)
-    verify = context.get("verify", False)
+    verify = context.get('verify', False)
 
-    if context.get('key_file') and context.get("cert_file"):
+    if context.get('key_file') and context.get('cert_file'):
         # cert = ('/path/client.cert', '/path/client.key')
         cert = context['key_file'], context['cert_file']
     elif context.get('cert_file'):

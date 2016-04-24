@@ -166,7 +166,7 @@ class XMLEvent(Event):
         </stream>']
         '''
 
-        stream = ET.Element("stream")
+        stream = ET.Element('stream')
         for event in events:
             stream.append(event._to_xml())
 
@@ -209,12 +209,12 @@ class HECEvent(Event):
         for event in events:
             new_length = size + len(event) + len(batched_events) - 1
             if new_length >= cls.MAX_HEC_EVENT_LENGTH:
-                new_events.append("\n".join(batched_events))
+                new_events.append('\n'.join(batched_events))
                 del batched_events[:]
                 size = 0
             batched_events.append(event)
             size = size + len(event)
         if batched_events:
-            new_events.append("\n".join(batched_events))
+            new_events.append('\n'.join(batched_events))
 
         return new_events
