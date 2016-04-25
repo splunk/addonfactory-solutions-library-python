@@ -174,11 +174,11 @@ class KVStoreCheckpointer(Checkpointer):
                                                port=port,
                                                **context).kvstore
 
-        collection_name = re.sub('[^\w]+', '_', collection_name)
+        collection_name = re.sub(r'[^\w]+', '_', collection_name)
         try:
             kvstore.get(name=collection_name)
         except binding.HTTPError as e:
-            if not e.status == 404:
+            if e.status != 404:
                 raise
 
             fields = {'state': 'string'}
@@ -207,7 +207,7 @@ class KVStoreCheckpointer(Checkpointer):
         try:
             record = self._collection_data.query_by_id(key)
         except binding.HTTPError as e:
-            if not e.status == 404:
+            if e.status != 404:
                 logging.error(
                     'Get checkpoint failed: %s.', traceback.format_exc(e))
                 raise
@@ -221,7 +221,7 @@ class KVStoreCheckpointer(Checkpointer):
         try:
             self._collection_data.delete_by_id(key)
         except binding.HTTPError as e:
-            if not e.status == 404:
+            if e.status != 404:
                 logging.error(
                     'Delete checkpoint failed: %s.', traceback.format_exc(e))
                 raise

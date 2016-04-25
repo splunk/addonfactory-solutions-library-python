@@ -242,13 +242,13 @@ class HECEventWriter(EventWriter):
                                    output_mode='json').body.read()
         port = int(json.loads(content)['entry'][0]['content']['port'])
 
-        hec_input_name = re.sub('[^\w]+', '_', hec_input_name)
+        hec_input_name = re.sub(r'[^\w]+', '_', hec_input_name)
         try:
             content = _rest_client.get(
                 self.HTTP_INPUT_CONFIG_ENDPOINT + '/' + hec_input_name,
                 output_mode='json').body.read()
         except binding.HTTPError as e:
-            if not e.status == 404:
+            if e.status != 404:
                 raise
 
             content = _rest_client.post(self.HTTP_INPUT_CONFIG_ENDPOINT,
