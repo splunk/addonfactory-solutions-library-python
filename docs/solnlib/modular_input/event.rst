@@ -8,11 +8,9 @@ APIs
 
 :class:`~solnlib.modular_input.event.EventException` class
 
-:class:`~solnlib.modular_input.event.Event` class
+:class:`~solnlib.modular_input.event.HECEvent` class
 
 :class:`~solnlib.modular_input.event.XMLEvent` class
-
-:class:`~solnlib.modular_input.event.HECEvent` class
 
 Detail Info
 -----------
@@ -20,11 +18,8 @@ Detail Info
 .. autoclass:: EventException
    :members:
 
-.. autoclass:: Event
+.. autoclass:: HECEvent
    :members:
 
 .. autoclass:: XMLEvent
-   :members:
-
-.. autoclass:: HECEvent
    :members:

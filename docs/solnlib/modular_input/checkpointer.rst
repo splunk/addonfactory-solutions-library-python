@@ -8,11 +8,9 @@ APIs
 
 :class:`~solnlib.modular_input.checkpointer.CheckpointerException` class
 
-:class:`~solnlib.modular_input.checkpointer.Checkpointer` class
+:class:`~solnlib.modular_input.checkpointer.FileCheckpointer` class
 
 :class:`~solnlib.modular_input.checkpointer.KVStoreCheckpointer` class
-
-:class:`~solnlib.modular_input.checkpointer.FileCheckpointer` class
 
 Detail Info
 -----------
@@ -20,11 +18,8 @@ Detail Info
 .. autoclass:: CheckpointerException
    :members:
 
-.. autoclass:: Checkpointer
+.. autoclass:: FileCheckpointer
    :members:
 
 .. autoclass:: KVStoreCheckpointer
-   :members:
-
-.. autoclass:: FileCheckpointer
    :members:

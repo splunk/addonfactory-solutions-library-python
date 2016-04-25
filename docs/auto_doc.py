@@ -246,7 +246,6 @@ class AutoDocWriter(object):
                     print "Got max depth %s" % max_depth
 
                     content += ".. automodule:: {0}\n" \
-                               "   :members:\n" \
                                "\n.. toctree::\n" \
                                "   :maxdepth: {1}\n\n".format(auto_module, max_depth)
                     if self._sort_item:
