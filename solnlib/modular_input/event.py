@@ -1,13 +1,13 @@
 # Copyright 2016 Splunk, Inc.
 #
-# Licensed under the Apache License, Version 2.0 (the "License"): you may
+# Licensed under the Apache License, Version 2.0 (the 'License'): you may
 # not use this file except in compliance with the License. You may obtain
 # a copy of the License at
 #
 #     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# distributed under the License is distributed on an 'AS IS' BASIS, WITHOUT
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
@@ -32,11 +32,12 @@ class EventException(Exception):
 
 
 class Event(object):
-    '''Base class of event.
+    '''Base class of modular input event.
     '''
 
-    def __init__(self, data, time=None, index=None, host=None, source=None,
-                 sourcetype=None, stanza=None, unbroken=False, done=False):
+    def __init__(self, data, time=None,
+                 index=None, host=None, source=None, sourcetype=None,
+                 stanza=None, unbroken=False, done=False):
         '''Modular input event.
 
         :param data: Event data.
@@ -80,21 +81,23 @@ class Event(object):
         self._sourcetype = sourcetype
         self._stanza = stanza
         if not unbroken and done:
-            raise EventException('Invalid combination of unbroken and done.')
+            raise EventException(
+                'Invalid combination of "unbroken" and "done".')
         self._unbroken = unbroken
         self._done = done
 
     def __str__(self):
-        return json.dumps(
-            {'data': self._data,
-             'time': float(self._time) if self._time else self._time,
-             'index': self._index,
-             'host': self._host,
-             'source': self._source,
-             'sourcetype': self._sourcetype,
-             'stanza': self._stanza,
-             'unbroken': self._unbroken,
-             'done': self._done})
+        return json.dumps({
+            'data': self._data,
+            'time': float(self._time) if self._time else self._time,
+            'index': self._index,
+            'host': self._host,
+            'source': self._source,
+            'sourcetype': self._sourcetype,
+            'stanza': self._stanza,
+            'unbroken': self._unbroken,
+            'done': self._done
+        })
 
     @classmethod
     def format_events(cls, events):
@@ -106,7 +109,7 @@ class Event(object):
         :rtype: ``list``
         '''
 
-        raise EventException('Unimplemented format_events.')
+        raise EventException('Unimplemented "format_events".')
 
 
 class XMLEvent(Event):
@@ -198,7 +201,7 @@ class HECEvent(Event):
     @classmethod
     def format_events(cls, events):
         '''Output: [
-        '{"index": "main", ... "event": {"kk": [1, 2, 3]}}\\\\n
+        '{"index": "main", ... "event": {"kk": [1, 2, 3]}}\\n
         {"index": "main", ... "event": {"kk": [3, 2, 3]}}',
         '...']
         '''
@@ -212,6 +215,7 @@ class HECEvent(Event):
                 new_events.append('\n'.join(batched_events))
                 del batched_events[:]
                 size = 0
+
             batched_events.append(event)
             size = size + len(event)
         if batched_events:

@@ -103,7 +103,7 @@ def test_modular_input(monkeypatch):
             self._buf = ''
             return content
 
-        def write(self, event, size=None):
+        def write(self, event):
             self._buf += event
 
         def flush(self):

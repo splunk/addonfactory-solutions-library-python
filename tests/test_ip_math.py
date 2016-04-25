@@ -6,7 +6,7 @@ sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 from solnlib import ip_math
 
 
-def test_ip2long():
+def test_ip2long(monkeypatch):
     valid_ip = '192.168.1.1'
     invalid_ip1 = '192.168.1'
     invalid_ip2 = 192
@@ -18,7 +18,7 @@ def test_ip2long():
         ip_math.ip2long(invalid_ip2)
 
 
-def test_long2ip():
+def test_long2ip(monkeypatch):
     valid_ip = 3232235777L
     invalid_ip1 = -1
     invalid_ip2 = pow(2, 32)
@@ -33,7 +33,7 @@ def test_long2ip():
         ip_math.long2ip(invalid_ip3)
 
 
-def test_cidr2long():
+def test_cidr2long(monkeypatch):
     valid_cidr = '192.168.1.0/24'
     invalid_cidr1 = '192.168.1.0/16'
     invalid_cidr2 = '192.168.1.0'
@@ -48,7 +48,7 @@ def test_cidr2long():
         ip_math.cidr2long(invalid_cidr3)
 
 
-def test_is_valid_mac():
+def test_is_valid_mac(monkeypatch):
     valid_mac = '2e:ef:19:25:dc:47'
     invalid_mac1 = '2e:ef:19:25:dc:47:39'
     invalid_mac2 = 123
@@ -58,7 +58,7 @@ def test_is_valid_mac():
     assert not ip_math.is_valid_mac(invalid_mac2)
 
 
-def test_is_valid_mask():
+def test_is_valid_mask(monkeypatch):
     valid_mask = 24
     invalid_mask1 = -1
     invalid_mask2 = 33
@@ -68,7 +68,7 @@ def test_is_valid_mask():
     assert not ip_math.is_valid_mask(invalid_mask2)
 
 
-def test_is_valid_cidr():
+def test_is_valid_cidr(monkeypatch):
     valid_cidr = '192.168.1.0/24'
     invalid_cidr1 = '192.168.1.0/16'
     invalid_cidr2 = '192.168.1.0'
@@ -80,7 +80,7 @@ def test_is_valid_cidr():
     assert not ip_math.is_valid_cidr(invalid_cidr3)
 
 
-def test_is_valid_ip():
+def test_is_valid_ip(monkeypatch):
     valid_ip = '192.168.1.1'
     invalid_ip1 = '192.168.1'
     invalid_ip2 = 192
@@ -90,7 +90,7 @@ def test_is_valid_ip():
     assert not ip_math.is_valid_ip(invalid_ip2)
 
 
-def test_expand_ip_range_to_cidr():
+def test_expand_ip_range_to_cidr(monkeypatch):
     # ('192.168.0.1', '192.168.44.128')
     valid_ip_range = (3232235521L, 3232246912L)
     invalid_ip_range1 = (3232246912L, 3232235521L)

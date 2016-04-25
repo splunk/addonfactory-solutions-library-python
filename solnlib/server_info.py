@@ -1,13 +1,13 @@
 # Copyright 2016 Splunk, Inc.
 #
-# Licensed under the Apache License, Version 2.0 (the "License"): you may
+# Licensed under the Apache License, Version 2.0 (the 'License'): you may
 # not use this file except in compliance with the License. You may obtain
 # a copy of the License at
 #
 #     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# distributed under the License is distributed on an 'AS IS' BASIS, WITHOUT
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
@@ -18,7 +18,10 @@ This module contains splunk server info related functionalities.
 
 import json
 
-import solnlib.splunk_rest_proxy as rest_proxy
+from splunklib import binding
+
+from solnlib.utils import retry
+import solnlib.splunk_rest_client as rest_client
 
 __all__ = ['ServerInfo']
 
@@ -34,20 +37,30 @@ class ServerInfo(object):
     :type host: ``string``
     :param port: (optional) The port number, default is 8089.
     :type port: ``integer``
+    :param context: Other configurations for Splunk rest client.
+    :type context: ``dict``
     '''
 
     SHC_MEMBER_ENDPOINT = '/services/shcluster/member/members'
 
     def __init__(self, session_key,
-                 scheme='https', host='localhost', port=8089):
+                 scheme='https', host='localhost', port=8089, **context):
         self._session_key = session_key
         self._scheme = scheme
         self._host = host
         self._port = port
-        service = rest_proxy.SplunkRestProxy(
-            session_key=session_key, app='-',
-            scheme=scheme, host=host, port=port)
-        self._server_info = service.info
+        self._context = context
+        self._rest_client = rest_client.SplunkRestClient(session_key,
+                                                         '-',
+                                                         scheme=scheme,
+                                                         host=host,
+                                                         port=port,
+                                                         **context)
+        self._server_info = self._get_server_info()
+
+    @retry(exceptions=[binding.HTTPError])
+    def _get_server_info(self):
+        return self._rest_client.info
 
     @property
     def server_name(self):
@@ -113,6 +126,7 @@ class ServerInfo(object):
 
         return 'cluster_search_head' in self._server_info['server_roles']
 
+    @retry(exceptions=[binding.HTTPError])
     def get_shc_members(self):
         '''Get SHC members.
 
@@ -121,13 +135,9 @@ class ServerInfo(object):
 
         :Raises splunklib.binding.HTTPError: If endpoint doesn't exist.
         '''
-        context = rest_proxy.SplunkRestProxy(
-            session_key=self._session_key, app='-',
-            scheme=self._scheme, host=self._host,
-            port=self._port)
 
-        content = context.get(self.SHC_MEMBER_ENDPOINT,
-                              output_mode='json').body.read()
+        content = self._rest_client.get(self.SHC_MEMBER_ENDPOINT,
+                                        output_mode='json').body.read()
         members = []
         for member in json.loads(content)['entry']:
             content = member['content']

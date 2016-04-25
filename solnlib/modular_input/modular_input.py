@@ -1,13 +1,13 @@
 # Copyright 2016 Splunk, Inc.
 #
-# Licensed under the Apache License, Version 2.0 (the "License"): you may
+# Licensed under the Apache License, Version 2.0 (the 'License'): you may
 # not use this file except in compliance with the License. You may obtain
 # a copy of the License at
 #
 #     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# distributed under the License is distributed on an 'AS IS' BASIS, WITHOUT
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
@@ -49,19 +49,29 @@ class ModularInputException(Exception):
 class ModularInput(object):
     '''Base class of Splunk modular input.
 
-    It's a base modular input, it should be inherited by sub modular
-    input. For sub modular input, some class properties must be overriden,
-    like: app, name, title and description, also there are some other
-    optional properties can be overriden like: use_external_validation,
-    use_single_instance, use_kvstore_checkpointer, use_hec_event_writer etc..
+    It's a base modular input, it should be inherited by sub modular input. For
+    sub modular input, properties: 'app', 'name', 'title' and 'description' must
+    be overriden, also there are some other optional properties can be overriden
+    like: 'use_external_validation', 'use_single_instance', 'use_kvstore_checkpointer'
+    and 'use_hec_event_writer'.
+
+    Notes: If you set 'KVStoreCheckpointer' or 'use_hec_event_writer' to True,
+    you must override the corresponding 'kvstore_checkpointer_collection_name'
+    and 'hec_input_name'.
 
     Usage::
 
        >>> Class TestModularInput(ModularInput):
        >>>     app = 'TestApp'
-       >>>     name = 'TestModularInput'
+       >>>     name = 'test_modular_input'
        >>>     title = 'Test modular input'
        >>>     description = 'This is a test modular input'
+       >>>     use_external_validation = True
+       >>>     use_single_instance = False
+       >>>     use_kvstore_checkpointer = True
+       >>>     kvstore_checkpointer_collection_name = 'TestCheckpoint'
+       >>>     use_hec_event_writer = True
+       >>>     hec_input_name = 'TestEventWriter'
        >>>
        >>>     def extra_arguments(self):
        >>>         ... .. .
@@ -122,7 +132,7 @@ class ModularInput(object):
             if self.hec_input_name is None:
                 raise ModularInputException(
                     'Attribute: "hec_input_name" must be overriden '
-                    'if "use_hec_event_writer" is True".')
+                    'if "use_hec_event_writer" is True.')
             elif self.hec_input_name.strip() == '':
                 raise ModularInputException(
                     'Attribute: "hec_input_name" can not be empty.')
@@ -226,13 +236,13 @@ class ModularInput(object):
 
     @property
     def checkpointer(self):
-        '''Get checkpointer instance.
+        '''Get checkpointer object.
 
         The checkpointer returned depends on use_kvstore_checkpointer flag,
         if use_kvstore_checkpointer is true will return an KVStoreCheckpointer
-        instance else an FileCheckpointer instance.
+        object else an FileCheckpointer object.
 
-        :returns: An checkpointer instance.
+        :returns: An checkpointer object.
         :rtype: ``Checkpointer object``
         '''
 
@@ -244,15 +254,15 @@ class ModularInput(object):
 
     def _create_checkpointer(self):
         if self.use_kvstore_checkpointer:
+            checkpointer_name = ':'.join(
+                [self.app, self._config_name,
+                 self.kvstore_checkpointer_collection_name])
+            checkpointer_name = re.sub(
+                '[^\w]+',
+                '_',
+                ':'.join([self.app, self._config_name,
+                          self.kvstore_checkpointer_collection_name]))
             try:
-                checkpointer_name = ':'.join(
-                    [self.app, self._config_name,
-                     self.kvstore_checkpointer_collection_name])
-                checkpointer_name = re.sub(
-                    '[^\w]+',
-                    '_',
-                    ':'.join([self.app, self._config_name,
-                              self.kvstore_checkpointer_collection_name]))
                 return checkpointer.KVStoreCheckpointer(
                     checkpointer_name, self._session_key,
                     self.app, owner='nobody', scheme=self._server_scheme,
@@ -267,13 +277,13 @@ class ModularInput(object):
 
     @property
     def event_writer(self):
-        '''Get event writer instance.
+        '''Get event writer object.
 
         The event writer returned depends on use_hec_event_writer flag,
         if use_hec_event_writer is true will return an HECEventWriter
-        instance else an ClassicEventWriter instance.
+        object else an ClassicEventWriter object.
 
-        :returns: Event writer instance.
+        :returns: Event writer object.
         :rtype: ``EventWriter object``
         '''
 
@@ -285,11 +295,11 @@ class ModularInput(object):
 
     def _create_event_writer(self):
         if self.use_hec_event_writer:
+            hec_input_name = re.sub(
+                '[^\w]+',
+                '_',
+                ':'.join([self.app, self.hec_input_name]))
             try:
-                hec_input_name = re.sub(
-                    '[^\w]+',
-                    '_',
-                    ':'.join([self.app, self.hec_input_name]))
                 return event_writer.HECEventWriter(
                     hec_input_name, self._session_key,
                     scheme=self.server_scheme, host=self.server_host,
@@ -376,8 +386,15 @@ class ModularInput(object):
     def do_run(self, inputs):
         '''Runs this modular input
 
-        :param inputs: Dict of command line arguments passed to this script,
-           like: {'stanza_name': {'arg1': 'arg1_value', 'arg2': 'arg2_value', ...}}.
+        :param inputs: Command line arguments passed to this modular input.
+            For single instance mode, inputs like: {
+            'stanza_name1': {'arg1': 'arg1_value', 'arg2': 'arg2_value', ...}
+            'stanza_name2': {'arg1': 'arg1_value', 'arg2': 'arg2_value', ...}
+            'stanza_name3': {'arg1': 'arg1_value', 'arg2': 'arg2_value', ...}
+            }.
+            For multile instance mode, inputs like: {
+            'stanza_name1': {'arg1': 'arg1_value', 'arg2': 'arg2_value', ...}
+            }.
         :type inputs: ``dict``
         '''
 

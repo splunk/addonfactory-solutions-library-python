@@ -1,13 +1,13 @@
 # Copyright 2016 Splunk, Inc.
 #
-# Licensed under the Apache License, Version 2.0 (the "License"): you may
+# Licensed under the Apache License, Version 2.0 (the 'License'): you may
 # not use this file except in compliance with the License. You may obtain
 # a copy of the License at
 #
 #     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# distributed under the License is distributed on an 'AS IS' BASIS, WITHOUT
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
@@ -20,7 +20,9 @@ import re
 import json
 
 from splunklib import binding
-import solnlib.splunk_rest_proxy as rest_proxy
+
+from solnlib.utils import retry
+import solnlib.splunk_rest_client as rest_client
 
 __all__ = ['CredNotExistException',
            'CredentialManager',
@@ -33,8 +35,6 @@ class CredNotExistException(Exception):
 
 class CredentialManager(object):
     '''Credential manager.
-
-    This class provides interfaces of CRUD operations on password.
 
     :param session_key: Splunk access token.
     :type session_key: ``string``
@@ -50,6 +50,8 @@ class CredentialManager(object):
     :type host: ``string``
     :param port: (optional) The port number, default is 8089.
     :type port: ``integer``
+    :param context: Other configurations for Splunk rest client.
+    :type context: ``dict``
 
     Usage::
 
@@ -68,9 +70,9 @@ class CredentialManager(object):
     def __init__(self, session_key, app, owner='nobody', realm=None,
                  scheme='https', host='localhost', port=8089, **context):
         self._realm = realm
-        self._storage_passwords = rest_proxy.SplunkRestProxy(
-            session_key=session_key,
-            app=app,
+        self._storage_passwords = rest_client.SplunkRestClient(
+            session_key,
+            app,
             owner=owner,
             scheme=scheme,
             host=host,
@@ -85,7 +87,7 @@ class CredentialManager(object):
         :returns: Clear user password.
         :rtype: ``string``
 
-        :raises CredNotExistException: If password for realm:user
+        :raises CredNotExistException: If password for 'realm:user'
             doesn't exist.
 
         Usage::
@@ -107,6 +109,7 @@ class CredentialManager(object):
             'Failed to get password of realm=%s, user=%s.' %
             (self._realm, user))
 
+    @retry(exceptions=[binding.HTTPError])
     def set_password(self, user, password):
         '''Set password.
 
@@ -143,6 +146,7 @@ class CredentialManager(object):
                 self._storage_passwords.create(
                     curr_str, partial_user, self._realm)
 
+    @retry(exceptions=[binding.HTTPError])
     def delete_password(self, user):
         '''Delete password.
 
@@ -179,6 +183,7 @@ class CredentialManager(object):
                     'Failed to delete password of realm=%s, user=%s' %
                     (self._realm, user))
 
+    @retry(exceptions=[binding.HTTPError])
     def _get_all_passwords(self):
         all_passwords = self._storage_passwords.list()
 
@@ -222,6 +227,7 @@ class CredentialManager(object):
         return results.values()
 
 
+@retry(exceptions=[binding.HTTPError])
 def get_session_key(username, password,
                     scheme='https', host='localhost', port=8089, **context):
     '''Get splunkd access token.
@@ -239,6 +245,8 @@ def get_session_key(username, password,
     :type port: ``integer``
     :returns: Splunk session key.
     :rtype: ``string``
+    :param context: Other configurations for Splunk rest client.
+    :type context: ``dict``
 
     Usage::
 
@@ -247,7 +255,7 @@ def get_session_key(username, password,
 
     uri = '{scheme}://{host}:{port}/{endpoint}'.format(
         scheme=scheme, host=host, port=port, endpoint='services/auth/login')
-    service = rest_proxy.SplunkRestProxy(session_key=None, app='-', **context)
+    service = rest_client.SplunkRestClient(None, '-', **context)
     response = service.http.post(
         uri, username=username, password=password, output_mode='json')
 

@@ -15,8 +15,10 @@ class TestClassicEventWriter(object):
         def __init__(self):
             self._buf = ''
 
-        def read(self):
-            return self._buf
+        def read(self, size=None):
+            content = self._buf
+            self._buf = ''
+            return content
 
         def write(self, event):
             self._buf += event

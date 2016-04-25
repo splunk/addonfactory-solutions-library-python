@@ -1,13 +1,13 @@
 # Copyright 2016 Splunk, Inc.
 #
-# Licensed under the Apache License, Version 2.0 (the "License"): you may
+# Licensed under the Apache License, Version 2.0 (the 'License'): you may
 # not use this file except in compliance with the License. You may obtain
 # a copy of the License at
 #
 #     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# distributed under the License is distributed on an 'AS IS' BASIS, WITHOUT
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
@@ -16,7 +16,6 @@
 This module provides log functionalities.
 '''
 
-import os
 import logging
 import logging.handlers
 import os.path as op
@@ -35,7 +34,7 @@ def log_enter_exit(logger):
     This decorator will generate a lot of debug log, please add this
     only when it is required.
 
-    :param logger: logger to decorate.
+    :param logger: Logger to decorate.
     :type logger: ``logging.Logger``
 
     Usage::
@@ -74,7 +73,9 @@ class Logs(object):
     # Normal logger settings
     _default_directory = None
     _default_namespace = None
-    _default_log_format = '%(asctime)s %(levelname)s pid=%(process)d tid=%(threadName)s file=%(filename)s:%(funcName)s:%(lineno)d | %(message)s'
+    _default_log_format = (
+        '%(asctime)s %(levelname)s pid=%(process)d tid=%(threadName)s '
+        'file=%(filename)s:%(funcName)s:%(lineno)d | %(message)s')
     _default_log_level = logging.INFO
     _default_max_bytes = 25000000
     _default_backup_count = 5
@@ -92,8 +93,8 @@ class Logs(object):
         :param namespace: (optional) Logger namespace, default is None.
         :type namespace: ``string``
         :param log_format: (optional) Log format, default is:
-            "%(asctime)s %(levelname)s pid=%(process)d tid=%(threadName)s
-            file=%(filename)s:%(funcName)s:%(lineno)d | %(message)s".
+            '%(asctime)s %(levelname)s pid=%(process)d tid=%(threadName)s
+            file=%(filename)s:%(funcName)s:%(lineno)d | %(message)s'.
         :type log_format: ``string``
         :param log_level: (optional) Log level, default is logging.INFO.
         :type log_level: ``integer``
@@ -104,7 +105,7 @@ class Logs(object):
             default is 5.
         :type backup_count: ``integer``
         :param root_logger_log_file: (optional) Root logger log file name,
-            default is "solnlib".
+            default is 'solnlib'.
         :type root_logger_log_file: ``string``
         '''
 

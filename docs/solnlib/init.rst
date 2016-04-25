@@ -20,4 +20,3 @@ solnlib
    metadata.rst
    server_info.rst
    splunkenv.rst
-   http_request.rst
