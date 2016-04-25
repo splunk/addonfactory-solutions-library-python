@@ -1,13 +1,13 @@
 # Copyright 2016 Splunk, Inc.
 #
-# Licensed under the Apache License, Version 2.0 (the "License"): you may
+# Licensed under the Apache License, Version 2.0 (the 'License'): you may
 # not use this file except in compliance with the License. You may obtain
 # a copy of the License at
 #
 #     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# distributed under the License is distributed on an 'AS IS' BASIS, WITHOUT
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
@@ -16,11 +16,11 @@
 This module provides a base class of Splunk modular input.
 '''
 
+import re
 import sys
 import urllib2
 import logging
 import traceback
-import urlparse
 from abc import ABCMeta, abstractmethod
 try:
     import xml.etree.cElementTree as ET
@@ -38,7 +38,8 @@ from solnlib.modular_input import checkpointer
 from solnlib.modular_input import event_writer
 from solnlib.orphan_process_monitor import OrphanProcessMonitor
 
-__all__ = ['ModularInput']
+__all__ = ['ModularInputException',
+           'ModularInput']
 
 
 class ModularInputException(Exception):
@@ -48,19 +49,29 @@ class ModularInputException(Exception):
 class ModularInput(object):
     '''Base class of Splunk modular input.
 
-    It's a base modular input, it should be inherited by sub modular
-    input. For sub modular input, some class properties must be overriden,
-    like: app, name, title and description, also there are some other
-    optional properties can be overriden like: use_external_validation,
-    use_single_instance, use_kvstore_checkpointer, use_hec_event_writer etc..
+    It's a base modular input, it should be inherited by sub modular input. For
+    sub modular input, properties: 'app', 'name', 'title' and 'description' must
+    be overriden, also there are some other optional properties can be overriden
+    like: 'use_external_validation', 'use_single_instance', 'use_kvstore_checkpointer'
+    and 'use_hec_event_writer'.
+
+    Notes: If you set 'KVStoreCheckpointer' or 'use_hec_event_writer' to True,
+    you must override the corresponding 'kvstore_checkpointer_collection_name'
+    and 'hec_input_name'.
 
     Usage::
 
        >>> Class TestModularInput(ModularInput):
        >>>     app = 'TestApp'
-       >>>     name = 'TestModularInput'
+       >>>     name = 'test_modular_input'
        >>>     title = 'Test modular input'
        >>>     description = 'This is a test modular input'
+       >>>     use_external_validation = True
+       >>>     use_single_instance = False
+       >>>     use_kvstore_checkpointer = True
+       >>>     kvstore_checkpointer_collection_name = 'TestCheckpoint'
+       >>>     use_hec_event_writer = True
+       >>>     hec_input_name = 'TestEventWriter'
        >>>
        >>>     def extra_arguments(self):
        >>>         ... .. .
@@ -92,20 +103,18 @@ class ModularInput(object):
     use_single_instance = False
     # Use kvstore as checkpointer, default is True
     use_kvstore_checkpointer = True
-    # Collection name of kvstore checkpointer, default is
-    # 'solnlib_kvstore_checkpoint'
-    kvstore_checkpointer_collection_name = 'solnlib_kvstore_checkpoint'
+    # Collection name of kvstore checkpointer, must be overriden if
+    # use_kvstore_checkpointer is True
+    kvstore_checkpointer_collection_name = None
     # Use hec event writer
     use_hec_event_writer = True
-    # Input name of Splunk HEC, default is 'solnlib_hec'
-    hec_input_name = 'solnlib_hec'
+    # Input name of Splunk HEC, must be overriden if use_hec_event_writer
+    # is True
+    hec_input_name = None
 
     def __init__(self):
-        if not (self.app and self.name and
-                self.title and self.description):
-            raise ModularInputException(
-                'Modular input "app", "name", "title", "description" must be overriden.')
-
+        # Validate properties
+        self._validate_properties()
         # Modular input state
         self._should_exit = False
         # Metadata
@@ -116,12 +125,39 @@ class ModularInput(object):
         self._server_port = None
         self._session_key = None
         self._checkpoint_dir = None
+        # Modular input config name
+        self._config_name = None
         # Checkpointer
         self._checkpointer = None
         # Orphan process monitor
         self._orphan_monitor = None
         # Event writer
         self._event_writer = None
+
+    def _validate_properties(self):
+        if not all([self.app, self.name, self.title, self.description]):
+            raise ModularInputException(
+                'Attributes: "app", "name", "title", "description" must '
+                'be overriden.')
+
+        if self.use_kvstore_checkpointer:
+            if self.kvstore_checkpointer_collection_name is None:
+                raise ModularInputException(
+                    'Attribute: "kvstore_checkpointer_collection_name" must'
+                    'be overriden if "use_kvstore_checkpointer" is True".')
+            elif self.kvstore_checkpointer_collection_name.strip() == '':
+                raise ModularInputException(
+                    'Attribute: "kvstore_checkpointer_collection_name" can'
+                    ' not be empty.')
+
+        if self.use_hec_event_writer:
+            if self.hec_input_name is None:
+                raise ModularInputException(
+                    'Attribute: "hec_input_name" must be overriden '
+                    'if "use_hec_event_writer" is True.')
+            elif self.hec_input_name.strip() == '':
+                raise ModularInputException(
+                    'Attribute: "hec_input_name" can not be empty.')
 
     @property
     def should_exit(self):
@@ -130,6 +166,16 @@ class ModularInput(object):
     @should_exit.setter
     def should_exit(self, state):
         self._should_exit = bool(state)
+
+    @property
+    def config_name(self):
+        '''Get modular input config name.
+
+        :returns: Modular input config name.
+        :rtype: ``string``
+        '''
+
+        return self._config_name
 
     @property
     def server_host_name(self):
@@ -193,60 +239,72 @@ class ModularInput(object):
 
     @property
     def checkpointer(self):
-        '''Get checkpointer instance.
+        '''Get checkpointer object.
 
         The checkpointer returned depends on use_kvstore_checkpointer flag,
         if use_kvstore_checkpointer is true will return an KVStoreCheckpointer
-        instance else an FileCheckpointer instance.
+        object else an FileCheckpointer object.
 
-        :returns: An checkpointer instance.
+        :returns: An checkpointer object.
         :rtype: ``Checkpointer object``
         '''
 
-        if self._checkpointer is None:
-            if self.use_kvstore_checkpointer:
-                splunkd = urlparse.urlparse(self._server_uri)
-                self._checkpointer = checkpointer.KVStoreCheckpointer(
-                    self.app + ':' + self.kvstore_checkpointer_collection_name,
-                    self._session_key, self.app, owner='nobody',
-                    scheme=splunkd.scheme, host=splunkd.hostname,
-                    port=splunkd.port)
-            else:
-                self._checkpointer = checkpointer.FileCheckpointer(
-                    self._checkpoint_dir)
+        if self._checkpointer is not None:
+            return self._checkpoint_dir
 
+        self._checkpointer = self._create_checkpointer()
         return self._checkpointer
+
+    def _create_checkpointer(self):
+        if self.use_kvstore_checkpointer:
+            checkpointer_name = ':'.join(
+                [self.app, self._config_name,
+                 self.kvstore_checkpointer_collection_name])
+            checkpointer_name = ':'.join(
+                [self.app, self._config_name,
+                 self.kvstore_checkpointer_collection_name])
+            try:
+                return checkpointer.KVStoreCheckpointer(
+                    checkpointer_name, self._session_key,
+                    self.app, owner='nobody', scheme=self._server_scheme,
+                    host=self._server_host, port=self._server_port)
+            except binding.HTTPError as e:
+                logging.error('Failed to init kvstore checkpointer: %s.',
+                              traceback.format_exc(e))
+                raise
+        else:
+            return checkpointer.FileCheckpointer(self._checkpoint_dir)
 
     @property
     def event_writer(self):
-        '''Get event writer instance.
+        '''Get event writer object.
 
         The event writer returned depends on use_hec_event_writer flag,
         if use_hec_event_writer is true will return an HECEventWriter
-        instance else an ClassicEventWriter instance.
+        object else an ClassicEventWriter object.
 
-        :returns: Event writer instance.
+        :returns: Event writer object.
         :rtype: ``EventWriter object``
         '''
 
         if self._event_writer is not None:
             return self._event_writer
 
-        self._event_writer = self.create_event_writer()
+        self._event_writer = self._create_event_writer()
         return self._event_writer
 
-    def create_event_writer(self):
+    def _create_event_writer(self):
         if self.use_hec_event_writer:
+            hec_input_name = ':'.join([self.app, self.hec_input_name])
             try:
                 return event_writer.HECEventWriter(
-                    self.app + ':' + self.hec_input_name, self._session_key,
+                    hec_input_name, self._session_key,
                     scheme=self.server_scheme, host=self.server_host,
                     port=self.server_port)
-            except binding.HTTPError:
-                logging.error(
-                    'Failed to init HECEventWriter, will use '
-                    'ClassicEventWriter instead.')
-                return event_writer.ClassicEventWriter()
+            except binding.HTTPError as e:
+                logging.error('Failed to init HECEventWriter: %s.',
+                              traceback.format_exc(e))
+                raise
         else:
             return event_writer.ClassicEventWriter()
 
@@ -265,7 +323,7 @@ class ModularInput(object):
         scheme.description = self.description
         scheme.use_external_validation = self.use_external_validation
         scheme.streaming_mode = Scheme.streaming_mode_xml
-        scheme.use_single_instance = self.use_external_validation
+        scheme.use_single_instance = self.use_single_instance
 
         for argument in self.extra_arguments():
             name = argument['name']
@@ -320,15 +378,19 @@ class ModularInput(object):
 
         pass
 
-    def _do_run(self, inputs):
-        self.do_run(inputs)
-
     @abstractmethod
     def do_run(self, inputs):
         '''Runs this modular input
 
-        :param inputs: Dict of command line arguments passed to this script,
-           like: {'stanza_name': {'arg1': 'arg1_value', 'arg2': 'arg2_value', ...}}.
+        :param inputs: Command line arguments passed to this modular input.
+            For single instance mode, inputs like: {
+            'stanza_name1': {'arg1': 'arg1_value', 'arg2': 'arg2_value', ...}
+            'stanza_name2': {'arg1': 'arg1_value', 'arg2': 'arg2_value', ...}
+            'stanza_name3': {'arg1': 'arg1_value', 'arg2': 'arg2_value', ...}
+            }.
+            For multile instance mode, inputs like: {
+            'stanza_name1': {'arg1': 'arg1_value', 'arg2': 'arg2_value', ...}
+            }.
         :type inputs: ``dict``
         '''
 
@@ -386,8 +448,12 @@ class ModularInput(object):
             try:
                 input_definition = InputDefinition.parse(sys.stdin)
                 self._update_metadata(input_definition.metadata)
-                self._do_run(input_definition.inputs)
-                logging.info('Modular input: %s exit normally.', self.title)
+                if self.use_single_instance:
+                    self._config_name = self.name
+                else:
+                    self._config_name = input_definition.inputs.keys()[0]
+                self.do_run(input_definition.inputs)
+                logging.info('Modular input: %s exit normally.', self.name)
                 return 0
             except Exception as e:
                 logging.error('Modular input: %s exit with exception: %s.',

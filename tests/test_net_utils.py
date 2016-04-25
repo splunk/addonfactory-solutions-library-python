@@ -16,7 +16,7 @@ def test_resolve_hostname(monkeypatch):
 
     def _mock_gethostbyaddr(addr):
         if addr == resolvable_ip:
-            return ("unittestServer", None, None)
+            return ('unittestServer', None, None)
         elif addr == unresolvable_ip1:
             raise socket.gaierror()
         elif addr == unresolvable_ip2:

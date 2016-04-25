@@ -41,7 +41,6 @@ def run_test():
     import test_metadata
     import test_acl
     import test_credentials
-    import test_http_request
 
     print 'check splunk environment...'
     test_splunkenv.test_splunkenv()
@@ -55,8 +54,6 @@ def run_test():
     test_acl.test_acl_manager()
     print 'test credential manager...'
     test_credentials.test_credential_manager()
-    print 'test http request...'
-    test_http_request.test_http_request()
 
 if __name__ == '__main__':
     teardown_environment()

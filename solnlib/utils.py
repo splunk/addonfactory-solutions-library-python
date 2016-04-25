@@ -1,13 +1,13 @@
 # Copyright 2016 Splunk, Inc.
 #
-# Licensed under the Apache License, Version 2.0 (the "License"): you may
+# Licensed under the Apache License, Version 2.0 (the 'License'): you may
 # not use this file except in compliance with the License. You may obtain
 # a copy of the License at
 #
 #     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# distributed under the License is distributed on an 'AS IS' BASIS, WITHOUT
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
@@ -17,14 +17,19 @@ Common utilities.
 '''
 
 import os
+import time
 import datetime
 import signal
+import logging
+import traceback
+from functools import wraps
 
 __all__ = ['handle_teardown_signals',
            'datetime_to_seconds',
            'is_true',
            'is_false',
-           'escape_json_control_chars']
+           'escape_json_control_chars',
+           'retry']
 
 
 def handle_teardown_signals(callback):
@@ -114,9 +119,48 @@ def unescape_json_control_chars(json_str):
     :rtype: ``string``
     '''
 
-    control_chars = (("\\\\n", r"\n"),
-                     ("\\\\r", r"\r"),
-                     ("\\\\r\\\\n", r"\r\n"))
+    control_chars = (('\\\\n', r'\n'),
+                     ('\\\\r', r'\r'),
+                     ('\\\\r\\\\n', r'\r\n'))
     for ch, replace in control_chars:
         json_str = json_str.replace(ch, replace)
     return json_str
+
+
+def retry(retries=3, reraise=True, default_return=None, exceptions=None):
+    '''A decorator to run function with max `retries` times
+    if there is exception.
+
+    :param retries: (optional) Max retries times, default is 3.
+    :param reraise: ``integer``
+    :param default_return: (optional) Default return value for function
+        run after max retries and reraise is False.
+    :param exceptions: (optional) List of exceptions that should retry.
+    :type exceptions: ``list``
+    '''
+
+    def do_retry(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            last_ex = None
+            for i in xrange(retries):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    logging.error('Run function: %s failed: %s.',
+                                  func.__name__, traceback.format_exc(e))
+                    if not exceptions or \
+                       any([isinstance(e, exception) for exception in exceptions]):
+                        last_ex = e
+                        time.sleep(2 ** (i + 1))
+                    else:
+                        raise
+
+            if reraise:
+                raise last_ex
+            else:
+                return default_return
+
+        return wrapper
+
+    return do_retry

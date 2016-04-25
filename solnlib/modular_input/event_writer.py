@@ -1,13 +1,13 @@
 # Copyright 2016 Splunk, Inc.
 #
-# Licensed under the Apache License, Version 2.0 (the "License"): you may
+# Licensed under the Apache License, Version 2.0 (the 'License'): you may
 # not use this file except in compliance with the License. You may obtain
 # a copy of the License at
 #
 #     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# distributed under the License is distributed on an 'AS IS' BASIS, WITHOUT
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
@@ -17,6 +17,7 @@ This module provides two kinds of event writers (ClassicEventWriter,
 HECEventWriter) to write Splunk modular input events.
 '''
 
+import re
 import sys
 import time
 import json
@@ -27,9 +28,10 @@ import Queue
 import multiprocessing
 from abc import ABCMeta, abstractmethod
 
-import solnlib.splunk_rest_proxy as rest_proxy
+import solnlib.splunk_rest_client as rest_client
 from splunklib import binding
 
+from solnlib.utils import retry
 from solnlib.modular_input.event import XMLEvent, HECEvent
 
 __all__ = ['ClassicEventWriter',
@@ -51,8 +53,9 @@ class EventWriter(object):
         pass
 
     @abstractmethod
-    def create_event(self, data, time=None, index=None, host=None, source=None,
-                     sourcetype=None, stanza=None, unbroken=False, done=False):
+    def create_event(self, data, time=None,
+                     index=None, host=None, source=None, sourcetype=None,
+                     stanza=None, unbroken=False, done=False):
         '''Create a new event.
 
         :param data: Event data.
@@ -71,12 +74,10 @@ class EventWriter(object):
         :param stanza: (optional) Event stanza name, default is None.
         :type stanza: ``string``
         :param unbroken: (optional) Event unbroken flag, default is False.
-            It is only meaningful when for XMLEvent when using
-            ClassicEventWriter
+            It is only meaningful when for XMLEvent when using ClassicEventWriter.
         :type unbroken: ``bool``
         :param done: (optional) The last unbroken event, default is False.
-            It is only meaningful when for XMLEvent when using
-            ClassicEventWriter
+            It is only meaningful when for XMLEvent when using ClassicEventWriter.
         :returns: ``bool``
         :returns: A new event object.
         :rtype: ``(XMLEvent, HECEvent)``
@@ -118,18 +119,23 @@ class ClassicEventWriter(EventWriter):
 
     Use sys.stdout as the output.
 
+    :param process_safe: (optional) Flag to indicate if enforce
+        process safe if this event writer will be used in different
+        process, default is False.
+    :type process_safe: ``bool``
+
     Usage::
         >>> from solnlib.modular_input import event_writer
-        >>> ew = event_writer.ClassicEventWriter()
+        >>> ew = event_writer.ClassicEventWriter(process_safe=True)
         >>> ew.write_events([event1, event2])
         >>> ew.close()
     '''
 
     description = 'ClassicEventWriter'
 
-    def __init__(self, **context):
+    def __init__(self, process_safe=False):
         self._mgr = None
-        if context.get("process_safe"):
+        if process_safe:
             self._mgr = multiprocessing.Manager()
             self._event_queue = self._mgr.Queue(100)
         else:
@@ -145,22 +151,24 @@ class ClassicEventWriter(EventWriter):
             self._mgr.shutdown()
         self._events_writer.join()
 
-    def create_event(self, data, time=None, index=None, host=None, source=None,
-                     sourcetype=None, stanza=None, unbroken=False, done=False):
+    def create_event(self, data, time=None,
+                     index=None, host=None, source=None, sourcetype=None,
+                     stanza=None, unbroken=False, done=False):
         '''Create a new XMLEvent object.
         '''
 
         return XMLEvent(
-            data, time=time, index=index, host=host, source=source,
-            sourcetype=sourcetype, stanza=stanza, unbroken=unbroken, done=done)
+            data, time=time,
+            index=index, host=host, source=source, sourcetype=sourcetype,
+            stanza=stanza, unbroken=unbroken, done=done)
 
     def write_events(self, events):
         if not events:
             return
 
         if self._closed:
-            logging.error('Event writer: %s has been closed.',
-                          self.description)
+            logging.error(
+                'Event writer: %s has been closed.', self.description)
             return
 
         for event in XMLEvent.format_events(events):
@@ -170,6 +178,7 @@ class ClassicEventWriter(EventWriter):
         while 1:
             event = self._events_queue.get()
             if event is None:
+                logging.info('Event writer: %s will exit.', self.description)
                 break
 
             sys.stdout.write(event)
@@ -191,6 +200,8 @@ class HECEventWriter(EventWriter):
     :type host: ``string``
     :param port: (optional) The port number, default is 8089.
     :type port: ``integer``
+    :param context: Other configurations for Splunk rest client.
+    :type context: ``dict``
 
     Usage::
         >>> from solnlib.modular_input import event_writer
@@ -200,7 +211,8 @@ class HECEventWriter(EventWriter):
     '''
 
     WRITE_EVENT_RETRIES = 3
-    HTTP_INPUT_CONFIG_ENDPOINT = '/servicesNS/nobody/splunk_httpinput/data/inputs/http'
+    HTTP_INPUT_CONFIG_ENDPOINT = \
+        '/servicesNS/nobody/splunk_httpinput/data/inputs/http'
     HTTP_EVENT_COLLECTOR_ENDPOINT = '/services/collector'
 
     description = 'HECEventWriter'
@@ -210,55 +222,63 @@ class HECEventWriter(EventWriter):
         super(HECEventWriter, self).__init__()
         hec_port, hec_token = self._get_hec_config(
             hec_input_name, session_key, scheme, host, port, **context)
-        self._context = rest_proxy.SplunkRestProxy(
-            session_key=hec_token, app='-',
-            scheme=scheme, host=host, port=hec_port, **context)
+        self._rest_client = rest_client.SplunkRestClient(hec_token,
+                                                         app='-',
+                                                         scheme=scheme,
+                                                         host=host,
+                                                         port=hec_port,
+                                                         **context)
 
+    @retry()
     def _get_hec_config(self, hec_input_name, session_key,
                         scheme, host, port, **context):
-        context = rest_proxy.SplunkRestProxy(
-            session_key=session_key, app='-',
-            scheme=scheme, host=host, port=port, **context)
-        content = context.get(self.HTTP_INPUT_CONFIG_ENDPOINT + '/http',
-                              output_mode='json').body.read()
+        _rest_client = rest_client.SplunkRestClient(session_key,
+                                                    '-',
+                                                    scheme=scheme,
+                                                    host=host,
+                                                    port=port,
+                                                    **context)
+        content = _rest_client.get(self.HTTP_INPUT_CONFIG_ENDPOINT + '/http',
+                                   output_mode='json').body.read()
         port = int(json.loads(content)['entry'][0]['content']['port'])
 
+        hec_input_name = re.sub(r'[^\w]+', '_', hec_input_name)
         try:
-            content = context.get(
+            content = _rest_client.get(
                 self.HTTP_INPUT_CONFIG_ENDPOINT + '/' + hec_input_name,
                 output_mode='json').body.read()
-            token = json.loads(content)['entry'][0]['content']['token']
-        except binding.HTTPError:
-            content = context.post(self.HTTP_INPUT_CONFIG_ENDPOINT,
-                                   name=hec_input_name,
-                                   output_mode='json').body.read()
-            token = json.loads(content)['entry'][0]['content']['token']
+        except binding.HTTPError as e:
+            if e.status != 404:
+                raise
 
+            content = _rest_client.post(self.HTTP_INPUT_CONFIG_ENDPOINT,
+                                        name=hec_input_name,
+                                        output_mode='json').body.read()
+
+        token = json.loads(content)['entry'][0]['content']['token']
         return (port, token)
 
-    def create_event(self, data, time=None, index=None, host=None, source=None,
-                     sourcetype=None, stanza=None, unbroken=False, done=False):
+    def create_event(self, data, time=None,
+                     index=None, host=None, source=None, sourcetype=None,
+                     stanza=None, unbroken=False, done=False):
         '''Create a new HECEvent object.
         '''
 
         return HECEvent(
-            data, time=time, index=index, host=host, source=source,
-            sourcetype=sourcetype)
+            data, time=time,
+            index=index, host=host, source=source, sourcetype=sourcetype)
 
     def write_events(self, events):
         if not events:
             return
 
         for event in HECEvent.format_events(events):
-            retries = self.WRITE_EVENT_RETRIES
-            while retries:
+            for i in xrange(self.WRITE_EVENT_RETRIES):
                 try:
-                    return self._context.post(
+                    self._rest_client.post(
                         self.HTTP_EVENT_COLLECTOR_ENDPOINT, body=event,
                         headers=[('Content-Type', 'application/json')])
                 except binding.HTTPError as e:
-                    # FIXME, handle 1000,000+ events
-                    logging.error('Failed to write events through HEC: %s.',
+                    logging.error('Write events through HEC failed: %s.',
                                   traceback.format_exc(e))
-                    time.sleep(2 ** (self.WRITE_EVENT_RETRIES - retries + 1))
-                    retries -= 1
+                    time.sleep(2 ** (i + 1))
