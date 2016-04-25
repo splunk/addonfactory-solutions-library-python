@@ -180,13 +180,6 @@ class AutoDocWriter(object):
         """
         return self._is_python_file(file_name) and not self._is_python_init_file(file_name)
 
-    def _contains_init(self, files):
-        # Check if a file list contains a __init__.py
-        for item in files:
-            if self._is_python_init_file(item):
-                return True
-        return False
-
     def _py_to_doc(self, name):
         # Make doc file name from file name. such as `abc.py` will
         # get (`abc`+doc_extension)
@@ -212,18 +205,15 @@ class AutoDocWriter(object):
                 file_items.extend(
                     [self._py_to_doc(item) for item in sub_files if self._is_module(item)])
             else:
-                for _1, _2, child_files in os.walk(sub_root, topdown=False):
-                    if self._contains_init(child_files):
-                        file_items.append(os.path.join(os.path.basename(sub_root),
-                                                       "init{0}".format(self._doc_extension)))
-                        break
+                if os.path.exists(os.path.join(sub_root, "__init__.py")):
+                    file_items.append(os.path.join(os.path.basename(sub_root),
+                                                   "init{0}".format(self._doc_extension)))
         return max_depth, file_items
 
     def auto_doc(self):
         docs = os.path.join(self._save_to_dir, self._doc_dir)
         self._makedir_if_not_exists(docs)
 
-        # xx/sss/abc top_root_name is abc
         module_root = os.path.basename(self._module_path)
         save_to_dir = os.path.join(docs, module_root)
         self._makedir_if_not_exists(save_to_dir)
