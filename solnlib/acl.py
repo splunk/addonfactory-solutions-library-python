@@ -68,7 +68,7 @@ class ACLManager(object):
                                                          port=port,
                                                          **context)
 
-    @retry(exceptions=[binding.HTTPError])
+    @retry()
     def get(self, path):
         '''Get ACL of  /servicesNS/{`owner`}/{`app`}/{`path`}.
 

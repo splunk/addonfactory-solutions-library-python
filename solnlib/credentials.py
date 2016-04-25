@@ -79,6 +79,7 @@ class CredentialManager(object):
             port=port,
             **context).storage_passwords
 
+    @retry(exceptions=[binding.HTTPError])
     def get_password(self, user):
         '''Get password.
 

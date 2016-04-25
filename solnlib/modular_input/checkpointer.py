@@ -17,6 +17,7 @@ This module provides two kinds of checkpointer: KVStoreCheckpointer,
 FileCheckpointer for modular input to save checkpoint.
 '''
 
+import re
 import os
 import json
 import base64
@@ -173,16 +174,15 @@ class KVStoreCheckpointer(Checkpointer):
                                                port=port,
                                                **context).kvstore
 
+        collection_name = re.sub('[^\w]+', '_', collection_name)
         try:
             kvstore.get(name=collection_name)
         except binding.HTTPError as e:
-            if e.status == 404:
-                fields = {'state': 'string'}
-                kvstore.create(collection_name, fields=fields)
-            else:
-                logging.error('Create kvstore checkpointer failed: %s.',
-                              traceback.format_exc(e))
+            if not e.status == 404:
                 raise
+
+            fields = {'state': 'string'}
+            kvstore.create(collection_name, fields=fields)
 
         collections = kvstore.list(search=collection_name)
         for collection in collections:
@@ -191,15 +191,18 @@ class KVStoreCheckpointer(Checkpointer):
         else:
             raise CheckpointerException('Get kvstore checkpointer failed.')
 
+    @retry()
     def update(self, key, state):
         record = {'_key': key, 'state': json.dumps(state)}
         self._collection_data.batch_save(record)
 
+    @retry()
     def batch_update(self, states):
         for state in states:
             state['state'] = json.dumps(state['state'])
             self._collection_data.batch_save(*states)
 
+    @retry()
     def get(self, key):
         try:
             record = self._collection_data.query_by_id(key)
@@ -207,10 +210,13 @@ class KVStoreCheckpointer(Checkpointer):
             if not e.status == 404:
                 logging.error(
                     'Get checkpoint failed: %s.', traceback.format_exc(e))
+                raise
+
             return None
 
         return json.loads(record['state'])
 
+    @retry()
     def delete(self, key):
         try:
             self._collection_data.delete_by_id(key)

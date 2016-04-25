@@ -113,6 +113,28 @@ class ModularInput(object):
     hec_input_name = None
 
     def __init__(self):
+        # Validate properties
+        self._validate_properties()
+        # Modular input state
+        self._should_exit = False
+        # Metadata
+        self._server_host_name = None
+        self._server_uri = None
+        self._server_scheme = None
+        self._server_host = None
+        self._server_port = None
+        self._session_key = None
+        self._checkpoint_dir = None
+        # Modular input config name
+        self._config_name = None
+        # Checkpointer
+        self._checkpointer = None
+        # Orphan process monitor
+        self._orphan_monitor = None
+        # Event writer
+        self._event_writer = None
+
+    def _validate_properties(self):
         if not all([self.app, self.name, self.title, self.description]):
             raise ModularInputException(
                 'Attributes: "app", "name", "title", "description" must '
@@ -136,25 +158,6 @@ class ModularInput(object):
             elif self.hec_input_name.strip() == '':
                 raise ModularInputException(
                     'Attribute: "hec_input_name" can not be empty.')
-
-        # Modular input state
-        self._should_exit = False
-        # Metadata
-        self._server_host_name = None
-        self._server_uri = None
-        self._server_scheme = None
-        self._server_host = None
-        self._server_port = None
-        self._session_key = None
-        self._checkpoint_dir = None
-        # Modular input config name
-        self._config_name = None
-        # Checkpointer
-        self._checkpointer = None
-        # Orphan process monitor
-        self._orphan_monitor = None
-        # Event writer
-        self._event_writer = None
 
     @property
     def should_exit(self):
@@ -257,21 +260,18 @@ class ModularInput(object):
             checkpointer_name = ':'.join(
                 [self.app, self._config_name,
                  self.kvstore_checkpointer_collection_name])
-            checkpointer_name = re.sub(
-                '[^\w]+',
-                '_',
-                ':'.join([self.app, self._config_name,
-                          self.kvstore_checkpointer_collection_name]))
+            checkpointer_name = ':'.join(
+                [self.app, self._config_name,
+                 self.kvstore_checkpointer_collection_name])
             try:
                 return checkpointer.KVStoreCheckpointer(
                     checkpointer_name, self._session_key,
                     self.app, owner='nobody', scheme=self._server_scheme,
                     host=self._server_host, port=self._server_port)
             except binding.HTTPError as e:
-                logging.error(
-                    'Failed to init kvstore checkpointer, will use '
-                    'FileCheckpointer instead: %s.', traceback.format_exc(e))
-                return checkpointer.FileCheckpointer(self._checkpoint_dir)
+                logging.error('Failed to init kvstore checkpointer: %s.',
+                              traceback.format_exc(e))
+                raise
         else:
             return checkpointer.FileCheckpointer(self._checkpoint_dir)
 
@@ -295,20 +295,16 @@ class ModularInput(object):
 
     def _create_event_writer(self):
         if self.use_hec_event_writer:
-            hec_input_name = re.sub(
-                '[^\w]+',
-                '_',
-                ':'.join([self.app, self.hec_input_name]))
+            hec_input_name = ':'.join([self.app, self.hec_input_name])
             try:
                 return event_writer.HECEventWriter(
                     hec_input_name, self._session_key,
                     scheme=self.server_scheme, host=self.server_host,
                     port=self.server_port)
             except binding.HTTPError as e:
-                logging.error(
-                    'Failed to init HECEventWriter, will use '
-                    'ClassicEventWriter instead: %s.', traceback.format_exc(e))
-                return event_writer.ClassicEventWriter()
+                logging.error('Failed to init HECEventWriter: %s.',
+                              traceback.format_exc(e))
+                raise
         else:
             return event_writer.ClassicEventWriter()
 

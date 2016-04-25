@@ -147,10 +147,10 @@ def retry(retries=3, reraise=True, default_return=None, exceptions=None):
                 try:
                     return func(*args, **kwargs)
                 except Exception as e:
+                    logging.error('Run function: %s failed: %s.',
+                                  func.__name__, traceback.format_exc(e))
                     if not exceptions or \
                        any([isinstance(e, exception) for exception in exceptions]):
-                        logging.error('Run function: %s failed: %s.',
-                                      func.__name__, traceback.format_exc(e))
                         last_ex = e
                         time.sleep(2 ** (i + 1))
                     else:

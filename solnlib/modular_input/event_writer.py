@@ -17,6 +17,7 @@ This module provides two kinds of event writers (ClassicEventWriter,
 HECEventWriter) to write Splunk modular input events.
 '''
 
+import re
 import sys
 import time
 import json
@@ -241,22 +242,20 @@ class HECEventWriter(EventWriter):
                                    output_mode='json').body.read()
         port = int(json.loads(content)['entry'][0]['content']['port'])
 
+        hec_input_name = re.sub('[^\w]+', '_', hec_input_name)
         try:
             content = _rest_client.get(
                 self.HTTP_INPUT_CONFIG_ENDPOINT + '/' + hec_input_name,
                 output_mode='json').body.read()
-            token = json.loads(content)['entry'][0]['content']['token']
         except binding.HTTPError as e:
-            if e.status == 404:
-                content = _rest_client.post(self.HTTP_INPUT_CONFIG_ENDPOINT,
-                                            name=hec_input_name,
-                                            output_mode='json').body.read()
-                token = json.loads(content)['entry'][0]['content']['token']
-            else:
-                logging.error(
-                    'Create HEC input failed: %s.', traceback.format_exc(e))
+            if not e.status == 404:
                 raise
 
+            content = _rest_client.post(self.HTTP_INPUT_CONFIG_ENDPOINT,
+                                        name=hec_input_name,
+                                        output_mode='json').body.read()
+
+        token = json.loads(content)['entry'][0]['content']['token']
         return (port, token)
 
     def create_event(self, data, time=None,
@@ -280,7 +279,6 @@ class HECEventWriter(EventWriter):
                         self.HTTP_EVENT_COLLECTOR_ENDPOINT, body=event,
                         headers=[('Content-Type', 'application/json')])
                 except binding.HTTPError as e:
-                    # FIXME, handle 1000,000+ events
                     logging.error('Write events through HEC failed: %s.',
                                   traceback.format_exc(e))
                     time.sleep(2 ** (i + 1))

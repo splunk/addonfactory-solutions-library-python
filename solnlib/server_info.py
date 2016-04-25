@@ -56,10 +56,9 @@ class ServerInfo(object):
                                                          host=host,
                                                          port=port,
                                                          **context)
-        self._server_info = self._get_server_info()
 
-    @retry(exceptions=[binding.HTTPError])
-    def _get_server_info(self):
+    @retry()
+    def _server_info(self):
         return self._rest_client.info
 
     @property
@@ -70,7 +69,7 @@ class ServerInfo(object):
         :rtype: ``string``
         '''
 
-        return self._server_info['serverName']
+        return self._server_info()['serverName']
 
     @property
     def version(self):
@@ -80,7 +79,7 @@ class ServerInfo(object):
         :rtype: ``string``
         '''
 
-        return self._server_info['version']
+        return self._server_info()['version']
 
     def is_captain(self):
         '''Check if this server is SHC captain.
@@ -89,7 +88,7 @@ class ServerInfo(object):
         :rtype: ``bool``
         '''
 
-        return 'shc_captain' in self._server_info['server_roles']
+        return 'shc_captain' in self._server_info()['server_roles']
 
     def is_cloud_instance(self):
         '''Check if this server is a cloud instance.
@@ -99,7 +98,7 @@ class ServerInfo(object):
         '''
 
         try:
-            return self._server_info['instance_type'] == 'cloud'
+            return self._server_info()['instance_type'] == 'cloud'
         except KeyError:
             return False
 
@@ -110,7 +109,7 @@ class ServerInfo(object):
         :rtype: ``bool``
         '''
 
-        server_info = self._server_info
+        server_info = self._server_info()
         for sh in ('search_head', 'cluster_search_head'):
             if sh in server_info['server_roles']:
                 return True
@@ -124,9 +123,9 @@ class ServerInfo(object):
         :rtype: ``bool``
         '''
 
-        return 'cluster_search_head' in self._server_info['server_roles']
+        return 'cluster_search_head' in self._server_info()['server_roles']
 
-    @retry(exceptions=[binding.HTTPError])
+    @retry()
     def get_shc_members(self):
         '''Get SHC members.
 

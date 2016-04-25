@@ -25,6 +25,7 @@ from solnlib.pattern import Singleton
 from solnlib.splunkenv import make_splunkhome_path
 
 __all__ = ['log_enter_exit',
+           'LogException',
            'Logs']
 
 
@@ -53,6 +54,10 @@ def log_enter_exit(logger):
         return wrapper
 
     return log_decorator
+
+
+class LogException(Exception):
+    pass
 
 
 class Logs(object):
@@ -149,7 +154,12 @@ class Logs(object):
         if cls._default_directory:
             directory = cls._default_directory
         else:
-            directory = make_splunkhome_path(['var', 'log', 'splunk'])
+            try:
+                directory = make_splunkhome_path(['var', 'log', 'splunk'])
+            except KeyError:
+                raise LogException(
+                    'Log directory is empty, please set log directory '
+                    'by calling Logs.set_context(directory="/var/log/...").')
         log_file = op.sep.join([directory, name])
 
         return log_file
