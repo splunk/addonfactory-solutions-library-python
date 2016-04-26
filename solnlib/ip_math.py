@@ -1,13 +1,13 @@
 # Copyright 2016 Splunk, Inc.
 #
-# Licensed under the Apache License, Version 2.0 (the "License"): you may
+# Licensed under the Apache License, Version 2.0 (the 'License'): you may
 # not use this file except in compliance with the License. You may obtain
 # a copy of the License at
 #
 #     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# distributed under the License is distributed on an 'AS IS' BASIS, WITHOUT
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
@@ -181,10 +181,10 @@ def expand_ip_range_to_cidr(ip_range, clean_single_ips=False):
 
     :param ip_range: An IPv4 address range in (range_start, range_end) format.
     :type ip_range: ``tuple``
-    :param clean_single_ips: (optional) If True, remove "/32" suffix from
+    :param clean_single_ips: (optional) If True, remove '/32' suffix from
         single IPs, default is False.
     :type clean_single_ips: ``bool``
-    :returns: A list of strings "a.b.c.d[/N]" where 0 <= N <= 32.
+    :returns: A list of strings 'a.b.c.d[/N]' where 0 <= N <= 32.
     :rtype: ``list``
     '''
 
@@ -224,7 +224,7 @@ def expand_ip_range_to_cidr(ip_range, clean_single_ips=False):
         #       This means that the range_end matched our final subnet exactly,
         #       and no more coverage is needed.
         #    b. range_start == range_end
-        #       This means that the subnet left one "dangling" IP, which should
+        #       This means that the subnet left one 'dangling' IP, which should
         #       be covered via a /32 subnet.
         #
         # Example:
@@ -243,13 +243,13 @@ def expand_ip_range_to_cidr(ip_range, clean_single_ips=False):
         #    marked by a pipe  character:
         #
         #    10.10.10.10/31                 |
-        #      '0b1010000010100000101000001010'    <- "0" suffix
-        #      '0b1010000010100000101000001011'    <- "1" suffix
+        #      '0b1010000010100000101000001010'    <- '0' suffix
+        #      '0b1010000010100000101000001011'    <- '1' suffix
         #    10.10.10.12/30                |
-        #      '0b1010000010100000101000001100'    <- "00" suffix
-        #      '0b1010000010100000101000001101'    <- "01" suffix
-        #      '0b1010000010100000101000001110'    <- "10" suffix
-        #      '0b1010000010100000101000001111'    <- "11" suffix
+        #      '0b1010000010100000101000001100'    <- '00' suffix
+        #      '0b1010000010100000101000001101'    <- '01' suffix
+        #      '0b1010000010100000101000001110'    <- '10' suffix
+        #      '0b1010000010100000101000001111'    <- '11' suffix
         #    10.10.10.16/30              X |
         #      '0b1010000010100000101000010000'
         #      '0b1010000010100000101000010001'
@@ -258,13 +258,13 @@ def expand_ip_range_to_cidr(ip_range, clean_single_ips=False):
         #    10.10.10.20/32                  |
         #      '0b1010000010100000101000010100'
         #
-        #    Note that the subnet 10.10.10.16/30 would have been "reduced"
-        #    from an originally calculated mask of /29. The "X" represents
+        #    Note that the subnet 10.10.10.16/30 would have been 'reduced'
+        #    from an originally calculated mask of /29. The 'X' represents
         #    the original guess.
 
         while range_start < range_end:
             # Flip the rightmost zero bits; this will be our initial subnet
-            # guess. See "Hacker's Delight" pg. 11.
+            # guess. See Hacker's Delight pg. 11.
             last_in_subnet = range_start | (range_start - 1)
 
             # Handle rollover when range_start is '0.0.0.0'
@@ -295,11 +295,11 @@ def expand_ip_range_to_cidr(ip_range, clean_single_ips=False):
         else:
             # This should never happen due to the exit condition on the above
             # while loop.
-            raise ValueError("Subnet calculation failed unexpectedly.")
+            raise ValueError('Subnet calculation failed unexpectedly.')
 
     else:
         # Invalid IP range.
         raise ValueError(
-            "Invalid IP range specified (perhaps reversed).")
+            'Invalid IP range specified (perhaps reversed).')
 
     return sorted(subnets, key=lambda x: x.split('/')[1])

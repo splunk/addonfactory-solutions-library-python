@@ -19,7 +19,7 @@ def teardown_module(module):
     shutil.rmtree('./.log')
 
 
-def test_log_enter_exit():
+def test_log_enter_exit(monkeypatch):
     logger1 = log.Logs().get_logger('enter_exit1')
     logger2 = log.Logs().get_logger('enter_exit2')
 
@@ -37,13 +37,13 @@ def test_log_enter_exit():
 
 class TestLogs(object):
 
-    def test_get_logger(self):
+    def test_get_logger(self, monkeypatch):
         logger = log.Logs().get_logger('logging')
 
         logger.debug('this is a test log')
         logger.warn('this is a test log that can show')
 
-    def test_set_level(self):
+    def test_set_level(self, monkeypatch):
         logger = log.Logs().get_logger('set_level')
 
         logger.debug('this is a test log')
@@ -54,7 +54,7 @@ class TestLogs(object):
         log.Logs().set_level(log.logging.ERROR, name='set_level')
         logger.warn('this is a test log that can not show')
 
-    def test_multi_thread(self):
+    def test_multi_thread(self, monkeypatch):
         log.Logs.set_context(directory='/tmp/', namespace='unittest')
         logger = log.Logs().get_logger('test_multi_thread')
 
@@ -75,7 +75,7 @@ class TestLogs(object):
 
         time.sleep(1)
 
-    def test_multi_process(self):
+    def test_multi_process(self, monkeypatch):
         log.Logs.set_context(directory='/tmp/', namespace='unittest')
         logger = log.Logs().get_logger('test_multi_process')
 

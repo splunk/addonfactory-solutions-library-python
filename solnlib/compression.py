@@ -1,13 +1,13 @@
 # Copyright 2016 Splunk, Inc.
 #
-# Licensed under the Apache License, Version 2.0 (the "License"): you may
+# Licensed under the Apache License, Version 2.0 (the 'License'): you may
 # not use this file except in compliance with the License. You may obtain
 # a copy of the License at
 #
 #     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# distributed under the License is distributed on an 'AS IS' BASIS, WITHOUT
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
@@ -29,9 +29,6 @@ class GzipHandler(object):
     Class for handling gzip-formatted string content.
     '''
 
-    # Error messages
-    ERR_INVALID_FORMAT = 'File is not gzip format.'
-
     @classmethod
     def check_format(cls, data):
         '''Validate `data` whether it is in gzip format.
@@ -39,7 +36,7 @@ class GzipHandler(object):
         Bytes 0 and 1 should be (per RFC 1952):
         data[0] = 31 (0x1f), data[1] = 139 (0x8b).
 
-        :param data: data to check.
+        :param data: Data to check.
         :type data: ``bytes``
         :returns: True if it is in gzip format else False.
         :rtype: ``bool``
@@ -54,17 +51,16 @@ class GzipHandler(object):
         It will perform basic validation, then return the decompressed
         data or raises ValueError exception for invalid `data`.
 
-        :param data: gzip-compressed data to decompress.
+        :param data: Gzip-compressed data to decompress.
         :type data: ``bytes``
         :returns: decompressed data.
         :rtype: ``string``
 
-        :raises ValueError:
-            with error cls.ERR_INVALID_FORMAT for `data` is not in gzip format.
+        :raises ValueError: If `data` is not in gzip format
         '''
 
         if not cls.check_format(data):
-            raise ValueError(cls.ERR_INVALID_FORMAT)
+            raise ValueError('File is not gzip format.')
 
         return gzip.GzipFile(fileobj=StringIO.StringIO(data),
                              mode='rb').read()
@@ -75,17 +71,11 @@ class ZipHandler(object):
     Class for handling zip files.
     '''
 
-    # Error messages
-    ERR_EXCESS_FILES = 'Zip files containing multiple files not supported by this handler.'
-    ERR_EXTRACT_ERROR = 'Unknown exception when extracting zip file.'
-    ERR_INVALID_FORMAT = 'File is not zip format.'
-    ERR_SIZE_MISMATCH = 'Zip file size does not match actual size.'
-
     @classmethod
     def check_format(cls, data):
         '''Validate `data` whether it is in zip format.
 
-        :param data: data to check.
+        :param data: Data to check.
         :type data: ``bytes``
         :returns: True if it is in zip format else False.
         :rtype: ``bool``
@@ -100,33 +90,32 @@ class ZipHandler(object):
         It will perform basic validation, then return the decompressed
         data or raises ValueError exception with error message.
 
-        :param data: zip-compressed data to decompress.
+        :param data: Zip-compressed data to decompress.
         :type data: ``bytes``
         :returns: decompressed data.
         :rtype: ``string``
 
-        :raises ValueError: with error message of
-            cls.ERR_INVALID_FORMAT for `data` is not in zip format,
-            cls.ERR_EXCESS_FILES for `data` contains multiple files,
-            cls.ERR_SIZE_MISMATCH for `data` is not complete
+        :raises ValueError: If decompress data failed.
         '''
 
         if not cls.check_format(data):
-            raise ValueError(cls.ERR_INVALID_FORMAT)
+            raise ValueError('File is not zip format.')
 
         fh = StringIO.StringIO(data)
         decompressor = zipfile.ZipFile(fh)
 
         files = decompressor.infolist()
         if len(files) > 1:
-            raise ValueError(cls.ERR_EXCESS_FILES)
+            raise ValueError(
+                'Zip files containing multiple files not supported by this '
+                'handler.')
 
         try:
             text = decompressor.read(files[0].filename)
         except:
-            raise ValueError(cls.ERR_EXTRACT_ERROR)
+            raise ValueError('Unknown exception when extracting zip file.')
 
         if len(text) != files[0].file_size:
-            raise ValueError(cls.ERR_SIZE_MISMATCH)
+            raise ValueError('Zip file size does not match actual size.')
 
         return text

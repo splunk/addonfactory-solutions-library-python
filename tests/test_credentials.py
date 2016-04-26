@@ -38,10 +38,10 @@ class TestCredentialManager(object):
         if title in TestCredentialManager._credentials_store:
             del TestCredentialManager._credentials_store[title]
         else:
-            raise KeyError("No such entity %s" % username)
+            raise KeyError('No such entity %s' % username)
 
     def test_set_password(self, monkeypatch):
-        monkeypatch.setattr(client.ReadOnlyCollection, 'list', self._mock_storage_passwords_list)
+        monkeypatch.setattr(client.StoragePasswords, 'list', self._mock_storage_passwords_list)
         monkeypatch.setattr(client.StoragePasswords, 'create', self._mock_storage_passwords_create)
         monkeypatch.setattr(client.StoragePasswords, 'delete', self._mock_storage_passwords_delete)
 
@@ -49,12 +49,12 @@ class TestCredentialManager(object):
         cm.set_password('testuser1', 'password1')
         assert cm.get_password('testuser1') == 'password1'
 
-        long_password = "".join(['1111111111' for i in xrange(30)])
+        long_password = ''.join(['1111111111' for i in xrange(30)])
         cm.set_password('testuser2', long_password)
         assert cm.get_password('testuser2') == long_password
 
     def test_delete_password(self, monkeypatch):
-        monkeypatch.setattr(client.ReadOnlyCollection, 'list', self._mock_storage_passwords_list)
+        monkeypatch.setattr(client.StoragePasswords, 'list', self._mock_storage_passwords_list)
         monkeypatch.setattr(client.StoragePasswords, 'delete', self._mock_storage_passwords_delete)
         monkeypatch.setattr(client.StoragePasswords, 'delete', self._mock_storage_passwords_delete)
 
