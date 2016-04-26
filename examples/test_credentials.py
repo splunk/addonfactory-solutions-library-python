@@ -30,6 +30,3 @@ def test_credential_manager():
     cm.delete_password('testuser2')
     with pytest.raises(Exception):
         cm.get_password('testuser2')
-
-    cm.set_password('admin', 'admin')
-    assert cm.get_password('admin') == 'admin'

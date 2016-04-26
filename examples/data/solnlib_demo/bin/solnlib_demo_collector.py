@@ -31,7 +31,7 @@ class SolnlibDemoCollector(ModularInput):
     # Override modular input name
     name = 'solnlib_demo_collector'
     # Override modular input scheme title
-    title = 'Solnlib demo collector'
+    title = 'Solnlib Demo Collector'
     # Override modular input scheme description
     description = 'Solnlib demo collector'
     # Override modular input use_external_validation
