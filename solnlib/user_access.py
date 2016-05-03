@@ -63,7 +63,10 @@ class ObjectACL(object):
         :param obj_type: ``string``
         :param obj_owner: Owner of this object.
         :param obj_owner: ``string``
-        :param obj_perms: Object perms.
+        :param obj_perms: Object perms, like: {
+            'read': ['*'],
+            'write': ['admin'],
+            'delete': ['admin']}.
         :type obj_perms: ``dict``
         :param obj_shared_by_inclusion: Flag of object is shared by inclusion.
         :type obj_shared_by_inclusion: ``bool``
@@ -77,7 +80,7 @@ class ObjectACL(object):
            >>>    'test_object',
            >>>    'Splunk_TA_test',
            >>>    'admin',
-           >>>    {'read': '*', 'write': 'admin', 'delete': 'admin'},
+           >>>    {'read': ['*'], 'write': ['admin'], 'delete': ['admin']},
            >>>    False)
         '''
 
@@ -150,14 +153,14 @@ class ObjectACL(object):
         '''Get object acl record.
 
         :returns: Object acl record, like: {
-            "_key": "test_collection-1234",
-            "obj_collection": "test_collection",
-            "obj_id": "1234",
-            "obj_type": "test_object",
-            "obj_app": "Splunk_TA_test",
-            "obj_owner": "admin",
-            "obj_perms": {"read": "*", "write": "admin", "delete": "admin"},
-            "obj_shared_by_inclusion": false}
+            '_key': 'test_collection-1234',
+            'obj_collection': 'test_collection',
+            'obj_id': '1234',
+            'obj_type': 'test_object',
+            'obj_app': 'Splunk_TA_test',
+            'obj_owner': 'admin',
+            'obj_perms': {'read': ['*'], 'write': ['admin'], 'delete': ['admin']},
+            'obj_shared_by_inclusion': false}
         :rtype: ``dict``
         '''
 
@@ -208,7 +211,7 @@ class ObjectACL(object):
         return json.dumps(self.record)
 
 
-@retry()
+@retry(exceptions=[binding.HTTPError])
 def _get_collection_data(collection_name, session_key, app, owner,
                          scheme, host, port, **context):
     kvstore = rest_client.SplunkRestClient(session_key,
@@ -297,7 +300,10 @@ class ObjectACLManager(object):
         :param obj_type: ``string``
         :param obj_owner: Owner of this object.
         :param obj_owner: ``string``
-        :param obj_perms: Object perms.
+        :param obj_perms: Object perms, like: {
+            'read': ['*'],
+            'write': ['admin'],
+            'delete': ['admin']}.
         :type obj_perms: ``dict``
         :param obj_shared_by_inclusion: Flag of object is shared by inclusion.
         :type obj_shared_by_inclusion: ``bool``
@@ -321,7 +327,7 @@ class ObjectACLManager(object):
                 old_obj_acl = None
 
             if old_obj_acl:
-                obj_acl = obj_acl.merge(old_obj_acl)
+                obj_acl.merge(old_obj_acl)
 
         self._collection_data.batch_save(obj_acl.record)
 
@@ -337,7 +343,10 @@ class ObjectACLManager(object):
         :param obj_type: ``string``
         :param obj_owner: Owner of this object.
         :param obj_owner: ``string``
-        :param obj_perms: Object perms.
+        :param obj_perms: Object perms, like: {
+            'read': ['*'],
+            'write': ['admin'],
+            'delete': ['admin']}.
         :type obj_perms: ``dict``
         :param obj_shared_by_inclusion: Flag of object is shared by inclusion.
         :type obj_shared_by_inclusion: ``bool``
@@ -507,6 +516,8 @@ class AppCapabilityManager(object):
                  scheme='https', host='localhost', port=8089, **context):
         self._app = app
 
+        collection_name = '{app}_{collection_name}'.format(
+            app=app, collection_name=collection_name)
         try:
             self._collection_data = _get_collection_data(
                 collection_name, session_key, app, owner,
