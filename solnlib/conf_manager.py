@@ -152,11 +152,12 @@ class ConfManager(object):
         try:
             stanza_mgr = self._conf_mgr.list(name=stanza_name)[0]
         except binding.HTTPError as e:
-            if e.status == 404:
-                raise ConfStanzaNotExistException(
-                    'Stanza: %s does not exist in %s.conf' %
-                    (stanza_name, self._conf_file))
-            raise
+            if e.status != 404:
+                raise
+
+            raise ConfStanzaNotExistException(
+                'Stanza: %s does not exist in %s.conf' %
+                (stanza_name, self._conf_file))
 
         stanza = self._decrypt_stanza(stanza_mgr.name, stanza_mgr.content)
         return stanza
