@@ -57,7 +57,8 @@ def test_object_acl_manager(monkeypatch):
         try:
             del object_acls[id]
         except:
-            raise binding.HTTPError(None, status=404)
+            raise binding.HTTPError(
+                common.make_response_record('', status=404))
 
     def mock_kvstore_collection_data_delete(self, query=None):
         query = json.loads(query)
@@ -107,10 +108,17 @@ def test_object_acl_manager(monkeypatch):
                      'Splunk_TA_test', 'nobody', obj_perms2, True,
                      replace_existing=False)
     obj_acl = oaclm.get_acl(obj_collection, obj_id1)
+    assert obj_acl.obj_collection == 'test_object_collection'
+    assert obj_acl.obj_id == obj_id1
+    assert obj_acl.obj_type == 'test_object_type'
+    assert obj_acl.obj_app == 'Splunk_TA_test'
+    assert obj_acl.obj_owner == 'nobody'
+    assert obj_acl.obj_shared_by_inclusion == True
     assert obj_acl.obj_perms['read'] == ['admin', 'user1']
 
     oaclm.update_acls(obj_collection, [obj_id2, obj_id3], obj_type,
-                      'Splunk_TA_test', 'nobody', obj_perms1, True)
+                      'Splunk_TA_test', 'nobody', obj_perms1, True,
+                      replace_existing=False)
     oaclm.get_acl(obj_collection, obj_id2)
     oaclm.get_acl(obj_collection, obj_id3)
     obj_acls = oaclm.get_acls(obj_collection, [obj_id2, obj_id3, obj_id4])
@@ -121,6 +129,8 @@ def test_object_acl_manager(monkeypatch):
         obj_collection, [obj_id1, obj_id2, obj_id3]) == [obj_id1]
 
     oaclm.delete_acl(obj_collection, obj_id1)
+    with pytest.raises(user_access.ObjectACLNotExistException):
+        oaclm.delete_acl(obj_collection, obj_id1)
     oaclm.delete_acls(obj_collection, [obj_id2, obj_id3])
 
     assert not object_acls
@@ -195,6 +205,9 @@ def test_app_capability_manager(monkeypatch):
             'write': 'write_app_object_type2',
             'delete': 'delete_app_object_type2'},
     }
+
+    with pytest.raises(user_access.AppCapabilityNotExistException):
+        acm.get_capabilities()
     acm.register_capabilities(app_capabilities)
     assert acm.capabilities_are_registered()
     assert acm.get_capabilities() == app_capabilities
@@ -229,39 +242,75 @@ def test_check_user_access(monkeypatch):
 
 
 def test_get_current_username(monkeypatch):
+    mode = 0
+
     def mock_get(self, path_segment, owner=None, app=None, sharing=None, **query):
-        return common.make_response_record('{"entry": [{"content": {"username": "admin"}}]}')
+        if mode == 0:
+            return common.make_response_record('{"entry": [{"content": {"username": "admin"}}]}')
+        else:
+            raise binding.HTTPError(common.make_response_record('', status=401))
 
     monkeypatch.setattr(binding.Context, 'get', mock_get)
 
     assert user_access.get_current_username(common.SESSION_KEY) == 'admin'
 
+    mode = 1
+    with pytest.raises(user_access.InvalidSessionKeyException):
+        user_access.get_current_username(common.SESSION_KEY)
+
 
 def test_get_user_capabilities(monkeypatch):
+    mode = 0
+
     def mock_get(self, path_segment, owner=None, app=None, sharing=None, **query):
-        return common.make_response_record('{"entry": [{"content": {"capabilities": ["can_read"]}}]}')
+        if mode == 0:
+            return common.make_response_record('{"entry": [{"content": {"capabilities": ["can_read"]}}]}')
+        else:
+            raise binding.HTTPError(common.make_response_record('', status=404))
 
     monkeypatch.setattr(binding.Context, 'get', mock_get)
 
     assert user_access.get_user_capabilities(
         common.SESSION_KEY, 'admin') == ['can_read']
 
+    mode = 1
+    with pytest.raises(user_access.UserNotExistException):
+        user_access.get_user_capabilities(common.SESSION_KEY, 'admin')
+
 
 def test_user_is_capable(monkeypatch):
+    mode = 0
+
     def mock_get(self, path_segment, owner=None, app=None, sharing=None, **query):
-        return common.make_response_record('{"entry": [{"content": {"capabilities": ["can_read"]}}]}')
+        if mode == 0:
+            return common.make_response_record('{"entry": [{"content": {"capabilities": ["can_read"]}}]}')
+        else:
+            raise binding.HTTPError(common.make_response_record('', status=404))
 
     monkeypatch.setattr(binding.Context, 'get', mock_get)
 
     assert not user_access.user_is_capable(
         common.SESSION_KEY, 'admin', 'test_capability')
 
+    mode = 1
+    with pytest.raises(user_access.UserNotExistException):
+        user_access.user_is_capable(common.SESSION_KEY, 'admin', 'test_capability')
+
 
 def test_get_user_roles(monkeypatch):
+    mode = 0
+
     def mock_get(self, path_segment, owner=None, app=None, sharing=None, **query):
-        return common.make_response_record('{"entry": [{"content": {"roles": ["admin", "user"]}}]}')
+        if mode == 0:
+            return common.make_response_record('{"entry": [{"content": {"roles": ["admin", "user"]}}]}')
+        else:
+            raise binding.HTTPError(common.make_response_record('', status=404))
 
     monkeypatch.setattr(binding.Context, 'get', mock_get)
 
     user_access.get_user_roles(
         common.SESSION_KEY, 'admin') == ['admin', 'user']
+
+    mode = 1
+    with pytest.raises(user_access.UserNotExistException):
+        user_access.get_user_roles(common.SESSION_KEY, 'admin')

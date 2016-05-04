@@ -32,7 +32,9 @@ __all__ = ['ObjectACL',
            'AppCapabilityManager',
            'UserAccessException',
            'CheckUserAccess',
+           'InvalidSessionKeyException',
            'get_current_username',
+           'UserNotExistException',
            'get_user_capabilities',
            'user_is_capable',
            'get_user_roles']
@@ -239,7 +241,11 @@ def _get_collection_data(collection_name, session_key, app, owner,
         raise KeyError('Get collection data: %s failed.' % collection_name)
 
 
-class ObjectACLManagerException(object):
+class ObjectACLManagerException(Exception):
+    pass
+
+
+class ObjectACLNotExistException(Exception):
     pass
 
 
@@ -284,6 +290,7 @@ class ObjectACLManager(object):
             raise ObjectACLManagerException(
                 'Get object acl collection: %s fail.' % collection_name)
 
+    @retry(exceptions=[binding.HTTPError])
     def update_acl(self, obj_collection, obj_id, obj_type, obj_app, obj_owner,
                    obj_perms, obj_shared_by_inclusion, replace_existing=True):
         '''Update acl info of object.
@@ -320,10 +327,7 @@ class ObjectACLManager(object):
         if not replace_existing:
             try:
                 old_obj_acl = self.get_acl(obj_collection, obj_id)
-            except binding.HTTPError as e:
-                if e.status != 404:
-                    raise
-
+            except ObjectACLNotExistException:
                 old_obj_acl = None
 
             if old_obj_acl:
@@ -331,6 +335,7 @@ class ObjectACLManager(object):
 
         self._collection_data.batch_save(obj_acl.record)
 
+    @retry(exceptions=[binding.HTTPError])
     def update_acls(self, obj_collection, obj_ids, obj_type, obj_app, obj_owner,
                     obj_perms, obj_shared_by_inclusion, replace_existing=True):
         '''Batch update acl info of objects.
@@ -365,11 +370,8 @@ class ObjectACLManager(object):
             if not replace_existing:
                 try:
                     old_obj_acl = self.get_acl(obj_collection, obj_id)
-                except binding.HTTPError as e:
-                    if e.status == 404:
-                        old_obj_acl = None
-                    else:
-                        raise
+                except ObjectACLNotExistException:
+                    old_obj_acl = None
 
                 if old_obj_acl:
                     obj_acl.merge(old_obj_acl)
@@ -378,6 +380,7 @@ class ObjectACLManager(object):
 
         self._collection_data.batch_save(*obj_acl_records)
 
+    @retry(exceptions=[binding.HTTPError])
     def get_acl(self, obj_collection, obj_id):
         '''Get acl info.
 
@@ -391,13 +394,24 @@ class ObjectACLManager(object):
         :type obj_id: ``string``
         :returns: Object acl info if success else None.
         :rtype: ``ObjectACL``
+
+        :raises ObjectACLNotExistException: If object ACL info does not exist.
         '''
 
         key = ObjectACL.generate_key(obj_collection, obj_id)
-        obj_acl = self._collection_data.query_by_id(key)
+        try:
+            obj_acl = self._collection_data.query_by_id(key)
+        except binding.HTTPError as e:
+            if e.status != 404:
+                raise
+
+            raise ObjectACLNotExistException(
+                'Object ACL info of %s_%s does not exist.' %
+                (obj_collection, obj_id))
 
         return ObjectACL.parse(obj_acl)
 
+    @retry(exceptions=[binding.HTTPError])
     def get_acls(self, obj_collection, obj_ids):
         '''Batch get acl info.
 
@@ -419,6 +433,7 @@ class ObjectACLManager(object):
 
         return [ObjectACL.parse(obj_acl) for obj_acl in obj_acls]
 
+    @retry(exceptions=[binding.HTTPError])
     def delete_acl(self, obj_collection, obj_id):
         '''Delete acl info.
 
@@ -429,11 +444,22 @@ class ObjectACLManager(object):
         :type obj_collection: ``string``
         :param obj_id: ID of this object.
         :type obj_id: ``string``
+
+        :raises ObjectACLNotExistException: If object ACL info does not exist.
         '''
 
         key = ObjectACL.generate_key(obj_collection, obj_id)
-        self._collection_data.delete_by_id(key)
+        try:
+            self._collection_data.delete_by_id(key)
+        except binding.HTTPError as e:
+            if e.status != 404:
+                raise
 
+            raise ObjectACLNotExistException(
+                'Object ACL info of %s_%s does not exist.' %
+                (obj_collection, obj_id))
+
+    @retry(exceptions=[binding.HTTPError])
     def delete_acls(self, obj_collection, obj_ids):
         '''Batch delete acl info.
 
@@ -451,6 +477,7 @@ class ObjectACLManager(object):
                      for obj_id in obj_ids]})
         self._collection_data.delete(query=query)
 
+    @retry(exceptions=[binding.HTTPError])
     def get_accessible_object_ids(self, user, operation, obj_collection, obj_ids):
         '''Get accessible IDs of objects from `obj_acls`.
 
@@ -477,6 +504,10 @@ class ObjectACLManager(object):
 
 
 class AppCapabilityManagerException(Exception):
+    pass
+
+
+class AppCapabilityNotExistException(Exception):
     pass
 
 
@@ -527,6 +558,7 @@ class AppCapabilityManager(object):
                 'Get app capabilities collection: %s failed.' %
                 collection_name)
 
+    @retry(exceptions=[binding.HTTPError])
     def register_capabilities(self, capabilities):
         '''Register app capabilities.
 
@@ -546,12 +578,24 @@ class AppCapabilityManager(object):
         record = {'_key': self._app, 'capabilities': capabilities}
         self._collection_data.batch_save(record)
 
+    @retry(exceptions=[binding.HTTPError])
     def unregister_capabilities(self):
         '''Unregister app capabilities.
+
+        :raises AppCapabilityNotExistException: If app capabilities are
+            not registered.
         '''
 
-        self._collection_data.delete_by_id(self._app)
+        try:
+            self._collection_data.delete_by_id(self._app)
+        except binding.HTTPError as e:
+            if e.status != 404:
+                raise
 
+            raise AppCapabilityNotExistException(
+                'App capabilities for %s have not been registered.' % self._app)
+
+    @retry(exceptions=[binding.HTTPError])
     def capabilities_are_registered(self):
         '''Check if app capabilities are registered.
 
@@ -562,19 +606,34 @@ class AppCapabilityManager(object):
 
         try:
             self._collection_data.query_by_id(self._app)
-        except binding.HTTPError:
+        except binding.HTTPError as e:
+            if e.status != 404:
+                raise
+
             return False
 
         return True
 
+    @retry(exceptions=[binding.HTTPError])
     def get_capabilities(self):
         '''Get app capabilities.
 
         :returns: App capabilities.
         :rtype: ``dict``
+
+        :raises AppCapabilityNotExistException: If app capabilities are
+            not registered.
         '''
 
-        record = self._collection_data.query_by_id(self._app)
+        try:
+            record = self._collection_data.query_by_id(self._app)
+        except binding.HTTPError as e:
+            if e.status != 404:
+                raise
+
+            raise AppCapabilityNotExistException(
+                'App capabilities for %s have not been registered.' % self._app)
+
         return record['capabilities']
 
 
@@ -666,6 +725,11 @@ class CheckUserAccess(object):
         return wrapper
 
 
+class InvalidSessionKeyException(Exception):
+    pass
+
+
+@retry(exceptions=[binding.HTTPError])
 def get_current_username(session_key,
                          scheme='https', host='localhost', port=8089, **context):
     '''Get current user name from `session_key`.
@@ -683,24 +747,38 @@ def get_current_username(session_key,
     :returns: Current user name.
     :rtype: ``string``
 
+    :raises InvalidSessionKeyException: If `session_key` is invalid.
+
     Usage::
 
        >>> from solnlib import user_access
        >>> user_name = user_access.get_current_username(session_key)
     '''
 
-    context = rest_client.SplunkRestClient(
+    _rest_client = rest_client.SplunkRestClient(
         session_key,
         '-',
         scheme=scheme,
         host=host,
         port=port,
         **context)
-    response = context.get('/services/authentication/current-context',
-                           output_mode='json').body.read()
+    try:
+        response = _rest_client.get('/services/authentication/current-context',
+                                    output_mode='json').body.read()
+    except binding.HTTPError as e:
+        if e.status != 401:
+            raise
+
+        raise InvalidSessionKeyException('Invalid session key.')
+
     return json.loads(response)['entry'][0]['content']['username']
 
 
+class UserNotExistException(Exception):
+    pass
+
+
+@retry(exceptions=[binding.HTTPError])
 def get_user_capabilities(session_key, username,
                           scheme='https', host='localhost', port=8089, **context):
     '''Get user capabilities.
@@ -720,6 +798,8 @@ def get_user_capabilities(session_key, username,
     :returns: User capabilities.
     :rtype: ``list``
 
+    :raises UserNotExistException: If `username` does not exist.
+
     Usage::
 
        >>> from solnlib import user_access
@@ -727,7 +807,7 @@ def get_user_capabilities(session_key, username,
        >>>     session_key, 'test_user')
     '''
 
-    context = rest_client.SplunkRestClient(
+    _rest_client = rest_client.SplunkRestClient(
         session_key,
         '-',
         scheme=scheme,
@@ -735,7 +815,14 @@ def get_user_capabilities(session_key, username,
         port=port,
         **context)
     url = '/services/authentication/users/{username}'.format(username=username)
-    response = context.get(url, output_mode='json').body.read()
+    try:
+        response = _rest_client.get(url, output_mode='json').body.read()
+    except binding.HTTPError as e:
+        if e.status != 404:
+            raise
+
+        raise UserNotExistException('User: %s does not exist.' % username)
+
     return json.loads(response)['entry'][0]['content']['capabilities']
 
 
@@ -760,6 +847,8 @@ def user_is_capable(session_key, username, capability,
     :returns: True if user is capable else False.
     :rtype: ``bool``
 
+    :raises UserNotExistException: If `username` does not exist.
+
     Usage::
 
        >>> from solnlib import user_access
@@ -772,6 +861,7 @@ def user_is_capable(session_key, username, capability,
     return capability in capabilities
 
 
+@retry(exceptions=[binding.HTTPError])
 def get_user_roles(session_key, username,
                    scheme='https', host='localhost', port=8089, **context):
     '''Get user roles.
@@ -791,13 +881,15 @@ def get_user_roles(session_key, username,
     :returns: User roles.
     :rtype: ``list``
 
+    :raises UserNotExistException: If `username` does not exist.
+
     Usage::
 
        >>> from solnlib import user_access
        >>> user_roles = user_access.get_user_roles(session_key, 'test_user')
     '''
 
-    context = rest_client.SplunkRestClient(
+    _rest_client = rest_client.SplunkRestClient(
         session_key,
         '-',
         scheme=scheme,
@@ -805,5 +897,12 @@ def get_user_roles(session_key, username,
         port=port,
         **context)
     url = '/services/authentication/users/{username}'.format(username=username)
-    response = context.get(url, output_mode='json').body.read()
+    try:
+        response = _rest_client.get(url, output_mode='json').body.read()
+    except binding.HTTPError as e:
+        if e.status != 404:
+            raise
+
+        raise UserNotExistException('User: %s does not exist.' % username)
+
     return json.loads(response)['entry'][0]['content']['roles']
