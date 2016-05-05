@@ -25,7 +25,8 @@ from splunklib import binding
 from solnlib.utils import retry
 import solnlib.splunk_rest_client as rest_client
 
-__all__ = ['ObjectACL',
+__all__ = ['ObjectACLException',
+           'ObjectACL',
            'ObjectACLManagerException',
            'ObjectACLManager',
            'AppCapabilityManagerException',
@@ -38,6 +39,10 @@ __all__ = ['ObjectACL',
            'get_user_capabilities',
            'user_is_capable',
            'get_user_roles']
+
+
+class ObjectACLException(Exception):
+    pass
 
 
 class ObjectACL(object):
@@ -91,8 +96,23 @@ class ObjectACL(object):
         self._obj_type = obj_type
         self._obj_app = obj_app
         self._obj_owner = obj_owner
+        self._check_perms(obj_perms)
         self._obj_perms = obj_perms
         self._obj_shared_by_inclusion = obj_shared_by_inclusion
+
+    @classmethod
+    def _check_perms(self, obj_perms):
+        if not isinstance(obj_perms, dict):
+            raise ObjectACLException(
+                'Invalid object acl perms type: %s, should be a dict.' %
+                type(obj_perms))
+
+        if not (self.OBJ_PERMS_READ_KEY in obj_perms and
+                self.OBJ_PERMS_WRITE_KEY in obj_perms and
+                self.OBJ_PERMS_DELETE_KEY in obj_perms):
+            raise ObjectACLException(
+                'Invalid object acl perms: %s, '
+                'should include read, write and delete perms.' % obj_perms)
 
     @property
     def obj_collection(self):
@@ -140,6 +160,7 @@ class ObjectACL(object):
 
     @obj_perms.setter
     def obj_perms(self, obj_perms):
+        self._check_perms(obj_perms)
         self._obj_perms = obj_perms
 
     @property
@@ -162,7 +183,7 @@ class ObjectACL(object):
             'obj_app': 'Splunk_TA_test',
             'obj_owner': 'admin',
             'obj_perms': {'read': ['*'], 'write': ['admin'], 'delete': ['admin']},
-            'obj_shared_by_inclusion': false}
+            'obj_shared_by_inclusion': True}
         :rtype: ``dict``
         '''
 
@@ -173,34 +194,50 @@ class ObjectACL(object):
             self.OBJ_TYPE_KEY: self._obj_type,
             self.OBJ_APP_KEY: self._obj_app,
             self.OBJ_OWNER_KEY: self._obj_owner,
-            self.OBJ_PERMS_KEY: {
-                self.OBJ_PERMS_READ_KEY: self._obj_perms[
-                    self.OBJ_PERMS_READ_KEY],
-                self.OBJ_PERMS_WRITE_KEY: self._obj_perms[
-                    self.OBJ_PERMS_WRITE_KEY],
-                self.OBJ_PERMS_DELETE_KEY: self._obj_perms[
-                    self.OBJ_PERMS_DELETE_KEY]
-            },
-            self.OBJ_SHARED_BY_INCLUSION_KEY: self._obj_shared_by_inclusion
-        }
+            self.OBJ_PERMS_KEY: self._obj_perms,
+            self.OBJ_SHARED_BY_INCLUSION_KEY: self._obj_shared_by_inclusion}
 
     @staticmethod
     def generate_key(obj_collection, obj_id):
+        '''Generate object acl record key.
+
+        :param obj_collection: Collection where object currently stored.
+        :type obj_collection: ``string``
+        :param obj_id: ID of this object.
+        :type obj_id: ``string``
+        :returns: Object acl record key.
+        :rtype: ``string``
+        '''
+
         return '{obj_collection}_{obj_id}'.format(
             obj_collection=obj_collection, obj_id=obj_id)
 
     @staticmethod
-    def parse(obj_acl):
+    def parse(obj_acl_record):
+        '''Parse object acl record and construct a new `ObjectACL` object from it.
+
+        :param obj_acl_record: Object acl record.
+        :type obj_acl: ``dict``
+        :returns: New `ObjectACL` object.
+        :rtype: `ObjectACL`
+        '''
+
         return ObjectACL(
-            obj_acl[ObjectACL.OBJ_COLLECTION_KEY],
-            obj_acl[ObjectACL.OBJ_ID_KEY],
-            obj_acl[ObjectACL.OBJ_TYPE_KEY],
-            obj_acl[ObjectACL.OBJ_APP_KEY],
-            obj_acl[ObjectACL.OBJ_OWNER_KEY],
-            obj_acl[ObjectACL.OBJ_PERMS_KEY],
-            obj_acl[ObjectACL.OBJ_SHARED_BY_INCLUSION_KEY])
+            obj_acl_record[ObjectACL.OBJ_COLLECTION_KEY],
+            obj_acl_record[ObjectACL.OBJ_ID_KEY],
+            obj_acl_record[ObjectACL.OBJ_TYPE_KEY],
+            obj_acl_record[ObjectACL.OBJ_APP_KEY],
+            obj_acl_record[ObjectACL.OBJ_OWNER_KEY],
+            obj_acl_record[ObjectACL.OBJ_PERMS_KEY],
+            obj_acl_record[ObjectACL.OBJ_SHARED_BY_INCLUSION_KEY])
 
     def merge(self, obj_acl):
+        '''Merge current object perms with perms of `obj_acl`.
+
+        :param obj_acl: Object acl to merge.
+        :type obj_acl: ``ObjectACL``
+        '''
+
         for perm_key in self._obj_perms:
             self._obj_perms[perm_key] = list(
                 set.union(
@@ -292,7 +329,7 @@ class ObjectACLManager(object):
 
     @retry(exceptions=[binding.HTTPError])
     def update_acl(self, obj_collection, obj_id, obj_type, obj_app, obj_owner,
-                   obj_perms, obj_shared_by_inclusion, replace_existing=True):
+                   obj_perms, obj_shared_by_inclusion=True, replace_existing=True):
         '''Update acl info of object.
 
         Construct a new object acl info first, if `replace_existing` is True
@@ -312,7 +349,8 @@ class ObjectACLManager(object):
             'write': ['admin'],
             'delete': ['admin']}.
         :type obj_perms: ``dict``
-        :param obj_shared_by_inclusion: Flag of object is shared by inclusion.
+        :param obj_shared_by_inclusion: (optional) Flag of object is shared by
+            inclusion, default is True.
         :type obj_shared_by_inclusion: ``bool``
         :param replace_existing: (optional) Replace existing acl info flag, True
             indicates replace old acl info with new one else merge with old acl
@@ -337,8 +375,8 @@ class ObjectACLManager(object):
 
     @retry(exceptions=[binding.HTTPError])
     def update_acls(self, obj_collection, obj_ids, obj_type, obj_app, obj_owner,
-                    obj_perms, obj_shared_by_inclusion, replace_existing=True):
-        '''Batch update acl info of objects.
+                    obj_perms, obj_shared_by_inclusion=True, replace_existing=True):
+        '''Batch update object acl info to all provided `obj_ids`.
 
         :param obj_collection: Collection where objects currently stored.
         :type obj_collection: ``string``
@@ -353,7 +391,8 @@ class ObjectACLManager(object):
             'write': ['admin'],
             'delete': ['admin']}.
         :type obj_perms: ``dict``
-        :param obj_shared_by_inclusion: Flag of object is shared by inclusion.
+        :param obj_shared_by_inclusion: (optional) Flag of object is shared by
+            inclusion, default is True.
         :type obj_shared_by_inclusion: ``bool``
         :param replace_existing: (optional) Replace existing acl info flag, True
             indicates replace old acl info with new one else merge with old acl
