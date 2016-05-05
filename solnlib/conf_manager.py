@@ -140,6 +140,8 @@ class ConfManager(object):
             'k2': '2'}
         :rtype: ``dict``
 
+        :raises ConfStanzaNotExistException: If stanza does not exist.
+
         Usage::
 
            >>> from solnlib import conf_manager
@@ -173,9 +175,6 @@ class ConfManager(object):
             'k1': '1',
             'k2': '2'}}
         :rtype: ``dict``
-
-        :raises ConfStanzaNotExistException: If stanza does not exist.
-
 
         Usage::
 
