@@ -229,7 +229,7 @@ class HECEventWriter(EventWriter):
                                                          port=hec_port,
                                                          **context)
 
-    @retry()
+    @retry(exceptions=[binding.HTTPError])
     def _get_hec_config(self, hec_input_name, session_key,
                         scheme, host, port, **context):
         _rest_client = rest_client.SplunkRestClient(session_key,

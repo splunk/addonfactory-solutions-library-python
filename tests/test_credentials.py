@@ -60,11 +60,11 @@ class TestCredentialManager(object):
 
         cm = credentials.CredentialManager(common.SESSION_KEY, common.app, realm='realm_test')
         cm.delete_password('testuser1')
-        with pytest.raises(Exception):
+        with pytest.raises(credentials.CredentialNotExistException):
             cm.get_password('testuser1')
 
         cm.delete_password('testuser2')
-        with pytest.raises(Exception):
+        with pytest.raises(credentials.CredentialNotExistException):
             cm.get_password('testuser2')
 
 

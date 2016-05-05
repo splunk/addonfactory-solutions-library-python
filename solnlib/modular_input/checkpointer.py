@@ -148,6 +148,8 @@ class KVStoreCheckpointer(Checkpointer):
     :param context: Other configurations for Splunk rest client.
     :type context: ``dict``
 
+    :raises CheckpointerException: If init kvstore checkpointer failed.
+
     Usage::
         >>> from solnlib.modular_input import checkpointer
         >>> ck = checkpoint.KVStoreCheckpointer('TestKVStoreCheckpointer',
@@ -159,11 +161,14 @@ class KVStoreCheckpointer(Checkpointer):
 
     def __init__(self, collection_name, session_key, app, owner='nobody',
                  scheme='https', host='localhost', port=8089, **context):
-        self._collection_data = self._get_collection_data(
-            collection_name, session_key, app, owner,
-            scheme, host, port, **context)
+        try:
+            self._collection_data = self._get_collection_data(
+                collection_name, session_key, app, owner,
+                scheme, host, port, **context)
+        except KeyError:
+            raise CheckpointerException('Get kvstore checkpointer failed.')
 
-    @retry()
+    @retry(exceptions=[binding.HTTPError])
     def _get_collection_data(self, collection_name, session_key, app, owner,
                              scheme, host, port, **context):
         kvstore = rest_client.SplunkRestClient(session_key,
@@ -189,20 +194,20 @@ class KVStoreCheckpointer(Checkpointer):
             if collection.name == collection_name:
                 return collection.data
         else:
-            raise CheckpointerException('Get kvstore checkpointer failed.')
+            raise KeyError('Get collection data: %s failed.' % collection_name)
 
-    @retry()
+    @retry(exceptions=[binding.HTTPError])
     def update(self, key, state):
         record = {'_key': key, 'state': json.dumps(state)}
         self._collection_data.batch_save(record)
 
-    @retry()
+    @retry(exceptions=[binding.HTTPError])
     def batch_update(self, states):
         for state in states:
             state['state'] = json.dumps(state['state'])
             self._collection_data.batch_save(*states)
 
-    @retry()
+    @retry(exceptions=[binding.HTTPError])
     def get(self, key):
         try:
             record = self._collection_data.query_by_id(key)
@@ -216,7 +221,7 @@ class KVStoreCheckpointer(Checkpointer):
 
         return json.loads(record['state'])
 
-    @retry()
+    @retry(exceptions=[binding.HTTPError])
     def delete(self, key):
         try:
             self._collection_data.delete_by_id(key)

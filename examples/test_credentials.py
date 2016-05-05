@@ -24,9 +24,9 @@ def test_credential_manager():
     assert cm.get_password('testuser2') == long_password
 
     cm.delete_password('testuser1')
-    with pytest.raises(Exception):
+    with pytest.raises(credentials.CredentialNotExistException):
         cm.get_password('testuser1')
 
     cm.delete_password('testuser2')
-    with pytest.raises(Exception):
+    with pytest.raises(credentials.CredentialNotExistException):
         cm.get_password('testuser2')
