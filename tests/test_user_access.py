@@ -217,7 +217,10 @@ def test_app_capability_manager(monkeypatch):
 
 def test_check_user_access(monkeypatch):
     def mock_get(self, path_segment, owner=None, app=None, sharing=None, **query):
-        return common.make_response_record('{"entry": [{"content": {"capabilities": ["can_read"]}}]}')
+        if path_segment.endswith('current-context'):
+            return common.make_response_record('{"entry": [{"content": {"username": "admin"}}]}')
+        else:
+            return common.make_response_record('{"entry": [{"content": {"capabilities": ["can_read"]}}]}')
 
     monkeypatch.setattr(binding.Context, 'get', mock_get)
 
@@ -232,13 +235,9 @@ def test_check_user_access(monkeypatch):
             'delete': 'delete_app_object_type2'},
     }
 
-    @user_access.CheckUserAccess(
-        common.SESSION_KEY, 'admin', app_capabilities, 'object_type1', 'read')
-    def test_func():
-        pass
-
     with pytest.raises(user_access.UserAccessException):
-        test_func()
+        user_access.check_user_access(
+            common.SESSION_KEY, app_capabilities, 'object_type1', 'read')
 
 
 def test_get_current_username(monkeypatch):

@@ -101,15 +101,15 @@ class ObjectACL(object):
         self._obj_shared_by_inclusion = obj_shared_by_inclusion
 
     @classmethod
-    def _check_perms(self, obj_perms):
+    def _check_perms(cls, obj_perms):
         if not isinstance(obj_perms, dict):
             raise ObjectACLException(
                 'Invalid object acl perms type: %s, should be a dict.' %
                 type(obj_perms))
 
-        if not (self.OBJ_PERMS_READ_KEY in obj_perms and
-                self.OBJ_PERMS_WRITE_KEY in obj_perms and
-                self.OBJ_PERMS_DELETE_KEY in obj_perms):
+        if not (cls.OBJ_PERMS_READ_KEY in obj_perms and
+                cls.OBJ_PERMS_WRITE_KEY in obj_perms and
+                cls.OBJ_PERMS_DELETE_KEY in obj_perms):
             raise ObjectACLException(
                 'Invalid object acl perms: %s, '
                 'should include read, write and delete perms.' % obj_perms)
@@ -680,13 +680,17 @@ class UserAccessException(Exception):
     pass
 
 
-class CheckUserAccess(object):
-    '''Decorator for handling user access.
+def check_user_access(session_key, capabilities, obj_type, operation,
+                      scheme='https', host='localhost', port=8089, **context):
+    '''User access checker.
+
+    It will fetch user capabilities from given `session_key` and check if
+    the capability extracted from `capabilities`, `obj_type` and `operation`
+    is contained, if user capabilities include the extracted capability user
+    access is ok else fail.
 
     :param session_key: Splunk access token.
     :type session_key: ``string``
-    :param username: User name of roles to get.
-    :type username: ``string``
     :param capabilities: App capabilities, example: {
         'object_type1': {
         'read': 'read_app_object_type1',
@@ -711,57 +715,24 @@ class CheckUserAccess(object):
     :param context: Other configurations for Splunk rest client.
     :type context: ``dict``
 
+    :raises UserAccessException: If user access permission is denied.
+
     Usage::
        >>> from solnlib.user_access import CheckUserAccess
-       >>> @CheckUserAccess(session_key, username, capabilities, 'test_object', 'read')
        >>> def fun():
-       >>>    ...
+       >>>     check_user_access(
+       >>>         session_key, capabilities, 'test_object', 'read')
+       >>>     ...
     '''
 
-    def __init__(self, session_key, username, capabilities, obj_type, operation,
-                 scheme='https', host='localhost', port=8089, **context):
-        self._session_key = session_key
-        self._username = username
-        self._capabilities = capabilities
-        self._obj_type = obj_type
-        self._operation = operation
-        self._scheme = scheme
-        self._host = host
-        self._port = port
-        self._context = context
-
-    def __call__(self, f):
-        def wrapper(*args, **kwargs):
-            is_capable = False
-
-            if self._obj_type is None:
-                self._obj_type = kwargs.get('object')
-            if self._obj_type is None:
-                raise UserAccessException(
-                    'Expecting non-empty `obj_type` to check user access.')
-
-            owner = kwargs.get('owner')
-            if owner is None:
-                logging.warn(
-                    'No `owner` is detected, no ownership based checks will be enforced.')
-            elif self._username == owner:
-                is_capable = True
-
-            if not is_capable:
-                capability = \
-                    self._capabilities[self._obj_type][self._operation]
-                is_capable = user_is_capable(
-                    self._session_key, self._username, capability,
-                    scheme=self._scheme, host=self._host, port=self._port, **self._context)
-
-            if is_capable:
-                return f(*args, **kwargs)
-            else:
-                raise UserAccessException(
-                    'Permission denied, %s does not have the capability: %s.' %
-                    (self._username, capability))
-
-        return wrapper
+    username = get_current_username(
+        session_key, scheme=scheme, host=host, port=port, **context)
+    capability = capabilities[obj_type][operation]
+    if not user_is_capable(session_key, username, capability,
+                           scheme=scheme, host=host, port=port, **context):
+        raise UserAccessException(
+            'Permission denied, %s does not have the capability: %s.' %
+            (username, capability))
 
 
 class InvalidSessionKeyException(Exception):
