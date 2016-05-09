@@ -116,17 +116,18 @@ class ModularInput(object):
         # Validate properties
         self._validate_properties()
         # Modular input state
-        self._should_exit = False
+        self.should_exit = False
         # Metadata
-        self._server_host_name = None
-        self._server_uri = None
-        self._server_scheme = None
-        self._server_host = None
-        self._server_port = None
-        self._session_key = None
-        self._checkpoint_dir = None
+        self.server_host_name = None
+        self.server_uri = None
+        self.server_scheme = None
+        self.server_host = None
+        self.server_port = None
+        self.session_key = None
         # Modular input config name
-        self._config_name = None
+        self.config_name = None
+        # Checkpoint dir
+        self._checkpoint_dir = None
         # Checkpointer
         self._checkpointer = None
         # Orphan process monitor
@@ -160,84 +161,6 @@ class ModularInput(object):
                     'Attribute: "hec_input_name" can not be empty.')
 
     @property
-    def should_exit(self):
-        return self._should_exit
-
-    @should_exit.setter
-    def should_exit(self, state):
-        self._should_exit = bool(state)
-
-    @property
-    def config_name(self):
-        '''Get modular input config name.
-
-        :returns: Modular input config name.
-        :rtype: ``string``
-        '''
-
-        return self._config_name
-
-    @property
-    def server_host_name(self):
-        '''Get splunk server host name.
-
-        :returns: splunk server host name.
-        :rtype: ``string``
-        '''
-
-        return self._server_host_name
-
-    @property
-    def server_uri(self):
-        '''Get splunk server uri.
-
-        :returns: splunk server uri.
-        :rtype: ``string``
-        '''
-
-        return self._server_uri
-
-    @property
-    def server_scheme(self):
-        '''Get splunk server scheme.
-
-        :returns: splunk server scheme.
-        :rtype: ``string``
-        '''
-
-        return self._server_scheme
-
-    @property
-    def server_host(self):
-        '''Get splunk server host.
-
-        :returns: splunk server host.
-        :rtype: ``string``
-        '''
-
-        return self._server_host
-
-    @property
-    def server_port(self):
-        '''Get splunk server port.
-
-        :returns: splunk server port.
-        :rtype: ``integer``
-        '''
-
-        return self._server_port
-
-    @property
-    def session_key(self):
-        '''Get splunkd session key.
-
-        :returns: splunkd session key.
-        :rtype: ``string``
-        '''
-
-        return self._session_key
-
-    @property
     def checkpointer(self):
         '''Get checkpointer object.
 
@@ -258,16 +181,16 @@ class ModularInput(object):
     def _create_checkpointer(self):
         if self.use_kvstore_checkpointer:
             checkpointer_name = ':'.join(
-                [self.app, self._config_name,
+                [self.app, self.config_name,
                  self.kvstore_checkpointer_collection_name])
             checkpointer_name = ':'.join(
-                [self.app, self._config_name,
+                [self.app, self.config_name,
                  self.kvstore_checkpointer_collection_name])
             try:
                 return checkpointer.KVStoreCheckpointer(
-                    checkpointer_name, self._session_key,
-                    self.app, owner='nobody', scheme=self._server_scheme,
-                    host=self._server_host, port=self._server_port)
+                    checkpointer_name, self.session_key,
+                    self.app, owner='nobody', scheme=self.server_scheme,
+                    host=self.server_host, port=self.server_port)
             except binding.HTTPError as e:
                 logging.error('Failed to init kvstore checkpointer: %s.',
                               traceback.format_exc(e))
@@ -298,7 +221,7 @@ class ModularInput(object):
             hec_input_name = ':'.join([self.app, self.hec_input_name])
             try:
                 return event_writer.HECEventWriter(
-                    hec_input_name, self._session_key,
+                    hec_input_name, self.session_key,
                     scheme=self.server_scheme, host=self.server_host,
                     port=self.server_port)
             except binding.HTTPError as e:
@@ -309,13 +232,13 @@ class ModularInput(object):
             return event_writer.ClassicEventWriter()
 
     def _update_metadata(self, metadata):
-        self._server_host_name = metadata['server_host']
+        self.server_host_name = metadata['server_host']
         splunkd = urllib2.urlparse.urlsplit(metadata['server_uri'])
-        self._server_uri = splunkd.geturl()
-        self._server_scheme = splunkd.scheme
-        self._server_host = splunkd.hostname
-        self._server_port = splunkd.port
-        self._session_key = metadata['session_key']
+        self.server_uri = splunkd.geturl()
+        self.server_scheme = splunkd.scheme
+        self.server_host = splunkd.hostname
+        self.server_port = splunkd.port
+        self.session_key = metadata['session_key']
         self._checkpoint_dir = metadata['checkpoint_dir']
 
     def _do_scheme(self):
@@ -449,9 +372,9 @@ class ModularInput(object):
                 input_definition = InputDefinition.parse(sys.stdin)
                 self._update_metadata(input_definition.metadata)
                 if self.use_single_instance:
-                    self._config_name = self.name
+                    self.config_name = self.name
                 else:
-                    self._config_name = input_definition.inputs.keys()[0]
+                    self.config_name = input_definition.inputs.keys()[0]
                 self.do_run(input_definition.inputs)
                 logging.info('Modular input: %s exit normally.', self.name)
                 return 0
