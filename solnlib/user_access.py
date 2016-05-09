@@ -669,7 +669,7 @@ def check_user_access(session_key, capabilities, obj_type, operation,
     :raises UserAccessException: If user access permission is denied.
 
     Usage::
-       >>> from solnlib.user_access import CheckUserAccess
+       >>> from solnlib.user_access import check_user_access
        >>> def fun():
        >>>     check_user_access(
        >>>         session_key, capabilities, 'test_object', 'read')
