@@ -18,7 +18,6 @@ Splunk user access control related utilities.
 
 import re
 import json
-import logging
 
 from splunklib import binding
 
@@ -32,7 +31,7 @@ __all__ = ['ObjectACLException',
            'AppCapabilityManagerException',
            'AppCapabilityManager',
            'UserAccessException',
-           'CheckUserAccess',
+           'check_user_access',
            'InvalidSessionKeyException',
            'get_current_username',
            'UserNotExistException',
@@ -91,14 +90,14 @@ class ObjectACL(object):
            >>>    False)
         '''
 
-        self._obj_collection = obj_collection
-        self._obj_id = obj_id
-        self._obj_type = obj_type
-        self._obj_app = obj_app
-        self._obj_owner = obj_owner
+        self.obj_collection = obj_collection
+        self.obj_id = obj_id
+        self.obj_type = obj_type
+        self.obj_app = obj_app
+        self.obj_owner = obj_owner
         self._check_perms(obj_perms)
         self._obj_perms = obj_perms
-        self._obj_shared_by_inclusion = obj_shared_by_inclusion
+        self.obj_shared_by_inclusion = obj_shared_by_inclusion
 
     @classmethod
     def _check_perms(cls, obj_perms):
@@ -115,46 +114,6 @@ class ObjectACL(object):
                 'should include read, write and delete perms.' % obj_perms)
 
     @property
-    def obj_collection(self):
-        return self._obj_collection
-
-    @obj_collection.setter
-    def obj_collection(self, obj_collection):
-        self._obj_collection = obj_collection
-
-    @property
-    def obj_id(self):
-        return self._obj_id
-
-    @obj_id.setter
-    def obj_id(self, obj_id):
-        self._obj_id = obj_id
-
-    @property
-    def obj_type(self):
-        return self._obj_type
-
-    @obj_type.setter
-    def obj_type(self, obj_type):
-        self._obj_type = obj_type
-
-    @property
-    def obj_app(self):
-        return self._obj_app
-
-    @obj_app.setter
-    def obj_app(self, obj_app):
-        self._obj_app = obj_app
-
-    @property
-    def obj_owner(self):
-        return self._obj_owner
-
-    @obj_owner.setter
-    def obj_owner(self, obj_owner):
-        self._obj_owner = obj_owner
-
-    @property
     def obj_perms(self):
         return self._obj_perms
 
@@ -162,14 +121,6 @@ class ObjectACL(object):
     def obj_perms(self, obj_perms):
         self._check_perms(obj_perms)
         self._obj_perms = obj_perms
-
-    @property
-    def obj_shared_by_inclusion(self):
-        return self._obj_shared_by_inclusion
-
-    @obj_shared_by_inclusion.setter
-    def obj_shared_by_inclusion(self, obj_shared_by_inclusion):
-        self._obj_shared_by_inclusion = obj_shared_by_inclusion
 
     @property
     def record(self):
@@ -188,14 +139,14 @@ class ObjectACL(object):
         '''
 
         return {
-            '_key': self.generate_key(self._obj_collection, self._obj_id),
-            self.OBJ_COLLECTION_KEY: self._obj_collection,
-            self.OBJ_ID_KEY: self._obj_id,
-            self.OBJ_TYPE_KEY: self._obj_type,
-            self.OBJ_APP_KEY: self._obj_app,
-            self.OBJ_OWNER_KEY: self._obj_owner,
+            '_key': self.generate_key(self.obj_collection, self.obj_id),
+            self.OBJ_COLLECTION_KEY: self.obj_collection,
+            self.OBJ_ID_KEY: self.obj_id,
+            self.OBJ_TYPE_KEY: self.obj_type,
+            self.OBJ_APP_KEY: self.obj_app,
+            self.OBJ_OWNER_KEY: self.obj_owner,
             self.OBJ_PERMS_KEY: self._obj_perms,
-            self.OBJ_SHARED_BY_INCLUSION_KEY: self._obj_shared_by_inclusion}
+            self.OBJ_SHARED_BY_INCLUSION_KEY: self.obj_shared_by_inclusion}
 
     @staticmethod
     def generate_key(obj_collection, obj_id):
