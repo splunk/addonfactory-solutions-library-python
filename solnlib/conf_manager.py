@@ -13,10 +13,13 @@
 # under the License.
 
 '''
-This modules contains simple interfaces for Splunk config file management.
+This modules contains simple interfaces for Splunk config file management, you
+can update/get/delete stanzas and encrypt some fields of stanza automatically.
 '''
 
 import json
+import logging
+import traceback
 
 from splunklib import binding
 
@@ -246,7 +249,9 @@ class ConfManager(object):
 
         try:
             self._conf_mgr.delete(stanza_name)
-        except KeyError:
+        except KeyError as e:
+            logging.error('Delete stanza: %s error: %s.',
+                          stanza_name, traceback.format_exc(e))
             raise ConfStanzaNotExistException(
                 'Stanza: %s does not exist in %s.conf' %
                 (stanza_name, self._conf_file))
