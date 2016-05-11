@@ -14,7 +14,7 @@
 
 '''
 This modules contains simple interfaces for Splunk config file management, you
-can update/get/delete stanzas and encrypt some fields of stanza automatically.
+can update/get/delete stanzas and encrypt/decrypt some fields of stanza automatically.
 '''
 
 import json
@@ -194,7 +194,10 @@ class ConfManager(object):
 
     @retry(exceptions=[binding.HTTPError])
     def update(self, stanza_name, stanza, encrypt_keys=None):
-        '''Update stanza with some fields are encrypted.
+        '''Update stanza.
+
+        It will try to encrypt the credential automatically fist if
+        encrypt_keys are not None else keep stanza untouched.
 
         :param stanza_name: Stanza name.
         :type stanza_name: ``string``
@@ -211,7 +214,7 @@ class ConfManager(object):
            >>> cfm = conf_manager.ConfManager('test_conf',
                                               session_key,
                                               'Splunk_TA_test')
-           >>> cfm.get('test_stanza', {'k1': 1, 'k2': 2}, ['k1'])
+           >>> cfm.update('test_stanza', {'k1': 1, 'k2': 2}, ['k1'])
         '''
 
         stanza = self._filter_stanza(stanza)
@@ -248,6 +251,11 @@ class ConfManager(object):
         '''
 
         try:
+            self._cred_mgr.delete_password(stanza_name)
+        except CredNotExistException:
+            pass
+
+        try:
             self._conf_mgr.delete(stanza_name)
         except KeyError as e:
             logging.error('Delete stanza: %s error: %s.',
@@ -255,11 +263,6 @@ class ConfManager(object):
             raise ConfStanzaNotExistException(
                 'Stanza: %s does not exist in %s.conf' %
                 (stanza_name, self._conf_file))
-
-        try:
-            self._cred_mgr.delete_password(stanza_name)
-        except CredNotExistException:
-            pass
 
     @retry(exceptions=[binding.HTTPError])
     def reload(self):
