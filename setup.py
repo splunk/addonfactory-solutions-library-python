@@ -103,9 +103,7 @@ setup(
     packages=['solnlib',
               'solnlib.modular_input'],
 
-    install_requires=['splunk-sdk==1.5.0', 'requests==2.9.1'],
-
-    dependency_links=["https://github.com/splunk/splunk-sdk-python/archive/develop.zip#egg=splunk-sdk-1.5.0"],
+    install_requires=['splunk-sdk==1.6.0', 'requests==2.9.1'],
 
     cmdclass={'test': TestCommand,
               'cov': CoverageCommand,
