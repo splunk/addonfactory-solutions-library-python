@@ -91,14 +91,9 @@ def test_check_user_access():
             'delete': 'delete_app_object_type2'},
     }
 
-    @user_access.CheckUserAccess(
-        session_key, context.username, app_capabilities, 'object_type1', 'read',
-        scheme=context.scheme, host=context.host, port=context.port)
-    def test_func():
-        pass
-
     with pytest.raises(user_access.UserAccessException):
-        test_func()
+        user_access.check_user_access(
+            session_key, app_capabilities, 'object_type1', 'read')
 
 
 def test_get_current_username():

@@ -68,7 +68,7 @@ class ACLManager(object):
                                                          port=port,
                                                          **context)
 
-    @retry()
+    @retry(exceptions=[binding.HTTPError])
     def get(self, path):
         '''Get ACL of  /servicesNS/{`owner`}/{`app`}/{`path`}.
 
@@ -77,13 +77,21 @@ class ACLManager(object):
         :returns: A dict contains ACL.
         :rtype: ``dict``
 
+        :raises ACLException: If `path` is invalid.
+
         Usage::
            >>> aclm = acl.ACLManager(session_key, 'Splunk_TA_test')
            >>> perms = aclm.get('data/transforms/extractions/_acl')
         '''
 
-        content = self._rest_client.get(
-            path, output_mode='json').body.read()
+        try:
+            content = self._rest_client.get(
+                path, output_mode='json').body.read()
+        except binding.HTTPError as e:
+            if e.status != 404:
+                raise
+
+            raise ACLException('Invalid endpoint: %s.', path)
 
         return json.loads(content)['entry'][0]['acl']
 
@@ -112,7 +120,7 @@ class ACLManager(object):
         :returns: A dict contains ACL after update.
         :rtype: ``dict``
 
-        :raises ACLException: If `path` doesn't end with 'acl/_acl'.
+        :raises ACLException: If `path` is invalid.
 
         Usage::
            >>> aclm = acl.ACLManager(session_key, 'Splunk_TA_test')
@@ -122,7 +130,7 @@ class ACLManager(object):
 
         if not path.endswith('/acl') and not path.endswith('/_acl'):
             raise ACLException(
-                'Endpoint: %s must end with /acl or /_acl.' % path)
+                'Invalid endpoint: %s, must end with /acl or /_acl.' % path)
 
         curr_acl = self.get(path)
 
@@ -147,8 +155,14 @@ class ACLManager(object):
 
         postargs['sharing'] = curr_acl['sharing']
 
-        content = self._rest_client.post(
-            path, body=binding._encode(**postargs),
-            output_mode='json').body.read()
+        try:
+            content = self._rest_client.post(
+                path, body=binding._encode(**postargs),
+                output_mode='json').body.read()
+        except binding.HTTPError as e:
+            if e.status != 404:
+                raise
+
+            raise ACLException('Invalid endpoint: %s.', path)
 
         return json.loads(content)['entry'][0]['acl']

@@ -24,7 +24,7 @@ import traceback
 from splunklib import binding
 
 from solnlib.utils import retry
-from solnlib.credentials import CredNotExistException
+from solnlib.credentials import CredentialNotExistException
 from solnlib.credentials import CredentialManager
 import solnlib.splunk_rest_client as rest_client
 
@@ -252,7 +252,7 @@ class ConfManager(object):
 
         try:
             self._cred_mgr.delete_password(stanza_name)
-        except CredNotExistException:
+        except CredentialNotExistException:
             pass
 
         try:
