@@ -19,6 +19,7 @@ The Splunk Software Development Kit for Solutions.
 from solnlib import acl
 from solnlib import compression
 from solnlib import credentials
+from solnlib import user_access
 from solnlib import ip_math
 from solnlib import log
 from solnlib import metadata
@@ -34,6 +35,7 @@ from solnlib import utils
 __all__ = ['acl',
            'compression',
            'credentials',
+           'user_access',
            'ip_math',
            'log',
            'metadata',
@@ -46,4 +48,4 @@ __all__ = ['acl',
            'splunkenv',
            'utils']
 
-__version__ = '1.0.0'
+__version__ = '1.0.1'

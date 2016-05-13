@@ -17,7 +17,7 @@ SESSION_KEY = 'nU1aB6BntzwREOnGowa7pN6avV3B6JefliAZIzCX9'
 
 
 def mock_splunkhome(monkeypatch):
-    class _MockPopen(object):
+    class MockPopen(object):
         def __init__(self, args, bufsize=0, executable=None,
                      stdin=None, stdout=None, stderr=None,
                      preexec_fn=None, close_fds=False, shell=False,
@@ -37,23 +37,23 @@ def mock_splunkhome(monkeypatch):
                 return fp.read(), None
 
     monkeypatch.setenv('SPLUNK_HOME', op.join(cur_dir, 'data/mock_splunk/'))
-    monkeypatch.setattr(subprocess, 'Popen', _MockPopen)
+    monkeypatch.setattr(subprocess, 'Popen', MockPopen)
 
 
 def mock_serverinfo(monkeypatch):
-    _mock_server_info_property = {'server_roles': ['cluster_search_head', 'search_head',
-                                                   'kv_store', 'shc_captain'],
-                                  'version': '6.3.1511.2',
-                                  'serverName': 'unittestServer'}
+    mock_server_info_property = {'server_roles': ['cluster_search_head', 'search_head',
+                                                  'kv_store', 'shc_captain'],
+                                 'version': '6.3.1511.2',
+                                 'serverName': 'unittestServer'}
 
-    monkeypatch.setattr(client.Service, 'info', _mock_server_info_property)
+    monkeypatch.setattr(client.Service, 'info', mock_server_info_property)
 
 
 def mock_gethostname(monkeypatch):
-    def _mock_gethostname():
+    def mock_gethostname():
         return 'unittestServer'
 
-    monkeypatch.setattr(socket, 'gethostname', _mock_gethostname)
+    monkeypatch.setattr(socket, 'gethostname', mock_gethostname)
 
 
 def make_response_record(body, status=200):

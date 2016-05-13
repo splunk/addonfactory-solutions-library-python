@@ -14,7 +14,7 @@ def test_resolve_hostname(monkeypatch):
     unresolvable_ip2 = '192.168.1.2'
     unresolvable_ip3 = '192.168.1.3'
 
-    def _mock_gethostbyaddr(addr):
+    def mock_gethostbyaddr(addr):
         if addr == resolvable_ip:
             return ('unittestServer', None, None)
         elif addr == unresolvable_ip1:
@@ -24,7 +24,7 @@ def test_resolve_hostname(monkeypatch):
         else:
             raise socket.timeout()
 
-    monkeypatch.setattr(socket, 'gethostbyaddr', _mock_gethostbyaddr)
+    monkeypatch.setattr(socket, 'gethostbyaddr', mock_gethostbyaddr)
 
     with pytest.raises(ValueError):
         net_utils.resolve_hostname(invalid_ip)

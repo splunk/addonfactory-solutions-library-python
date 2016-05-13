@@ -41,6 +41,8 @@ def run_test():
     import test_metadata
     import test_acl
     import test_credentials
+    import test_conf_manager
+    import test_user_access
 
     print 'check splunk environment...'
     test_splunkenv.test_splunkenv()
@@ -54,6 +56,10 @@ def run_test():
     test_acl.test_acl_manager()
     print 'test credential manager...'
     test_credentials.test_credential_manager()
+    print 'test conf manager...'
+    test_conf_manager.test_conf_manager()
+    print 'test user access...'
+    test_user_access.test_user_access()
 
 if __name__ == '__main__':
     teardown_environment()
