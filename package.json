@@ -7,6 +7,7 @@
     "build": "python setup.py sdist",
     "lint": "PYTHONPATH=./pypi_modules python setup.py lint | tee pylint.log",
     "test": "PYTHONPATH=./pypi_modules python setup.py test",
+    "jtest": "PYTHONPATH=./pypi_modules python setup.py jtest",
     "int_test": "PYTHONPATH=./pypi_modules python examples/main.py",
     "cov": "PYTHONPATH=./pypi_modules python setup.py cov",
     "cov_html": "PYTHONPATH=./pypi_modules python setup.py cov_html",

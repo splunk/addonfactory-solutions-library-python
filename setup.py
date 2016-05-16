@@ -45,6 +45,25 @@ class TestCommand(Command):
         pytest.main(['-v', tests_dir])
 
 
+class JTestCommand(Command):
+    '''
+    Command to run the whole test suite with junit report.
+    '''
+    description = 'Run full test suite with junit report.'
+    user_options = []
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        import pytest
+        tests_dir = op.sep.join([op.dirname(op.abspath(__file__)), 'tests'])
+        pytest.main(['-v', '--junitxml=junit_report.xml', tests_dir])
+
+
 class CoverageCommand(Command):
     '''
     Command to run the whole coverage.
@@ -106,6 +125,7 @@ setup(
     install_requires=['splunk-sdk==1.6.0', 'requests==2.9.1'],
 
     cmdclass={'test': TestCommand,
+              'jtest': JTestCommand,
               'cov': CoverageCommand,
               'cov_html': CoverageHtmlCommand},
 
