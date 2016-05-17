@@ -222,6 +222,13 @@ class HECEventWriter(EventWriter):
         super(HECEventWriter, self).__init__()
         hec_port, hec_token = self._get_hec_config(
             hec_input_name, session_key, scheme, host, port, **context)
+
+        if not context.get('pool_connections'):
+            context['pool_connections'] = 10
+
+        if not context.get('pool_maxsize'):
+            context['pool_maxsize'] = 10
+
         self._rest_client = rest_client.SplunkRestClient(hec_token,
                                                          app='-',
                                                          scheme=scheme,

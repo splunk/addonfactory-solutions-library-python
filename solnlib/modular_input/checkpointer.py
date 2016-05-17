@@ -171,6 +171,13 @@ class KVStoreCheckpointer(Checkpointer):
     @retry(exceptions=[binding.HTTPError])
     def _get_collection_data(self, collection_name, session_key, app, owner,
                              scheme, host, port, **context):
+
+        if not context.get('pool_connections'):
+            context['pool_connections'] = 5
+
+        if not context.get('pool_maxsize'):
+            context['pool_maxsize'] = 5
+
         kvstore = rest_client.SplunkRestClient(session_key,
                                                app,
                                                owner=owner,

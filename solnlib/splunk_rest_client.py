@@ -20,6 +20,7 @@ call instead of calling splunklib SDK directly in business logic code.
 
 import logging
 import traceback
+from cStringIO import StringIO
 
 import splunklib.binding as binding
 import splunklib.client as client
@@ -56,6 +57,8 @@ def _request_handler(context):
         'proxy_password': string,
         'key_file': string,
         'cert_file': string
+        'pool_connections', int,
+        'pool_maxsize', int,
         }
     :type content: dict
     '''
@@ -83,6 +86,17 @@ def _request_handler(context):
         cert = context['cert_file']
     else:
         cert = None
+
+    if context.get('pool_connections', 0):
+        logging.info("Use HTTP connection pooling")
+        session = requests.Session()
+        adapter = requests.adapters.HTTPAdapter(
+            pool_connections=context.get('pool_connections', 10),
+            pool_maxsize=context.get('pool_maxsize', 10))
+        session.mount('https://', adapter)
+        req_func = session.request
+    else:
+        req_func = requests.request
 
     def request(url, message, **kwargs):
         '''
@@ -112,8 +126,8 @@ def _request_handler(context):
         method = message.get('method', 'GET')
 
         try:
-            resp = requests.request(
-                method, url, data=body, headers=headers, stream=True,
+            resp = req_func(
+                method, url, data=body, headers=headers, stream=False,
                 verify=verify, proxies=proxies, cert=cert, **kwargs)
         except Exception as e:
             logging.error(
@@ -125,7 +139,7 @@ def _request_handler(context):
             'status': resp.status_code,
             'reason': resp.reason,
             'headers': dict(resp.headers),
-            'body': resp.raw,
+            'body': StringIO(resp.content),
         }
 
     return request
@@ -151,7 +165,8 @@ class SplunkRestClient(client.Service):
         be accounted and setup, all REST APIs to Splunkd will be through
         the proxy. If `context` contains `key_file`, `cert_file`, then
         certification will be accounted and setup, all REST APIs to Splunkd
-        will use certification.
+        will use certification. If `context` contains `pool_connections`,
+        `pool_maxsize`, then HTTP Connection will be pooled
     :type context: ``dict``
     '''
 
