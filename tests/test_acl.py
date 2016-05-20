@@ -36,6 +36,7 @@ def _mock_post(self, path_segment, owner=None, app=None, sharing=None, headers=N
 
 class TestACLManager(object):
     def test_get(self, monkeypatch):
+        common.mock_splunkhome(monkeypatch)
         monkeypatch.setattr(binding.Context, 'get', _mock_get)
 
         aclm = acl.ACLManager(common.SESSION_KEY, common.app)
@@ -43,6 +44,7 @@ class TestACLManager(object):
         assert perms == json.loads(_old_acl)['entry'][0]['acl']
 
     def test_update(self, monkeypatch):
+        common.mock_splunkhome(monkeypatch)
         monkeypatch.setattr(binding.Context, 'get', _mock_get)
         monkeypatch.setattr(binding.Context, 'post', _mock_post)
 

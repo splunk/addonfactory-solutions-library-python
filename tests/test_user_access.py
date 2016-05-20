@@ -68,6 +68,7 @@ def test_object_acl_manager(monkeypatch):
             if key in object_acls:
                 del object_acls[key]
 
+    common.mock_splunkhome(monkeypatch)
     monkeypatch.setattr(client.KVStoreCollections, 'get',
                         mock_kvstore_collections_get)
     monkeypatch.setattr(client.KVStoreCollections, 'create',
@@ -173,6 +174,7 @@ def test_app_capability_manager(monkeypatch):
         except:
             raise binding.HTTPError(None, status=404)
 
+    common.mock_splunkhome(monkeypatch)
     monkeypatch.setattr(client.KVStoreCollections, 'get',
                         mock_kvstore_collections_get)
     monkeypatch.setattr(client.KVStoreCollections, 'create',
@@ -222,6 +224,7 @@ def test_check_user_access(monkeypatch):
         else:
             return common.make_response_record('{"entry": [{"content": {"capabilities": ["can_read"]}}]}')
 
+    common.mock_splunkhome(monkeypatch)
     monkeypatch.setattr(binding.Context, 'get', mock_get)
 
     app_capabilities = {
@@ -249,6 +252,7 @@ def test_get_current_username(monkeypatch):
         else:
             raise binding.HTTPError(common.make_response_record('', status=401))
 
+    common.mock_splunkhome(monkeypatch)
     monkeypatch.setattr(binding.Context, 'get', mock_get)
 
     assert user_access.get_current_username(common.SESSION_KEY) == 'admin'
@@ -267,6 +271,7 @@ def test_get_user_capabilities(monkeypatch):
         else:
             raise binding.HTTPError(common.make_response_record('', status=404))
 
+    common.mock_splunkhome(monkeypatch)
     monkeypatch.setattr(binding.Context, 'get', mock_get)
 
     assert user_access.get_user_capabilities(
@@ -286,6 +291,7 @@ def test_user_is_capable(monkeypatch):
         else:
             raise binding.HTTPError(common.make_response_record('', status=404))
 
+    common.mock_splunkhome(monkeypatch)
     monkeypatch.setattr(binding.Context, 'get', mock_get)
 
     assert not user_access.user_is_capable(
@@ -305,6 +311,7 @@ def test_get_user_roles(monkeypatch):
         else:
             raise binding.HTTPError(common.make_response_record('', status=404))
 
+    common.mock_splunkhome(monkeypatch)
     monkeypatch.setattr(binding.Context, 'get', mock_get)
 
     user_access.get_user_roles(
