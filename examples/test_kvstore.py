@@ -1,9 +1,11 @@
 import sys
-import os.path as op
+import time
 import json
 import uuid
 import pytest
+import os.path as op
 
+from splunklib import binding
 from splunklib import client
 from splunklib.binding import HTTPError
 
@@ -23,7 +25,18 @@ def test_kvstore():
     fields = {'id': 'string',
               'name': 'string',
               'user': 'string'}
-    kvstore.create('sessions', fields=fields)
+
+    last_ex = None
+    for i in xrange(3):
+        try:
+            kvstore.create('sessions', fields=fields)
+            break
+        except binding.HTTPError as e:
+            last_ex = e
+            time.sleep(2 ** (i + 1))
+    else:
+        if last_ex:
+            raise last_ex
 
     collections = kvstore.list()
     collection_data = None

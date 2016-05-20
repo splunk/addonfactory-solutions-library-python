@@ -52,6 +52,7 @@ def test_kvstore_checkpointer(monkeypatch):
         except:
             raise binding.HTTPError(None, status=404)
 
+    common.mock_splunkhome(monkeypatch)
     monkeypatch.setattr(client.KVStoreCollections, 'get',
                         mock_kvstore_collections_get)
     monkeypatch.setattr(client.KVStoreCollections, 'create',

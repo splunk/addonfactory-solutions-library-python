@@ -40,11 +40,11 @@ class ACLManager(object):
     :type app: ``string``
     :param owner: (optional) Owner of namespace, default is `nobody`.
     :type owner: ``string``
-    :param scheme: (optional) The access scheme, default is `https`.
+    :param scheme: (optional) The access scheme, default is None.
     :type scheme: ``string``
-    :param host: (optional) The host name, default is `localhost`.
+    :param host: (optional) The host name, default is None.
     :type host: ``string``
-    :param port: (optional) The port number, default is 8089.
+    :param port: (optional) The port number, default is None.
     :type port: ``integer``
     :param context: Other configurations for Splunk rest client.
     :type context: ``dict``
@@ -59,7 +59,7 @@ class ACLManager(object):
     '''
 
     def __init__(self, session_key, app, owner='nobody',
-                 scheme='https', host='localhost', port=8089, **context):
+                 scheme=None, host=None, port=None, **context):
         self._rest_client = rest_client.SplunkRestClient(session_key,
                                                          app,
                                                          owner=owner,
@@ -68,7 +68,7 @@ class ACLManager(object):
                                                          port=port,
                                                          **context)
 
-    @retry()
+    @retry(exceptions=[binding.HTTPError])
     def get(self, path):
         '''Get ACL of  /servicesNS/{`owner`}/{`app`}/{`path`}.
 
@@ -77,13 +77,21 @@ class ACLManager(object):
         :returns: A dict contains ACL.
         :rtype: ``dict``
 
+        :raises ACLException: If `path` is invalid.
+
         Usage::
            >>> aclm = acl.ACLManager(session_key, 'Splunk_TA_test')
            >>> perms = aclm.get('data/transforms/extractions/_acl')
         '''
 
-        content = self._rest_client.get(
-            path, output_mode='json').body.read()
+        try:
+            content = self._rest_client.get(
+                path, output_mode='json').body.read()
+        except binding.HTTPError as e:
+            if e.status != 404:
+                raise
+
+            raise ACLException('Invalid endpoint: %s.', path)
 
         return json.loads(content)['entry'][0]['acl']
 
@@ -112,7 +120,7 @@ class ACLManager(object):
         :returns: A dict contains ACL after update.
         :rtype: ``dict``
 
-        :raises ACLException: If `path` doesn't end with 'acl/_acl'.
+        :raises ACLException: If `path` is invalid.
 
         Usage::
            >>> aclm = acl.ACLManager(session_key, 'Splunk_TA_test')
@@ -122,7 +130,7 @@ class ACLManager(object):
 
         if not path.endswith('/acl') and not path.endswith('/_acl'):
             raise ACLException(
-                'Endpoint: %s must end with /acl or /_acl.' % path)
+                'Invalid endpoint: %s, must end with /acl or /_acl.' % path)
 
         curr_acl = self.get(path)
 
@@ -147,8 +155,14 @@ class ACLManager(object):
 
         postargs['sharing'] = curr_acl['sharing']
 
-        content = self._rest_client.post(
-            path, body=binding._encode(**postargs),
-            output_mode='json').body.read()
+        try:
+            content = self._rest_client.post(
+                path, body=binding._encode(**postargs),
+                output_mode='json').body.read()
+        except binding.HTTPError as e:
+            if e.status != 404:
+                raise
+
+            raise ACLException('Invalid endpoint: %s.', path)
 
         return json.loads(content)['entry'][0]['acl']

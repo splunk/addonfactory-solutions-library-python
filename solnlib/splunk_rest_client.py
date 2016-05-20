@@ -20,9 +20,12 @@ call instead of calling splunklib SDK directly in business logic code.
 
 import logging
 import traceback
+from cStringIO import StringIO
 
 import splunklib.binding as binding
 import splunklib.client as client
+
+from solnlib.splunkenv import get_splunkd_access_info
 
 __all__ = ['SplunkRestClient']
 
@@ -56,6 +59,8 @@ def _request_handler(context):
         'proxy_password': string,
         'key_file': string,
         'cert_file': string
+        'pool_connections', int,
+        'pool_maxsize', int,
         }
     :type content: dict
     '''
@@ -83,6 +88,17 @@ def _request_handler(context):
         cert = context['cert_file']
     else:
         cert = None
+
+    if context.get('pool_connections', 0):
+        logging.info("Use HTTP connection pooling")
+        session = requests.Session()
+        adapter = requests.adapters.HTTPAdapter(
+            pool_connections=context.get('pool_connections', 10),
+            pool_maxsize=context.get('pool_maxsize', 10))
+        session.mount('https://', adapter)
+        req_func = session.request
+    else:
+        req_func = requests.request
 
     def request(url, message, **kwargs):
         '''
@@ -112,8 +128,8 @@ def _request_handler(context):
         method = message.get('method', 'GET')
 
         try:
-            resp = requests.request(
-                method, url, data=body, headers=headers, stream=True,
+            resp = req_func(
+                method, url, data=body, headers=headers, stream=False,
                 verify=verify, proxies=proxies, cert=cert, **kwargs)
         except Exception as e:
             logging.error(
@@ -125,14 +141,17 @@ def _request_handler(context):
             'status': resp.status_code,
             'reason': resp.reason,
             'headers': dict(resp.headers),
-            'body': resp.raw,
+            'body': StringIO(resp.content),
         }
 
     return request
 
 
 class SplunkRestClient(client.Service):
-    '''Splunk rest client.
+    '''Splunk rest client.AlertGroup
+
+    If any of scheme, host and port is None, will discover local
+    splunkd access info automatically.
 
     :param session_key: Splunk access token.
     :type session_key: ``string``
@@ -140,23 +159,27 @@ class SplunkRestClient(client.Service):
     :type app: ``string``
     :param owner: (optional) Owner of namespace, default is `nobody`.
     :type owner: ``string``
-    :param scheme: (optional) The access scheme, default is `https`.
+    :param scheme: (optional) The access scheme, default is None.
     :type scheme: ``string``
-    :param host: (optional) The host name, default is `localhost`.
+    :param host: (optional) The host name, default is None.
     :type host: ``string``
-    :param port: (optional) The port number, default is 8089.
+    :param port: (optional) The port number, default is None.
     :type port: ``integer``
     :param context: Other configurations, it can contains `proxy_hostname`,
         `proxy_port`, `proxy_username`, `proxy_password`, then proxy will
         be accounted and setup, all REST APIs to Splunkd will be through
         the proxy. If `context` contains `key_file`, `cert_file`, then
         certification will be accounted and setup, all REST APIs to Splunkd
-        will use certification.
+        will use certification. If `context` contains `pool_connections`,
+        `pool_maxsize`, then HTTP Connection will be pooled
     :type context: ``dict``
     '''
 
     def __init__(self, session_key, app, owner='nobody',
-                 scheme='https', host='localhost', port=8089, **context):
+                 scheme=None, host=None, port=None, **context):
+        if not all([scheme, host, port]):
+            scheme, host, port = get_splunkd_access_info()
+
         handler = _request_handler(context)
         super(SplunkRestClient, self).__init__(
             handler=handler,

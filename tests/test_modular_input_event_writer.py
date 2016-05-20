@@ -65,6 +65,7 @@ def test_hec_event_writer(monkeypatch):
     def mock_post(self, path_segment, owner=None, app=None, sharing=None, headers=None, **query):
         assert query['body'] == '{"index": "main", "sourcetype": "misc", "source": "Splunk", "host": "localhost", "time": 1372274622.493, "event": "This is a test data1."}\n{"index": "main", "sourcetype": "misc", "source": "Splunk", "host": "localhost", "time": 1372274622.493, "event": "This is a test data2."}'
 
+    common.mock_splunkhome(monkeypatch)
     monkeypatch.setattr(binding.Context, 'get', mock_get)
     monkeypatch.setattr(binding.Context, 'post', mock_post)
 

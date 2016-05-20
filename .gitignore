@@ -17,3 +17,4 @@ pylint.log
 pypi_modules/*
 htmlcov
 junit_report.xml
+run_all_tests.sh

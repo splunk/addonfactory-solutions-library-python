@@ -248,11 +248,11 @@ class ObjectACLManager(object):
     :type app: ``string``
     :param owner: (optional) Owner of namespace, default is `nobody`.
     :type owner: ``string``
-    :param scheme: (optional) The access scheme, default is `https`.
+    :param scheme: (optional) The access scheme, default is None.
     :type scheme: ``string``
-    :param host: (optional) The host name, default is `localhost`.
+    :param host: (optional) The host name, default is None.
     :type host: ``string``
-    :param port: (optional) The port number, default is 8089.
+    :param port: (optional) The port number, default is None.
     :type port: ``integer``
     :param context: Other configurations for Splunk rest client.
     :type context: ``dict``
@@ -267,7 +267,7 @@ class ObjectACLManager(object):
     '''
 
     def __init__(self, collection_name, session_key, app, owner='nobody',
-                 scheme='https', host='localhost', port=8089, **context):
+                 scheme=None, host=None, port=None, **context):
         collection_name = '{app}_{collection_name}'.format(
             app=app, collection_name=collection_name)
         try:
@@ -512,11 +512,11 @@ class AppCapabilityManager(object):
     :type app: ``string``
     :param owner: (optional) Owner of namespace, default is `nobody`.
     :type owner: ``string``
-    :param scheme: (optional) The access scheme, default is `https`.
+    :param scheme: (optional) The access scheme, default is None.
     :type scheme: ``string``
-    :param host: (optional) The host name, default is `localhost`.
+    :param host: (optional) The host name, default is None.
     :type host: ``string``
-    :param port: (optional) The port number, default is 8089.
+    :param port: (optional) The port number, default is None.
     :type port: ``integer``
     :param context: Other configurations for Splunk rest client.
     :type context: ``dict``
@@ -534,7 +534,7 @@ class AppCapabilityManager(object):
     '''
 
     def __init__(self, collection_name, session_key, app, owner='nobody',
-                 scheme='https', host='localhost', port=8089, **context):
+                 scheme=None, host=None, port=None, **context):
         self._app = app
 
         collection_name = '{app}_{collection_name}'.format(
@@ -632,7 +632,7 @@ class UserAccessException(Exception):
 
 
 def check_user_access(session_key, capabilities, obj_type, operation,
-                      scheme='https', host='localhost', port=8089, **context):
+                      scheme=None, host=None, port=None, **context):
     '''User access checker.
 
     It will fetch user capabilities from given `session_key` and check if
@@ -657,11 +657,11 @@ def check_user_access(session_key, capabilities, obj_type, operation,
     :type obj_type: ``string``
     :param operation: User operation, possible option: (read/write/delete).
     :type operation: ``string``
-    :param scheme: (optional) The access scheme, default is `https`.
+    :param scheme: (optional) The access scheme, default is None.
     :type scheme: ``string``
-    :param host: (optional) The host name, default is `localhost`.
+    :param host: (optional) The host name, default is None.
     :type host: ``string``
-    :param port: (optional) The port number, default is 8089.
+    :param port: (optional) The port number, default is None.
     :type port: ``integer``
     :param context: Other configurations for Splunk rest client.
     :type context: ``dict``
@@ -692,16 +692,16 @@ class InvalidSessionKeyException(Exception):
 
 @retry(exceptions=[binding.HTTPError])
 def get_current_username(session_key,
-                         scheme='https', host='localhost', port=8089, **context):
+                         scheme=None, host=None, port=None, **context):
     '''Get current user name from `session_key`.
 
     :param session_key: Splunk access token.
     :type session_key: ``string``
-    :param scheme: (optional) The access scheme, default is `https`.
+    :param scheme: (optional) The access scheme, default is None.
     :type scheme: ``string``
-    :param host: (optional) The host name, default is `localhost`.
+    :param host: (optional) The host name, default is None.
     :type host: ``string``
-    :param port: (optional) The port number, default is 8089.
+    :param port: (optional) The port number, default is None.
     :type port: ``integer``
     :param context: Other configurations for Splunk rest client.
     :type context: ``dict``
@@ -741,18 +741,18 @@ class UserNotExistException(Exception):
 
 @retry(exceptions=[binding.HTTPError])
 def get_user_capabilities(session_key, username,
-                          scheme='https', host='localhost', port=8089, **context):
+                          scheme=None, host=None, port=None, **context):
     '''Get user capabilities.
 
     :param session_key: Splunk access token.
     :type session_key: ``string``
     :param username: User name of capabilities to get.
     :type username: ``string``
-    :param scheme: (optional) The access scheme, default is `https`.
+    :param scheme: (optional) The access scheme, default is None.
     :type scheme: ``string``
-    :param host: (optional) The host name, default is `localhost`.
+    :param host: (optional) The host name, default is None.
     :type host: ``string``
-    :param port: (optional) The port number, default is 8089.
+    :param port: (optional) The port number, default is None.
     :type port: ``integer``
     :param context: Other configurations for Splunk rest client.
     :type context: ``dict``
@@ -788,7 +788,7 @@ def get_user_capabilities(session_key, username,
 
 
 def user_is_capable(session_key, username, capability,
-                    scheme='https', host='localhost', port=8089, **context):
+                    scheme=None, host=None, port=None, **context):
     '''Check if user is capable for given `capability`.
 
     :param session_key: Splunk access token.
@@ -797,11 +797,11 @@ def user_is_capable(session_key, username, capability,
     :type username: ``string``
     :param capability: The capability we wish to check for.
     :type capability: ``string``
-    :param scheme: (optional) The access scheme, default is `https`.
+    :param scheme: (optional) The access scheme, default is None.
     :type scheme: ``string``
-    :param host: (optional) The host name, default is `localhost`.
+    :param host: (optional) The host name, default is None.
     :type host: ``string``
-    :param port: (optional) The port number, default is 8089.
+    :param port: (optional) The port number, default is None.
     :type port: ``integer``
     :param context: Other configurations for Splunk rest client.
     :type context: ``dict``
@@ -824,18 +824,18 @@ def user_is_capable(session_key, username, capability,
 
 @retry(exceptions=[binding.HTTPError])
 def get_user_roles(session_key, username,
-                   scheme='https', host='localhost', port=8089, **context):
+                   scheme=None, host=None, port=None, **context):
     '''Get user roles.
 
     :param session_key: Splunk access token.
     :type session_key: ``string``
     :param username: (optional) User name of roles to get.
     :type username: ``string``
-    :param scheme: (optional) The access scheme, default is `https`.
+    :param scheme: (optional) The access scheme, default is None.
     :type scheme: ``string``
-    :param host: (optional) The host name, default is `localhost`.
+    :param host: (optional) The host name, default is None.
     :type host: ``string``
-    :param port: (optional) The port number, default is 8089.
+    :param port: (optional) The port number, default is None.
     :type port: ``integer``
     :param context: Other configurations for Splunk rest client.
     :type context: ``dict``

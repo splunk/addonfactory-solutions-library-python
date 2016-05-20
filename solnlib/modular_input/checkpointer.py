@@ -139,14 +139,16 @@ class KVStoreCheckpointer(Checkpointer):
     :type app: ``string``
     :param owner: (optional) Owner of namespace, default is `nobody`.
     :type owner: ``string``
-    :param scheme: (optional) The access scheme, default is `https`.
+    :param scheme: (optional) The access scheme, default is None.
     :type scheme: ``string``
-    :param host: (optional) The host name, default is `localhost`.
+    :param host: (optional) The host name, default is None.
     :type host: ``string``
-    :param port: (optional) The port number, default is 8089.
+    :param port: (optional) The port number, default is None.
     :type port: ``integer``
     :param context: Other configurations for Splunk rest client.
     :type context: ``dict``
+
+    :raises CheckpointerException: If init kvstore checkpointer failed.
 
     Usage::
         >>> from solnlib.modular_input import checkpointer
@@ -158,14 +160,24 @@ class KVStoreCheckpointer(Checkpointer):
     '''
 
     def __init__(self, collection_name, session_key, app, owner='nobody',
-                 scheme='https', host='localhost', port=8089, **context):
-        self._collection_data = self._get_collection_data(
-            collection_name, session_key, app, owner,
-            scheme, host, port, **context)
+                 scheme=None, host=None, port=None, **context):
+        try:
+            self._collection_data = self._get_collection_data(
+                collection_name, session_key, app, owner,
+                scheme, host, port, **context)
+        except KeyError:
+            raise CheckpointerException('Get kvstore checkpointer failed.')
 
-    @retry()
+    @retry(exceptions=[binding.HTTPError])
     def _get_collection_data(self, collection_name, session_key, app, owner,
                              scheme, host, port, **context):
+
+        if not context.get('pool_connections'):
+            context['pool_connections'] = 5
+
+        if not context.get('pool_maxsize'):
+            context['pool_maxsize'] = 5
+
         kvstore = rest_client.SplunkRestClient(session_key,
                                                app,
                                                owner=owner,
@@ -189,20 +201,20 @@ class KVStoreCheckpointer(Checkpointer):
             if collection.name == collection_name:
                 return collection.data
         else:
-            raise CheckpointerException('Get kvstore checkpointer failed.')
+            raise KeyError('Get collection data: %s failed.' % collection_name)
 
-    @retry()
+    @retry(exceptions=[binding.HTTPError])
     def update(self, key, state):
         record = {'_key': key, 'state': json.dumps(state)}
         self._collection_data.batch_save(record)
 
-    @retry()
+    @retry(exceptions=[binding.HTTPError])
     def batch_update(self, states):
         for state in states:
             state['state'] = json.dumps(state['state'])
             self._collection_data.batch_save(*states)
 
-    @retry()
+    @retry(exceptions=[binding.HTTPError])
     def get(self, key):
         try:
             record = self._collection_data.query_by_id(key)
@@ -216,7 +228,7 @@ class KVStoreCheckpointer(Checkpointer):
 
         return json.loads(record['state'])
 
-    @retry()
+    @retry(exceptions=[binding.HTTPError])
     def delete(self, key):
         try:
             self._collection_data.delete_by_id(key)

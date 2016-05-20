@@ -43,6 +43,7 @@ def test_credential_manager(monkeypatch):
         else:
             raise KeyError('No such entity %s' % username)
 
+    common.mock_splunkhome(monkeypatch)
     monkeypatch.setattr(
         client.StoragePasswords, 'list', mock_storage_passwords_list)
     monkeypatch.setattr(
@@ -73,6 +74,7 @@ def test_get_session_key(monkeypatch):
         return common.make_response_record(
             '{"sessionKey":"' + common.SESSION_KEY + '"}')
 
+    common.mock_splunkhome(monkeypatch)
     monkeypatch.setattr(binding.HttpLib, 'post', _mock_session_key_post)
 
     assert credentials.get_session_key(

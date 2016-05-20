@@ -26,16 +26,20 @@ import solnlib.splunk_rest_client as rest_client
 __all__ = ['ServerInfo']
 
 
+class ServerInfoException(Exception):
+    pass
+
+
 class ServerInfo(object):
     '''This class is a wrapper of splunk server info.
 
     :param session_key: Splunk access token.
     :type session_key: ``string``
-    :param scheme: (optional) The access scheme, default is `https`.
+    :param scheme: (optional) The access scheme, default is None.
     :type scheme: ``string``
-    :param host: (optional) The host name, default is `localhost`.
+    :param host: (optional) The host name, default is None.
     :type host: ``string``
-    :param port: (optional) The port number, default is 8089.
+    :param port: (optional) The port number, default is None.
     :type port: ``integer``
     :param context: Other configurations for Splunk rest client.
     :type context: ``dict``
@@ -44,12 +48,7 @@ class ServerInfo(object):
     SHC_MEMBER_ENDPOINT = '/services/shcluster/member/members'
 
     def __init__(self, session_key,
-                 scheme='https', host='localhost', port=8089, **context):
-        self._session_key = session_key
-        self._scheme = scheme
-        self._host = host
-        self._port = port
-        self._context = context
+                 scheme=None, host=None, port=None, **context):
         self._rest_client = rest_client.SplunkRestClient(session_key,
                                                          '-',
                                                          scheme=scheme,
@@ -57,7 +56,7 @@ class ServerInfo(object):
                                                          port=port,
                                                          **context)
 
-    @retry()
+    @retry(exceptions=[binding.HTTPError])
     def _server_info(self):
         return self._rest_client.info
 
@@ -125,18 +124,26 @@ class ServerInfo(object):
 
         return 'cluster_search_head' in self._server_info()['server_roles']
 
-    @retry()
+    @retry(exceptions=[binding.HTTPError])
     def get_shc_members(self):
         '''Get SHC members.
 
         :returns: List of SHC members [(label, peer_scheme_host_port) ...]
         :rtype: ``list``
 
-        :Raises splunklib.binding.HTTPError: If endpoint doesn't exist.
+        :raises ServerInfoException: If this server has no SHC members.
         '''
 
-        content = self._rest_client.get(self.SHC_MEMBER_ENDPOINT,
-                                        output_mode='json').body.read()
+        try:
+            content = self._rest_client.get(self.SHC_MEMBER_ENDPOINT,
+                                            output_mode='json').body.read()
+        except binding.HTTPError as e:
+            if e.status != 404 and e.status != 503:
+                raise
+
+            raise ServerInfoException(
+                'This server is not a SHC member and has no SHC members.')
+
         members = []
         for member in json.loads(content)['entry']:
             content = member['content']

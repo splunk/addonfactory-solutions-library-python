@@ -194,11 +194,11 @@ class HECEventWriter(EventWriter):
     :type hec_input_name: ``string``
     :param session_key: Splunk access token.
     :type session_key: ``string``
-    :param scheme: (optional) The access scheme, default is `https`.
+    :param scheme: (optional) The access scheme, default is None.
     :type scheme: ``string``
-    :param host: (optional) The host name, default is `localhost`.
+    :param host: (optional) The host name, default is None.
     :type host: ``string``
-    :param port: (optional) The port number, default is 8089.
+    :param port: (optional) The port number, default is None.
     :type port: ``integer``
     :param context: Other configurations for Splunk rest client.
     :type context: ``dict``
@@ -218,10 +218,17 @@ class HECEventWriter(EventWriter):
     description = 'HECEventWriter'
 
     def __init__(self, hec_input_name, session_key,
-                 scheme='https', host='localhost', port=8089, **context):
+                 scheme=None, host=None, port=None, **context):
         super(HECEventWriter, self).__init__()
         hec_port, hec_token = self._get_hec_config(
             hec_input_name, session_key, scheme, host, port, **context)
+
+        if not context.get('pool_connections'):
+            context['pool_connections'] = 10
+
+        if not context.get('pool_maxsize'):
+            context['pool_maxsize'] = 10
+
         self._rest_client = rest_client.SplunkRestClient(hec_token,
                                                          app='-',
                                                          scheme=scheme,
@@ -229,7 +236,7 @@ class HECEventWriter(EventWriter):
                                                          port=hec_port,
                                                          **context)
 
-    @retry()
+    @retry(exceptions=[binding.HTTPError])
     def _get_hec_config(self, hec_input_name, session_key,
                         scheme, host, port, **context):
         _rest_client = rest_client.SplunkRestClient(session_key,

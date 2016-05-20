@@ -98,6 +98,7 @@ def test_conf_manager(monkeypatch):
     def mock_stanza_submit(self, stanza):
         all_stanzas[self.name] = stanza
 
+    common.mock_splunkhome(monkeypatch)
     monkeypatch.setattr(client.StoragePasswords, 'list',
                         mock_storage_passwords_list)
     monkeypatch.setattr(client.StoragePasswords, 'create',
