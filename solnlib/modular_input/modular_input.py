@@ -16,7 +16,6 @@
 This module provides a base class of Splunk modular input.
 '''
 
-import re
 import sys
 import urllib2
 import logging

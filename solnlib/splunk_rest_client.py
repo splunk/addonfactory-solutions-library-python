@@ -25,6 +25,8 @@ from cStringIO import StringIO
 import splunklib.binding as binding
 import splunklib.client as client
 
+from solnlib.splunkenv import get_splunkd_access_info
+
 __all__ = ['SplunkRestClient']
 
 
@@ -146,7 +148,10 @@ def _request_handler(context):
 
 
 class SplunkRestClient(client.Service):
-    '''Splunk rest client.
+    '''Splunk rest client.AlertGroup
+
+    If any of scheme, host and port is None, will discover local
+    splunkd access info automatically.
 
     :param session_key: Splunk access token.
     :type session_key: ``string``
@@ -154,11 +159,11 @@ class SplunkRestClient(client.Service):
     :type app: ``string``
     :param owner: (optional) Owner of namespace, default is `nobody`.
     :type owner: ``string``
-    :param scheme: (optional) The access scheme, default is `https`.
+    :param scheme: (optional) The access scheme, default is None.
     :type scheme: ``string``
-    :param host: (optional) The host name, default is `localhost`.
+    :param host: (optional) The host name, default is None.
     :type host: ``string``
-    :param port: (optional) The port number, default is 8089.
+    :param port: (optional) The port number, default is None.
     :type port: ``integer``
     :param context: Other configurations, it can contains `proxy_hostname`,
         `proxy_port`, `proxy_username`, `proxy_password`, then proxy will
@@ -171,7 +176,10 @@ class SplunkRestClient(client.Service):
     '''
 
     def __init__(self, session_key, app, owner='nobody',
-                 scheme='https', host='localhost', port=8089, **context):
+                 scheme=None, host=None, port=None, **context):
+        if any([scheme is None, host is None, port is None]):
+            scheme, host, port = get_splunkd_access_info()
+
         handler = _request_handler(context)
         super(SplunkRestClient, self).__init__(
             handler=handler,

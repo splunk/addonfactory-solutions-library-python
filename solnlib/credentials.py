@@ -22,6 +22,7 @@ import json
 from splunklib import binding
 
 from solnlib.utils import retry
+from solnlib.splunkenv import get_splunkd_access_info
 import solnlib.splunk_rest_client as rest_client
 
 __all__ = ['CredentialException',
@@ -49,11 +50,11 @@ class CredentialManager(object):
     :type owner: ``string``
     :param realm: (optional) Realm of credential, default is None.
     :type realm: ``string``
-    :param scheme: (optional) The access scheme, default is `https`.
+    :param scheme: (optional) The access scheme, default is None.
     :type scheme: ``string``
-    :param host: (optional) The host name, default is `localhost`.
+    :param host: (optional) The host name, default is None.
     :type host: ``string``
-    :param port: (optional) The port number, default is 8089.
+    :param port: (optional) The port number, default is None.
     :type port: ``integer``
     :param context: Other configurations for Splunk rest client.
     :type context: ``dict``
@@ -73,7 +74,7 @@ class CredentialManager(object):
     SEP = '``splunk_cred_sep``'
 
     def __init__(self, session_key, app, owner='nobody', realm=None,
-                 scheme='https', host='localhost', port=8089, **context):
+                 scheme=None, host=None, port=None, **context):
         self._realm = realm
         self._storage_passwords = rest_client.SplunkRestClient(
             session_key,
@@ -235,7 +236,7 @@ class CredentialManager(object):
 
 @retry(exceptions=[binding.HTTPError])
 def get_session_key(username, password,
-                    scheme='https', host='localhost', port=8089, **context):
+                    scheme=None, host=None, port=None, **context):
     '''Get splunkd access token.
 
     :param username: The Splunk account username, which is used to
@@ -243,11 +244,11 @@ def get_session_key(username, password,
     :type username: ``string``
     :param password: The Splunk account password.
     :type password: ``string``
-    :param scheme: (optional) The access scheme, default is `https`.
+    :param scheme: (optional) The access scheme, default is None.
     :type scheme: ``string``
-    :param host: (optional) The host name, default is `localhost`.
+    :param host: (optional) The host name, default is None.
     :type host: ``string``
-    :param port: (optional) The port number, default is `8089`.
+    :param port: (optional) The port number, default is None.
     :type port: ``integer``
     :returns: Splunk session key.
     :rtype: ``string``
@@ -260,6 +261,9 @@ def get_session_key(username, password,
 
        >>> credentials.get_session_key('user', 'password')
     '''
+
+    if any([scheme is None, host is None, port is None]):
+        scheme, host, port = get_splunkd_access_info()
 
     uri = '{scheme}://{host}:{port}/{endpoint}'.format(
         scheme=scheme, host=host, port=port, endpoint='services/auth/login')

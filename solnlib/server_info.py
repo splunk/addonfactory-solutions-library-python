@@ -35,11 +35,11 @@ class ServerInfo(object):
 
     :param session_key: Splunk access token.
     :type session_key: ``string``
-    :param scheme: (optional) The access scheme, default is `https`.
+    :param scheme: (optional) The access scheme, default is None.
     :type scheme: ``string``
-    :param host: (optional) The host name, default is `localhost`.
+    :param host: (optional) The host name, default is None.
     :type host: ``string``
-    :param port: (optional) The port number, default is 8089.
+    :param port: (optional) The port number, default is None.
     :type port: ``integer``
     :param context: Other configurations for Splunk rest client.
     :type context: ``dict``
@@ -48,12 +48,7 @@ class ServerInfo(object):
     SHC_MEMBER_ENDPOINT = '/services/shcluster/member/members'
 
     def __init__(self, session_key,
-                 scheme='https', host='localhost', port=8089, **context):
-        self._session_key = session_key
-        self._scheme = scheme
-        self._host = host
-        self._port = port
-        self._context = context
+                 scheme=None, host=None, port=None, **context):
         self._rest_client = rest_client.SplunkRestClient(session_key,
                                                          '-',
                                                          scheme=scheme,

@@ -40,11 +40,11 @@ class ACLManager(object):
     :type app: ``string``
     :param owner: (optional) Owner of namespace, default is `nobody`.
     :type owner: ``string``
-    :param scheme: (optional) The access scheme, default is `https`.
+    :param scheme: (optional) The access scheme, default is None.
     :type scheme: ``string``
-    :param host: (optional) The host name, default is `localhost`.
+    :param host: (optional) The host name, default is None.
     :type host: ``string``
-    :param port: (optional) The port number, default is 8089.
+    :param port: (optional) The port number, default is None.
     :type port: ``integer``
     :param context: Other configurations for Splunk rest client.
     :type context: ``dict``
@@ -59,7 +59,7 @@ class ACLManager(object):
     '''
 
     def __init__(self, session_key, app, owner='nobody',
-                 scheme='https', host='localhost', port=8089, **context):
+                 scheme=None, host=None, port=None, **context):
         self._rest_client = rest_client.SplunkRestClient(session_key,
                                                          app,
                                                          owner=owner,

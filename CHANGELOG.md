@@ -1,5 +1,17 @@
 # Splunk Solution Library for Python Changelog
 
+## Version 1.1.0
+
+### New features and APIs
+
+* Enhance splunk_rest_client APIs to support local splunkd access without passing
+  scheme, host and port.
+* Support splunk_rest_client with thread pooling.
+
+### Notes
+
+* Rename `CredNotExistException` to `CredentialNotExistException`
+
 ## Version 1.0.1
 
 ### Bug fixes
