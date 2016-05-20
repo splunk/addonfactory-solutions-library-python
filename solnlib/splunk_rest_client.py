@@ -177,7 +177,7 @@ class SplunkRestClient(client.Service):
 
     def __init__(self, session_key, app, owner='nobody',
                  scheme=None, host=None, port=None, **context):
-        if any([scheme is None, host is None, port is None]):
+        if not all([scheme, host, port]):
             scheme, host, port = get_splunkd_access_info()
 
         handler = _request_handler(context)
