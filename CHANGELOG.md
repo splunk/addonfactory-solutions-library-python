@@ -5,8 +5,10 @@
 ### New features and APIs
 
 * Enhance splunk_rest_client APIs to support local splunkd access without passing
-  scheme, host and port.
-* Support splunk_rest_client with thread pooling.
+  scheme, host and port which will be auto discovered. This simplify all of the clients.
+* Add http connection pooling switch to splunk_rest_client. By default the http connection pooling
+  is not turned on, but for KVStore checkpointer and Http Event Writer, the http connection
+  pooling is turned on
 
 ### Notes
 
