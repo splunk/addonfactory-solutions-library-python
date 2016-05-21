@@ -1,6 +1,6 @@
 # Splunk Solution Library for Python Changelog
 
-## Version 1.1.0
+## Version 1.0.2
 
 ### New features and APIs
 
