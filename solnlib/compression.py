@@ -13,7 +13,7 @@
 # under the License.
 
 '''
-This modules contains simple interfaces for File compression and decompression.
+This module contains simple interfaces for File compression and decompression.
 '''
 
 import gzip
