@@ -13,8 +13,9 @@
 # under the License.
 
 '''
-This modules contains simple interfaces for Splunk config file management, you
-can update/get/delete stanzas and encrypt/decrypt some fields of stanza automatically.
+This module contains simple interfaces for Splunk config file management,
+you can update/get/delete stanzas and encrypt/decrypt some fields of stanza
+automatically.
 '''
 
 import json
