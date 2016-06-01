@@ -13,7 +13,7 @@
 # under the License.
 
 '''
-Common utilities.
+This module provides interfaces to parse and convert timestamp.
 '''
 
 import json
