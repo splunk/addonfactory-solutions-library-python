@@ -17,10 +17,8 @@ This module provides two kinds of event writers (ClassicEventWriter,
 HECEventWriter) to write Splunk modular input events.
 '''
 
-import re
 import sys
 import time
-import json
 import threading
 import logging
 import traceback
@@ -28,9 +26,12 @@ import Queue
 import multiprocessing
 from abc import ABCMeta, abstractmethod
 
-import solnlib.splunk_rest_client as rest_client
 from splunklib import binding
+import solnlib.splunk_rest_client as rest_client
+from solnlib.splunkenv import get_splunkd_access_info
 
+import solnlib.utils as utils
+from solnlib.hec_config import HECConfig
 from solnlib.utils import retry
 from solnlib.modular_input.event import XMLEvent, HECEvent
 
@@ -220,6 +221,11 @@ class HECEventWriter(EventWriter):
     def __init__(self, hec_input_name, session_key,
                  scheme=None, host=None, port=None, **context):
         super(HECEventWriter, self).__init__()
+        self._session_key = session_key
+
+        if not all([scheme, host, port]):
+            scheme, host, port = get_splunkd_access_info()
+
         hec_port, hec_token = self._get_hec_config(
             hec_input_name, session_key, scheme, host, port, **context)
 
@@ -239,31 +245,38 @@ class HECEventWriter(EventWriter):
     @retry(exceptions=[binding.HTTPError])
     def _get_hec_config(self, hec_input_name, session_key,
                         scheme, host, port, **context):
-        _rest_client = rest_client.SplunkRestClient(session_key,
-                                                    '-',
-                                                    scheme=scheme,
-                                                    host=host,
-                                                    port=port,
-                                                    **context)
-        content = _rest_client.get(self.HTTP_INPUT_CONFIG_ENDPOINT + '/http',
-                                   output_mode='json').body.read()
-        port = int(json.loads(content)['entry'][0]['content']['port'])
+        hc = HECConfig(
+            session_key, scheme=scheme, host=host, port=port, **context)
+        settings = hc.get_settings()
+        if utils.is_true(settings.get('disabled')):
+            # Enable HEC input
+            logging.info('Enabling HEC')
+            settings['disabled'] = '0'
+            settings['enableSSL'] = context.get('hec_enablessl', '1')
+            settings['port'] = context.get('hec_port', '8088')
+            hc.update_settings(settings)
 
-        hec_input_name = re.sub(r'[^\w]+', '_', hec_input_name)
-        try:
-            content = _rest_client.get(
-                self.HTTP_INPUT_CONFIG_ENDPOINT + '/' + hec_input_name,
-                output_mode='json').body.read()
-        except binding.HTTPError as e:
-            if e.status != 404:
-                raise
+        hec_input = hc.get_input(hec_input_name)
+        if not hec_input:
+            # Create HEC input
+            logging.info('Create HEC datainput, name=%s', hec_input_name)
+            hinput = {
+                'index': context.get('index', 'main'),
+            }
 
-            content = _rest_client.post(self.HTTP_INPUT_CONFIG_ENDPOINT,
-                                        name=hec_input_name,
-                                        output_mode='json').body.read()
+            if context.get('sourcetype'):
+                hinput['sourcetype'] = context['sourcetype']
 
-        token = json.loads(content)['entry'][0]['content']['token']
-        return (port, token)
+            if context.get('token'):
+                hinput['token'] = context['token']
+
+            hec_input = hc.create_input(hec_input_name, hinput)
+
+        limits = hc.get_limits()
+        HECEvent.MAX_HEC_EVENT_LENGTH = int(
+            limits.get('max_content_length', 1000000))
+
+        return settings['port'], hec_input['token']
 
     def create_event(self, data, time=None,
                      index=None, host=None, source=None, sourcetype=None,

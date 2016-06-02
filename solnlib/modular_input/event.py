@@ -212,7 +212,8 @@ class HECEvent(Event):
         for event in events:
             new_length = size + len(event) + len(batched_events) - 1
             if new_length >= cls.MAX_HEC_EVENT_LENGTH:
-                new_events.append('\n'.join(batched_events))
+                if batched_events:
+                    new_events.append('\n'.join(batched_events))
                 del batched_events[:]
                 size = 0
 

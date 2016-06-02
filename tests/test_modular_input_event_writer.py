@@ -69,7 +69,12 @@ def test_hec_event_writer(monkeypatch):
     monkeypatch.setattr(binding.Context, 'get', mock_get)
     monkeypatch.setattr(binding.Context, 'post', mock_post)
 
+    def _get_hec_config(self, hec_input_name, session_key, scheme, host, port, **context):
+        return "8088", "87de04d1-0823-11e6-9c94-a45e60e"
+    HECEventWriter._get_hec_config = _get_hec_config
+
     ew = HECEventWriter('HECTestInput', common.SESSION_KEY)
+
     events = []
     events.append(ew.create_event(data='This is a test data1.',
                                   time=1372274622.493,
