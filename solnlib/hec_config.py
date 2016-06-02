@@ -1,5 +1,7 @@
 import solnlib.splunk_rest_client as rest_client
 
+__all__ = ['HECConfig']
+
 
 class HECConfig(object):
     '''
