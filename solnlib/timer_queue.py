@@ -1,5 +1,6 @@
 """
-A simple timer queue implementation which has O(logn) time complexity
+A simple thread safe timer queue implementation which
+has O(logn) time complexity
 """
 
 
@@ -75,6 +76,25 @@ TEARDOWN_SENTINEL = None
 class TimerQueue(object):
     """
     A timer queue implementation, runs a separate thread to handle timers
+    Note: to effectively use this timer queue, the timer callback should be
+    short, otherwise it will cause other timers's delay execution.
+    A typical use scenario in production is that the timers are just a simple
+    functions which inject themselvies to a task queue and then they are
+    picked up by a threading/process pool to execute, as shows below:
+
+    Timers --enqueue---> TimerQueue --------expiration-----------
+                                                                |
+                                                                |
+                                                               \|/
+    Threading/Process Pool <---- TaskQueue <--enqueue-- Timers' callback (nonblocking)
+
+    Usage::
+           >>> from solnlib import time_queue
+           >>> tq = time_queue.TimerQueue()
+           >>> tq.start()
+           >>> t = tq.add_timer(my_func, time.time(), 10)
+           >>> # do other stuff
+           >>> tq.stop()
     """
 
     import sortedcontainers as sc
@@ -100,7 +120,7 @@ class TimerQueue(object):
         self._thr.start()
         logging.info("TimerQueue started.")
 
-    def tear_down(self):
+    def stop(self):
         if not self._started:
             return
         self._started = True
@@ -109,8 +129,14 @@ class TimerQueue(object):
         self._thr.join()
 
     def add_timer(self, callback, when, interval):
-        """
-        Add timer to the queue
+        """ Add timer to the queue
+
+        :param callback: arbitrary callable
+        :param when: the first expiration time, seconds since epoch
+        :param interval: timer interval, if equals 0, one time timer, otherwise
+            the timer will be periodically executed
+        :returns: a Timer object which should not be manipulated directly by
+            clients. Used to delete/update the timer
         """
 
         timer = Timer(callback, when, interval)
@@ -120,8 +146,9 @@ class TimerQueue(object):
         return timer
 
     def remove_timer(self, timer):
-        """
-        Remove timer from the queue.
+        """ Remove timer from the queue.
+
+        :param timer: Timer object which is returned by ``TimerQueue.add_timer``
         """
 
         with self._lock:
