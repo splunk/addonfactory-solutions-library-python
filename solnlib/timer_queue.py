@@ -1,6 +1,19 @@
+# Copyright 2016 Splunk, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the 'License'): you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an 'AS IS' BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+
 '''
-A simple thread safe timer queue implementation which
-has O(logn) time complexity
+A simple thread safe timer queue implementation which has O(logn) time complexity.
 '''
 
 
@@ -9,11 +22,21 @@ import Queue
 import traceback
 import logging
 from time import time
+import sortedcontainers as sc
 
 
 class Timer(object):
-    '''
-    Timer wraps the callback and timestamp related attributes
+    '''Timer wraps the callback and timestamp related attributes.
+
+    :param callback: Arbitrary callable object.
+    :type callback: ``callable object``
+    :param when: The first expiration time, seconds since epoch.
+    :type when: ``integer``
+    :param interval: Timer interval, if equals 0, one time timer, otherwise
+        the timer will be periodically executed
+    :type interval: ``integer``
+    :param ident: (optional) Timer identity.
+    :type ident:  ``integer``
     '''
 
     _ident = 0
@@ -21,37 +44,25 @@ class Timer(object):
 
     def __init__(self, callback, when, interval, ident=None):
         self._callback = callback
-        self._when = when
-        self._interval = interval
+        self.when = when
+        self.interval = interval
 
         if ident is not None:
-            self._id = ident
+            self.ident = ident
         else:
             with Timer._lock:
-                self._id = Timer._ident + 1
+                self.ident = Timer._ident + 1
                 Timer._ident = Timer._ident + 1
 
-    def get_interval(self):
-        return self._interval
-
-    def set_interval(self, interval):
-        self._interval = interval
-
-    def get_expiration(self):
-        return self._when
-
-    def set_initial_due_time(self, when):
-        self._when = when
-
     def update_expiration(self):
-        self._when += self._interval
+        self.when += self.interval
 
     def __cmp__(self, other):
         if other is None:
             return 1
 
-        self_k = (self.get_expiration(), self.ident())
-        other_k = (other.get_expiration(), other.ident())
+        self_k = (self.when, self.ident)
+        other_k = (other.when, other.ident)
 
         if self_k == other_k:
             return 0
@@ -61,27 +72,24 @@ class Timer(object):
             return 1
 
     def __eq__(self, other):
-        return isinstance(other, Timer) and (self.ident() == other.ident())
+        return isinstance(other, Timer) and (self.ident == other.ident)
 
     def __call__(self):
         self._callback()
-
-    def ident(self):
-        return self._id
 
 
 TEARDOWN_SENTINEL = None
 
 
 class TimerQueue(object):
-    '''
-    A timer queue implementation, runs a separate thread to handle timers
-    Note: to effectively use this timer queue, the timer callback should be
-    short, otherwise it will cause other timers's delay execution.
-    A typical use scenario in production is that the timers are just a simple
-    functions which inject themselvies to a task queue and then they are
-    picked up by a threading/process pool to execute, as shows below:
+    '''A simple timer queue implementation.
 
+    It runs a separate thread to handle timers Note: to effectively use this
+    timer queue, the timer callback should be short, otherwise it will cause
+    other timers's delay execution. A typical use scenario in production is
+    that the timers are just a simple functions which inject themselvies to
+    a task queue and then they are picked up by a threading/process pool to
+    execute, as shows below:
     Timers --enqueue---> TimerQueue --------expiration-----------
                                                                 |
                                                                 |
@@ -97,10 +105,8 @@ class TimerQueue(object):
            >>> tq.stop()
     '''
 
-    import sortedcontainers as sc
-
     def __init__(self):
-        self._timers = TimerQueue.sc.SortedSet()
+        self._timers = sc.SortedSet()
         self._cancelling_timers = {}
         self._lock = threading.Lock()
         self._wakeup_queue = Queue.Queue()
@@ -109,8 +115,7 @@ class TimerQueue(object):
         self._started = False
 
     def start(self):
-        '''
-        Start the timer queue
+        '''Start the timer queue.
         '''
 
         if self._started:
@@ -121,6 +126,9 @@ class TimerQueue(object):
         logging.info('TimerQueue started.')
 
     def stop(self):
+        '''Stop the timer queue.
+        '''
+
         if not self._started:
             return
         self._started = True
@@ -129,13 +137,16 @@ class TimerQueue(object):
         self._thr.join()
 
     def add_timer(self, callback, when, interval):
-        ''' Add timer to the queue
+        ''' Add timer to the queue.
 
-        :param callback: arbitrary callable
-        :param when: the first expiration time, seconds since epoch
-        :param interval: timer interval, if equals 0, one time timer, otherwise
+        :param callback: Arbitrary callable object.
+        :type callback: ``callable object``
+        :param when: The first expiration time, seconds since epoch.
+        :type when: ``integer``
+        :param interval: Timer interval, if equals 0, one time timer, otherwise
             the timer will be periodically executed
-        :returns: a Timer object which should not be manipulated directly by
+        :type interval: ``integer``
+        :returns: A timer object which should not be manipulated directly by
             clients. Used to delete/update the timer
         '''
 
@@ -148,7 +159,8 @@ class TimerQueue(object):
     def remove_timer(self, timer):
         ''' Remove timer from the queue.
 
-        :param timer: Timer object which is returned by ``TimerQueue.add_timer``
+        :param timer: Timer object which is returned by ``TimerQueue.add_timer``.
+        :type timer: ``Timer``
         '''
 
         with self._lock:
@@ -156,9 +168,9 @@ class TimerQueue(object):
                 self._timers.remove(timer)
             except ValueError:
                 logging.info('Timer=%s is not in queue, move it to cancelling '
-                             'list', timer.ident())
+                             'list', timer.ident)
             else:
-                self._cancelling_timers[timer.ident()] = timer
+                self._cancelling_timers[timer.ident] = timer
 
     def _check_and_execute(self):
         wakeup_queue = self._wakeup_queue
@@ -197,14 +209,14 @@ class TimerQueue(object):
         expired_timers = []
         with self._lock:
             for timer in self._timers:
-                if timer.get_expiration() <= now:
+                if timer.when <= now:
                     expired_timers.append(timer)
 
             if expired_timers:
                 del self._timers[:len(expired_timers)]
 
             if self._timers:
-                next_expired_time = self._timers[0].get_expiration()
+                next_expired_time = self._timers[0].when
         return (next_expired_time, expired_timers)
 
     def _reset_timers(self, expired_timers):
@@ -212,10 +224,10 @@ class TimerQueue(object):
         with self._lock:
             cancelling_timers = self._cancelling_timers
             for timer in expired_timers:
-                if timer.ident() in cancelling_timers:
-                    logging.INFO('Timer=%s has been cancelled', timer.ident())
+                if timer.ident in cancelling_timers:
+                    logging.INFO('Timer=%s has been cancelled', timer.ident)
                     continue
-                elif timer.get_interval():
+                elif timer.interval:
                     # Repeated timer
                     timer.update_expiration()
                     self._timers.add(timer)

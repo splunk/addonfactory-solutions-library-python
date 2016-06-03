@@ -8,7 +8,8 @@ sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 from solnlib import timer_queue
 
 n = 100
-t = 30
+t = 5
+
 # [start, end, interval, count]
 count = []
 for i in range(n):
@@ -42,6 +43,3 @@ def test_timer_queue():
     for start, end, interval, c in count:
         diff = int(math.fabs(c - (end - start) / interval - 1))
         assert 0 <= diff <= 1
-
-
-test_timer_queue()
