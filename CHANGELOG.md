@@ -10,7 +10,7 @@
 
 ### New features and APIs
 
-* A simple timer queue.
+* A simple multi-threading safe timer queue with O(LogN) time complexity.
 * Support a new parser/verifier for datatime string with time zone.
 
 ## Version 1.0.2
