@@ -180,7 +180,7 @@ class HECEvent(Event):
     '''HEC event.
     '''
 
-    MAX_HEC_EVENT_LENGTH = 1000000
+    max_hec_event_length = 1000000
 
     def _to_hec(self):
         event = {}
@@ -211,8 +211,9 @@ class HECEvent(Event):
         events = [event._to_hec() for event in events]
         for event in events:
             new_length = size + len(event) + len(batched_events) - 1
-            if new_length >= cls.MAX_HEC_EVENT_LENGTH:
-                new_events.append('\n'.join(batched_events))
+            if new_length >= cls.max_hec_event_length:
+                if batched_events:
+                    new_events.append('\n'.join(batched_events))
                 del batched_events[:]
                 size = 0
 
