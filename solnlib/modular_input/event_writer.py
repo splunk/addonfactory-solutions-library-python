@@ -273,7 +273,7 @@ class HECEventWriter(EventWriter):
             hec_input = hc.create_input(hec_input_name, hinput)
 
         limits = hc.get_limits()
-        HECEvent.MAX_HEC_EVENT_LENGTH = int(
+        HECEvent.max_hec_event_length = int(
             limits.get('max_content_length', 1000000))
 
         return settings['port'], hec_input['token']
@@ -298,6 +298,7 @@ class HECEventWriter(EventWriter):
                     self._rest_client.post(
                         self.HTTP_EVENT_COLLECTOR_ENDPOINT, body=event,
                         headers=[('Content-Type', 'application/json')])
+                    break
                 except binding.HTTPError as e:
                     logging.error('Write events through HEC failed: %s.',
                                   traceback.format_exc(e))

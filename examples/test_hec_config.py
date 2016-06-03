@@ -2,7 +2,6 @@ import sys
 import os.path as op
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-
 import context
 from solnlib import credentials
 from solnlib import hec_config
