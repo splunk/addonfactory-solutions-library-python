@@ -16,6 +16,7 @@
 This program is used to construct sphinx rst directory tree from source code.
 '''
 
+import re
 import sys
 import os
 import time
@@ -48,7 +49,7 @@ class AutoDoc(object):
             '   to your liking, but it should at least contain the root `toctree`\n'
             '   directive.\n\n'
             '{lib_welcome_msg}\n'
-            '=================================================\n\n'
+            '=========================================================\n\n'
             '.. toctree::\n'
             '   :maxdepth: 2\n'
             '   :numbered:\n\n'
@@ -173,10 +174,13 @@ class AutoDoc(object):
 
 if __name__ == '__main__':
     lib_name = 'solnlib'
-    lib_welcome_msg = 'Welcome to Splunk Solution Library API reference.'
+    lib_welcome_msg = 'Welcome to Splunk Solution Library (%s) API reference.'
 
     source_dir = op.join(op.dirname(cur_dir), lib_name)
     dest_dir = cur_dir
+    with open(op.join(source_dir, '__init__.py'), 'r') as fd:
+        version = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]',
+                            fd.read(), re.MULTILINE).group(1)
     auto_doc = AutoDoc(source_dir, dest_dir,
-                       lib_name, lib_welcome_msg)
+                       lib_name, lib_welcome_msg % version)
     auto_doc.auto_doc()
