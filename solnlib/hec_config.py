@@ -7,8 +7,18 @@ __all__ = ['HECConfig']
 
 
 class HECConfig(object):
-    '''
-    HTTP Event Collector configuration
+    '''HTTP Event Collector configuration.
+
+    :param session_key: Splunk access token.
+    :type session_key: ``string``
+    :param scheme: (optional) The access scheme, default is None.
+    :type scheme: ``string``
+    :param host: (optional) The host name, default is None.
+    :type host: ``string``
+    :param port: (optional) The port number, default is None.
+    :type port: ``integer``
+    :param context: Other configurations for Splunk rest client.
+    :type context: ``dict``
     '''
 
     input_type = 'http'

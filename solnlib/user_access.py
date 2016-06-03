@@ -45,6 +45,37 @@ class ObjectACLException(Exception):
 
 
 class ObjectACL(object):
+    '''Object ACL record.
+
+    :param obj_collection: Collection where object currently stored.
+    :type obj_collection: ``string``
+    :param obj_id: ID of this object.
+    :type obj_id: ``string``
+    :param obj_app: App of this object.
+    :param obj_type: ``string``
+    :param obj_owner: Owner of this object.
+    :param obj_owner: ``string``
+    :param obj_perms: Object perms, like: {
+        'read': ['*'],
+        'write': ['admin'],
+        'delete': ['admin']}.
+    :type obj_perms: ``dict``
+    :param obj_shared_by_inclusion: Flag of object is shared by inclusion.
+    :type obj_shared_by_inclusion: ``bool``
+
+    Usage::
+
+       >>> from solnlib import user_access
+       >>> obj_acl = user_access.ObjectACL(
+       >>>    'test_collection',
+       >>>    '9defa6f510d711e6be16a45e60e34295',
+       >>>    'test_object',
+       >>>    'Splunk_TA_test',
+       >>>    'admin',
+       >>>    {'read': ['*'], 'write': ['admin'], 'delete': ['admin']},
+       >>>    False)
+    '''
+
     OBJ_COLLECTION_KEY = 'obj_collection'
     OBJ_ID_KEY = 'obj_id'
     OBJ_TYPE_KEY = 'obj_type'
@@ -59,37 +90,6 @@ class ObjectACL(object):
 
     def __init__(self, obj_collection, obj_id, obj_type,
                  obj_app, obj_owner, obj_perms, obj_shared_by_inclusion):
-        '''Object ACL record.
-
-        :param obj_collection: Collection where object currently stored.
-        :type obj_collection: ``string``
-        :param obj_id: ID of this object.
-        :type obj_id: ``string``
-        :param obj_app: App of this object.
-        :param obj_type: ``string``
-        :param obj_owner: Owner of this object.
-        :param obj_owner: ``string``
-        :param obj_perms: Object perms, like: {
-            'read': ['*'],
-            'write': ['admin'],
-            'delete': ['admin']}.
-        :type obj_perms: ``dict``
-        :param obj_shared_by_inclusion: Flag of object is shared by inclusion.
-        :type obj_shared_by_inclusion: ``bool``
-
-        Usage::
-
-           >>> from solnlib import user_access
-           >>> obj_acl = user_access.ObjectACL(
-           >>>    'test_collection',
-           >>>    '9defa6f510d711e6be16a45e60e34295',
-           >>>    'test_object',
-           >>>    'Splunk_TA_test',
-           >>>    'admin',
-           >>>    {'read': ['*'], 'write': ['admin'], 'delete': ['admin']},
-           >>>    False)
-        '''
-
         self.obj_collection = obj_collection
         self.obj_id = obj_id
         self.obj_type = obj_type
