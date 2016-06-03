@@ -3,3 +3,4 @@ pytest==2.9.1
 pytest-cov==2.2.1
 requests==2.9.1
 splunk-sdk==1.6.0
+sortedcontainers==1.5.2
