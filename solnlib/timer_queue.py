@@ -24,6 +24,9 @@ import logging
 from time import time
 import sortedcontainers as sc
 
+__all__ = ['Timer',
+           'TimerQueue']
+
 
 class Timer(object):
     '''Timer wraps the callback and timestamp related attributes.
