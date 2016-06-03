@@ -2,20 +2,26 @@ import sys
 import os.path as op
 import time
 import random
-import json
+import math
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 from solnlib import timer_queue
 
-n = 10000
-count = [[0, 0]] * n
+n = 100
+t = 30
+# [start, end, interval, count]
+count = []
+for i in range(n):
+    count.append([0, 0, 0, 0])
 
 
 def fun(i, interval):
-    count[i][1] = interval
+    count[i][0] = time.time() + interval
+    count[i][2] = interval
 
     def do_fun():
-        count[i][0] += 1
+        count[i][1] = time.time()
+        count[i][-1] += 1
     return do_fun
 
 
@@ -23,17 +29,19 @@ def test_timer_queue():
     tq = timer_queue.TimerQueue()
     tq.start()
     timers = []
+    r = random.Random()
     for i in range(n):
-        interval = random.randint(1, 300)
-        timer = tq.add_timer(fun(i, interval), time.time() + interval, interval)
+        interval = r.randint(1, t)
+        timer = tq.add_timer(
+            fun(i, interval), time.time() + interval, interval)
         timers.append(timer)
 
-    print "done"
-    time.sleep(300)
+    time.sleep(t * 2)
     tq.stop()
 
-    with open("a.json", "w") as f:
-        json.dump(count, f)
+    for start, end, interval, c in count:
+        diff = int(math.fabs(c - (end - start) / interval - 1))
+        assert 0 <= diff <= 1
 
 
 test_timer_queue()
