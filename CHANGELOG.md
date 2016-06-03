@@ -1,5 +1,18 @@
 # Splunk Solution Library for Python Changelog
 
+## Version 1.0.3
+
+### Bug fixes
+
+* HECEventWriter get max HEC event size by query from limits.
+* Auto detect scheme/host/port breaks HECEventWriter.
+* HEC config class support.
+
+### New features and APIs
+
+* A simple multi-threading safe timer queue with O(LogN) time complexity.
+* Support a new parser/verifier for datatime string with time zone.
+
 ## Version 1.0.2
 
 ### New features and APIs
@@ -7,8 +20,8 @@
 * Enhance splunk_rest_client APIs to support local splunkd access without passing
   scheme, host and port which will be auto discovered. This simplify all of the clients.
 * Add http connection pooling switch to splunk_rest_client. By default the http connection pooling
-  is not turned on, but for KVStore checkpointer and Http Event Writer, the http connection
-  pooling is turned on
+  is not turned on, but for KVStore checkpointer and Http Event Writer, the http connection pooling
+  is turned on.
 
 ### Notes
 

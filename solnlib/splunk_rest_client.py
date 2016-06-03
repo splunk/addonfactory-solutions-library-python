@@ -90,7 +90,7 @@ def _request_handler(context):
         cert = None
 
     if context.get('pool_connections', 0):
-        logging.info("Use HTTP connection pooling")
+        logging.info('Use HTTP connection pooling')
         session = requests.Session()
         adapter = requests.adapters.HTTPAdapter(
             pool_connections=context.get('pool_connections', 10),
@@ -148,7 +148,7 @@ def _request_handler(context):
 
 
 class SplunkRestClient(client.Service):
-    '''Splunk rest client.AlertGroup
+    '''Splunk rest client
 
     If any of scheme, host and port is None, will discover local
     splunkd access info automatically.

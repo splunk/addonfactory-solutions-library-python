@@ -43,6 +43,9 @@ def run_test():
     import test_credentials
     import test_conf_manager
     import test_user_access
+    import test_hec_config
+    import test_hec_event_writer
+    import test_time_parser
 
     print 'check splunk environment...'
     test_splunkenv.test_splunkenv()
@@ -60,8 +63,15 @@ def run_test():
     test_conf_manager.test_conf_manager()
     print 'test user access...'
     test_user_access.test_user_access()
+    print 'test hec config...'
+    test_hec_config.test_hec_config()
+    print 'test hec eventwriter...'
+    test_hec_event_writer.test_hec_event_writer()
+    print 'test time parser...'
+    test_time_parser.test_time_parser()
 
 if __name__ == '__main__':
     teardown_environment()
     setup_environment()
     run_test()
+    print 'Run tests success.'
