@@ -20,6 +20,7 @@ import json
 
 from splunklib import binding
 
+from solnlib.utils import is_true
 from solnlib.utils import retry
 import solnlib.splunk_rest_client as rest_client
 
@@ -46,6 +47,7 @@ class ServerInfo(object):
     '''
 
     SHC_MEMBER_ENDPOINT = '/services/shcluster/member/members'
+    SHC_CAPTAIN_INFO_ENDPOINT = '/services/shcluster/captain/info'
 
     def __init__(self, session_key,
                  scheme=None, host=None, port=None, **context):
@@ -81,7 +83,11 @@ class ServerInfo(object):
         return self._server_info()['version']
 
     def is_captain(self):
-        '''Check if this server is SHC captain.
+        '''Check if this server is SHC captain. Note during a rolling start
+           of SH members, the captain may be changed from machine to machine.
+           To avoid the race condition, client may need do necessary sleep and
+           then poll is_captain_ready() == True and then check is_captain().
+           See is_captain_ready() for more details
 
         :returns: True if this server is SHC captain else False.
         :rtype: ``bool``
@@ -151,3 +157,55 @@ class ServerInfo(object):
                             content['peer_scheme_host_port']))
 
         return members
+
+    @retry(exceptions=[binding.HTTPError])
+    def is_captain_ready(self):
+        '''Check if captain is ready. Client usually first polls this function
+           until captain is ready and then call is_captain to detect current
+           captain machine
+        :returns: True/False
+
+        Usage::
+
+            >>> serverinfo = solnlib.server_info.ServerInfo(session_key)
+            >>> while 1:
+            >>>    if serverinfo.is_captain_ready():
+            >>>        break
+            >>>    time.sleep(2)
+            >>>
+            >>> # If do_stuff can only be executed in SH captain
+            >>> if serverinfo.is_captain():
+            >>>    do_stuff()
+        '''
+
+        return is_true(self.captain_info()["service_ready_flag"])
+
+    @retry(exceptions=[binding.HTTPError])
+    def captain_info(self):
+        '''Check if captain is ready.
+
+        :returns: captain info, like {
+            "elected_captain": 1463195590,
+            "id": "9CA04BAD-0C24-4703-8A88-E20345833508",
+            "initialized_flag": true,
+            "label": "my-shc04-sh",
+            "maintenance_mode": false,
+            "mgmt_uri": "https://my-shc04-sh:8089",
+            "min_peers_joined_flag": true,
+            "peer_scheme_host_port": "https://my-shc04-sh2:8089",
+            "rolling_restart_flag": false,
+            "service_ready_flag": true,
+        }
+        raise exception if there is SHC is not enabled
+        :rtype: ``dict``
+        '''
+
+        try:
+            content = self._rest_client.get(self.SHC_CAPTAIN_INFO_ENDPOINT,
+                                            output_mode='json').body.read()
+        except binding.HTTPError as e:
+            if e.status == 503 and "not available" in e.message:
+                raise ServerInfoException(e.message)
+            raise
+
+        return json.loads(content)["entry"][0]["content"]
