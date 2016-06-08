@@ -1,5 +1,11 @@
 # Splunk Solution Library for Python Changelog
 
+## Version 1.0.4
+
+### New features and APIs
+
+* Enhance server_info to detect captain's service ready status.
+
 ## Version 1.0.3
 
 ### Bug fixes
