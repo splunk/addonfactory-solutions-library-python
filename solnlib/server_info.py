@@ -160,10 +160,13 @@ class ServerInfo(object):
 
     @retry(exceptions=[binding.HTTPError])
     def is_captain_ready(self):
-        '''Check if captain is ready. Client usually first polls this function
-           until captain is ready and then call is_captain to detect current
-           captain machine
+        '''Check if captain is ready.
+
+        Client usually first polls this function until captain is ready
+        and then call is_captain to detect current captain machine
+
         :returns: True/False
+        :rtype: ``bool``
 
         Usage::
 
@@ -194,10 +197,10 @@ class ServerInfo(object):
             "min_peers_joined_flag": true,
             "peer_scheme_host_port": "https://my-shc04-sh2:8089",
             "rolling_restart_flag": false,
-            "service_ready_flag": true,
-        }
-        raise exception if there is SHC is not enabled
+            "service_ready_flag": true}
         :rtype: ``dict``
+
+        :raises ServerInfoException: If there is SHC is not enabled.
         '''
 
         try:
