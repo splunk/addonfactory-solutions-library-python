@@ -122,7 +122,9 @@ setup(
     packages=['solnlib',
               'solnlib.modular_input'],
 
-    install_requires=['splunk-sdk==1.6.0', 'requests==2.9.1'],
+    install_requires=['splunk-sdk==1.6.0',
+                      'requests==2.9.1',
+                      'sortedcontainers==1.5.2'],
 
     cmdclass={'test': TestCommand,
               'jtest': JTestCommand,
