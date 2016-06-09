@@ -1,5 +1,11 @@
 # Splunk Solution Library for Python Changelog
 
+## Version 1.0.5
+
+### Bug fixes
+
+* Miss sortedcontainers dependence in setup.py.
+
 ## Version 1.0.4
 
 ### New features and APIs
