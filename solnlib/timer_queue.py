@@ -139,7 +139,7 @@ class TimerQueue(object):
         self._wakeup(TEARDOWN_SENTINEL)
         self._thr.join()
 
-    def add_timer(self, callback, when, interval):
+    def add_timer(self, callback, when, interval, ident=None):
         ''' Add timer to the queue.
 
         :param callback: Arbitrary callable object.
@@ -153,7 +153,7 @@ class TimerQueue(object):
             clients. Used to delete/update the timer
         '''
 
-        timer = Timer(callback, when, interval)
+        timer = Timer(callback, when, interval, ident)
         with self._lock:
             self._timers.add(timer)
         self._wakeup()

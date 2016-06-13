@@ -134,22 +134,25 @@ class ClassicEventWriter(EventWriter):
 
     description = 'ClassicEventWriter'
 
-    def __init__(self, process_safe=False):
+    def __init__(self, process_safe=False, qsize=10):
         self._mgr = None
         if process_safe:
             self._mgr = multiprocessing.Manager()
-            self._event_queue = self._mgr.Queue(100)
+            self._events_queue = self._mgr.Queue(qsize)
         else:
-            self._events_queue = Queue.Queue(100)
+            self._events_queue = Queue.Queue(qsize)
         self._events_writer = threading.Thread(target=self._write_events)
         self._events_writer.start()
         self._closed = False
 
     def close(self):
         self._closed = True
-        self._events_queue.put(None)
-        if self._mgr is not None:
-            self._mgr.shutdown()
+        try:
+            self._events_queue.put(None)
+            if self._mgr is not None:
+                self._mgr.shutdown()
+        except Exception:
+            pass
         self._events_writer.join()
 
     def create_event(self, data, time=None,
@@ -177,7 +180,11 @@ class ClassicEventWriter(EventWriter):
 
     def _write_events(self):
         while 1:
-            event = self._events_queue.get()
+            try:
+                event = self._events_queue.get()
+            except EOFError:
+                break
+
             if event is None:
                 logging.info('Event writer: %s will exit.', self.description)
                 break
@@ -201,6 +208,9 @@ class HECEventWriter(EventWriter):
     :type host: ``string``
     :param port: (optional) The port number, default is None.
     :type port: ``integer``
+    :param hec_uri: (optional) If hec_uri and hec_token are provided, they will
+       higher precedence than hec_input_name
+    :type hec_token: ``integer``
     :param context: Other configurations for Splunk rest client.
     :type context: ``dict``
 
@@ -219,15 +229,20 @@ class HECEventWriter(EventWriter):
     description = 'HECEventWriter'
 
     def __init__(self, hec_input_name, session_key,
-                 scheme=None, host=None, port=None, **context):
+                 scheme=None, host=None, port=None, hec_uri=None,
+                 hec_token=None, **context):
         super(HECEventWriter, self).__init__()
         self._session_key = session_key
 
         if not all([scheme, host, port]):
             scheme, host, port = get_splunkd_access_info()
 
-        hec_port, hec_token = self._get_hec_config(
-            hec_input_name, session_key, scheme, host, port, **context)
+        if hec_uri and hec_token:
+            scheme, host, hec_port = utils.extract_http_scheme_host_port(
+                hec_uri)
+        else:
+            hec_port, hec_token = self._get_hec_config(
+                hec_input_name, session_key, scheme, host, port, **context)
 
         if not context.get('pool_connections'):
             context['pool_connections'] = 10
