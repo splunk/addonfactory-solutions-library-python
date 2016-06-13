@@ -30,7 +30,8 @@ __all__ = ['handle_teardown_signals',
            'is_true',
            'is_false',
            'escape_json_control_chars',
-           'retry']
+           'retry',
+           'extract_http_scheme_host_port']
 
 
 def handle_teardown_signals(callback):
