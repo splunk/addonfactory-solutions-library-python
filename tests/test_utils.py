@@ -72,31 +72,31 @@ def test_retry(monkeypatch):
 
 
 def test_extract_http_scheme_host_port(monkeypatch):
-    h1 = "https://localhost:8089"
+    h1 = 'https://localhost:8089'
     scheme, host, port = utils.extract_http_scheme_host_port(h1)
-    assert scheme == "https" and host == "localhost" and port == "8089"
+    assert scheme == 'https' and host == 'localhost' and port == 8089
 
-    h2 = "https://localhost:8089/"
+    h2 = 'https://localhost:8089/'
     scheme, host, port = utils.extract_http_scheme_host_port(h2)
-    assert scheme == "https" and host == "localhost" and port == "8089"
+    assert scheme == 'https' and host == 'localhost' and port == 8089
 
-    h3 = "https://localhost:8089/servicesNS/"
+    h3 = 'https://localhost:8089/servicesNS/'
     scheme, host, port = utils.extract_http_scheme_host_port(h3)
-    assert scheme == "https" and host == "localhost" and port == "8089"
+    assert scheme == 'https' and host == 'localhost' and port == 8089
 
-    h1 = "http://localhost:8089"
+    h1 = 'http://localhost:8089'
     scheme, host, port = utils.extract_http_scheme_host_port(h1)
-    assert scheme == "http" and host == "localhost" and port == "8089"
+    assert scheme == 'http' and host == 'localhost' and port == 8089
 
-    h2 = "http://localhost:8089/"
+    h2 = 'http://localhost:8089/'
     scheme, host, port = utils.extract_http_scheme_host_port(h2)
-    assert scheme == "http" and host == "localhost" and port == "8089"
+    assert scheme == 'http' and host == 'localhost' and port == 8089
 
-    h3 = "http://localhost:8089/servicesNS/"
+    h3 = 'http://localhost:8089/servicesNS/'
     scheme, host, port = utils.extract_http_scheme_host_port(h3)
-    assert scheme == "http" and host == "localhost" and port == "8089"
+    assert scheme == 'http' and host == 'localhost' and port == 8089
 
-    invalid = "localhost:8089"
+    invalid = 'localhost:8089'
     try:
         scheme, host, port = utils.extract_http_scheme_host_port(invalid)
     except ValueError:

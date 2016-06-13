@@ -22,7 +22,7 @@ import datetime
 import signal
 import logging
 import traceback
-import re
+import urllib2
 from functools import wraps
 
 __all__ = ['handle_teardown_signals',
@@ -168,16 +168,24 @@ def retry(retries=3, reraise=True, default_return=None, exceptions=None):
 
 
 def extract_http_scheme_host_port(http_url):
-    '''Extract scheme, host, port from a HTTP url
+    '''Extract scheme, host and port from a HTTP URL.
+
+    :param http_url: HTTP URL to extract.
+    :type http_url: ``string``
+    :returns: A tuple of scheme, host and port
+    :rtype: ``tuple``
+
+    :raises ValueError: If `http_url` is not in http(s)://hostname:port format.
     '''
 
-    pattern = r'(http|https)://([^/:]+):(\d+)'
     try:
-        res = re.search(pattern, http_url)
+        http_info = urllib2.urlparse.urlparse(http_url)
     except Exception:
-        raise ValueError(str(http_url) + " is not in http(s)://hostname:port format")
+        raise ValueError(
+            str(http_url) + " is not in http(s)://hostname:port format")
 
-    if res:
-        return res.group(1), res.group(2), res.group(3)
-    else:
-        raise ValueError(http_url + " is not in http(s)://hostname:port format")
+    if not http_info.scheme or not http_info.hostname or not http_info.port:
+        raise ValueError(
+            http_url + " is not in http(s)://hostname:port format")
+
+    return (http_info.scheme, http_info.hostname, http_info.port)
