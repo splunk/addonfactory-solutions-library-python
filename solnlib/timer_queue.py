@@ -149,6 +149,8 @@ class TimerQueue(object):
         :param interval: Timer interval, if equals 0, one time timer, otherwise
             the timer will be periodically executed
         :type interval: ``integer``
+        :param ident: (optional) Timer identity.
+        :type ident:  ``integer``
         :returns: A timer object which should not be manipulated directly by
             clients. Used to delete/update the timer
         '''
