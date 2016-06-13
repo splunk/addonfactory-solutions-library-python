@@ -22,6 +22,7 @@ import datetime
 import signal
 import logging
 import traceback
+import re
 from functools import wraps
 
 __all__ = ['handle_teardown_signals',
@@ -164,3 +165,19 @@ def retry(retries=3, reraise=True, default_return=None, exceptions=None):
         return wrapper
 
     return do_retry
+
+
+def extract_http_scheme_host_port(http_url):
+    '''Extract scheme, host, port from a HTTP url
+    '''
+
+    pattern = r'(http|https)://([^/:]+):(\d+)'
+    try:
+        res = re.search(pattern, http_url)
+    except Exception:
+        raise ValueError(str(http_url) + " is not in http(s)://hostname:port format")
+
+    if res:
+        return res.group(1), res.group(2), res.group(3)
+    else:
+        raise ValueError(http_url + " is not in http(s)://hostname:port format")
