@@ -21,6 +21,7 @@ call instead of calling splunklib SDK directly in business logic code.
 import logging
 import traceback
 from cStringIO import StringIO
+import urllib2
 
 import splunklib.binding as binding
 import splunklib.client as client
@@ -36,8 +37,10 @@ def _get_proxy_info(context):
 
     user_pass = ''
     if context.get('proxy_username') and context.get('proxy_password'):
+        username = urllib2.quote(context['proxy_username'], safe='')
+        password = urllib2.quote(context['proxy_password'], safe='')
         user_pass = '{user}:{password}@'.format(
-            user=context['proxy_username'], password=context['proxy_password'])
+            user=username, password=password)
 
     proxy = 'http://{user_pass}{host}:{port}'.format(
         user_pass=user_pass, host=context['proxy_hostname'],
