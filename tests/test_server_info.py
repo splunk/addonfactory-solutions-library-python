@@ -2,7 +2,6 @@ import sys
 import os.path as op
 
 from splunklib import binding
-from splunklib import client
 
 import common
 

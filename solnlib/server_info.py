@@ -20,7 +20,7 @@ import json
 
 from splunklib import binding
 
-from solnlib.utils import is_true
+import solnlib.utils as utils
 from solnlib.utils import retry
 import solnlib.splunk_rest_client as rest_client
 
@@ -181,7 +181,9 @@ class ServerInfo(object):
             >>>    do_stuff()
         '''
 
-        return is_true(self.captain_info()["service_ready_flag"])
+        cap_info = self.captain_info()
+        return utils.is_true(cap_info["service_ready_flag"]) and \
+            utils.is_false(cap_info["maintenance_mode"])
 
     @retry(exceptions=[binding.HTTPError])
     def captain_info(self):
