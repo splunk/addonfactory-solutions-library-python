@@ -1,5 +1,18 @@
 # Splunk Solution Library for Python Changelog
 
+## Version 1.0.6
+
+### Bug fixes
+
+* Escape proxy username/password in `SplunkRestClient`.
+* Update typo in event_writer.py.
+* Check `maintenance_mode_flag` in `is_captain_ready()`.
+
+### New features and APIs
+
+* Expose extra parameter `qsize` for `ClassicEventWriter`.
+* A simple utility to extract `scheme`, `host` and `port` from http url.
+
 ## Version 1.0.5
 
 ### Bug fixes
