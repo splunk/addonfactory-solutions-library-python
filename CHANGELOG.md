@@ -1,5 +1,11 @@
 # Splunk Solution Library for Python Changelog
 
+## Version 1.0.7
+
+### Bug fixes
+
+* `is_shc_member` returns true on standalone instance
+
 ## Version 1.0.6
 
 ### Bug fixes
