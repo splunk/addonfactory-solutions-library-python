@@ -128,7 +128,12 @@ class ServerInfo(object):
         :rtype: ``bool``
         '''
 
-        return 'cluster_search_head' in self._server_info()['server_roles']
+        server_info = self._server_info()
+        for sh in ('shc_member', 'shc_captain'):
+            if sh in server_info['server_roles']:
+                return True
+
+        return False
 
     @retry(exceptions=[binding.HTTPError])
     def get_shc_members(self):
