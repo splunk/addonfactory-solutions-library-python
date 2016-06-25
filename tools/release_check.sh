@@ -34,11 +34,12 @@ make -C docs html
 rm -rf build
 rm -rf dist
 rm -rf solnlib.egg-info
+rm -rf tests/__pycache__
 
 find ./ -name "*.pyc"|xargs rm -rf
 
 popd
 
-rm -rf "${RELEASE_CHECK_ENV}"
-
 deactivate
+
+rm -rf "${RELEASE_CHECK_ENV}"
