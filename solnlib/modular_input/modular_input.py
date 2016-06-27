@@ -354,6 +354,59 @@ class ModularInput(object):
             self._orphan_monitor = OrphanProcessMonitor(_orphan_handler)
             self._orphan_monitor.start()
 
+    def get_validation_definition(self):
+        '''Get validation definition.
+
+        This method can be overwritten to get validation definition from
+        other input instead `stdin`.
+
+        :returns: A dict object must contains `metadata` and `parameters`,
+            example: {
+            'metadata': {
+            'session_key': 'iCKPS0cvmpyeJk...sdaf',
+            'server_host': 'test-test.com',
+            'server_uri': 'https://127.0.0.1:8089',
+            'checkpoint_dir': '/tmp'
+            },
+            parameters: {'args1': value1, 'args2': value2}
+            }
+        :rtype: ``dict``
+        '''
+
+        validation_definition = ValidationDefinition.parse(sys.stdin)
+        return {
+            'metadata': validation_definition.metadata,
+            'parameters': validation_definition.parameters
+        }
+
+    def get_input_definition(self):
+        '''Get input definition.
+
+        This method can be overwritten to get input definition from
+        other input instead `stdin`.
+
+        :returns: A dict object must contains `metadata` and `inputs`,
+            example: {
+            'metadata': {
+            'session_key': 'iCKPS0cvmpyeJk...sdaf',
+            'server_host': 'test-test.com',
+            'server_uri': 'https://127.0.0.1:8089',
+            'checkpoint_dir': '/tmp'
+            },
+            inputs: {
+            'stanza1': {'arg1': value1, 'arg2': value2},
+            'stanza2': {'arg1': value1, 'arg2': value2}
+            }
+            }
+        :rtype: ``dict``
+        '''
+
+        input_definition = InputDefinition.parse(sys.stdin)
+        return {
+            'metadata': input_definition.metadata,
+            'inputs': input_definition.inputs
+        }
+
     def execute(self):
         '''Modular input entry.
 
@@ -368,13 +421,13 @@ class ModularInput(object):
 
         if len(sys.argv) == 1:
             try:
-                input_definition = InputDefinition.parse(sys.stdin)
-                self._update_metadata(input_definition.metadata)
+                input_definition = self.get_input_definition()
+                self._update_metadata(input_definition['metadata'])
                 if self.use_single_instance:
                     self.config_name = self.name
                 else:
-                    self.config_name = input_definition.inputs.keys()[0]
-                self.do_run(input_definition.inputs)
+                    self.config_name = input_definition['inputs'].keys()[0]
+                self.do_run(input_definition['inputs'])
                 logging.info('Modular input: %s exit normally.', self.name)
                 return 0
             except Exception as e:
@@ -396,9 +449,9 @@ class ModularInput(object):
 
         elif sys.argv[1].lower() == '--validate-arguments':
             try:
-                validation_definition = ValidationDefinition.parse(sys.stdin)
-                self._update_metadata(validation_definition.metadata)
-                self.do_validation(validation_definition.parameters)
+                validation_definition = self.get_validation_definition()
+                self._update_metadata(validation_definition['metadata'])
+                self.do_validation(validation_definition['parameters'])
                 return 0
             except Exception as e:
                 logging.error(
