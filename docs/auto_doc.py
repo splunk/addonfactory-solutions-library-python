@@ -27,7 +27,6 @@ import os.path as op
 
 cur_dir = op.dirname(op.abspath(__file__))
 
-
 class AutoDoc(object):
     '''
     Class for parsing module api and generating Sphinx format
@@ -41,6 +40,9 @@ class AutoDoc(object):
             dest_dir[:-1] if dest_dir.endswith('/') else dest_dir
         self._lib_name = lib_name
         self._lib_welcome_msg = lib_welcome_msg
+        self._classNum = 0
+        self._methodNum = 0
+        self._funcNum = 0
 
     def _create_index(self):
         index_content = (
@@ -114,10 +116,16 @@ class AutoDoc(object):
                 content += ':func:`{sub_module_import_path}.{func_name}` function'.format(
                     sub_module_import_path=sub_module_import_path,
                     func_name=attr) + '\n\n'
+                self._funcNum += 1
             elif inspect.isclass(getattr(sub_module, attr)):
                 content += ':class:`{sub_module_import_path}.{class_name}` class'.format(
                     sub_module_import_path=sub_module_import_path,
                     class_name=attr) + '\n\n'
+                self._classNum += 1
+                for a in dir(getattr(sub_module, attr)):
+                    if not a.startswith("_"):
+                        self._methodNum += 1
+
             else:
                 raise ValueError('Invalid attribute: %s of sub-module: %s.',
                                  attr, sub_module_import_path)
@@ -171,6 +179,11 @@ class AutoDoc(object):
         self._create_index()
         self._create_docs()
 
+    def info(self):
+        print "Total classes: ", self._classNum
+        print "Total methods: ", self._methodNum
+        print "Total funcs: ", self._funcNum
+
 
 if __name__ == '__main__':
     lib_name = 'solnlib'
@@ -184,3 +197,4 @@ if __name__ == '__main__':
     auto_doc = AutoDoc(source_dir, dest_dir,
                        lib_name, lib_welcome_msg % version)
     auto_doc.auto_doc()
+    auto_doc.info()

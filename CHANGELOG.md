@@ -2,9 +2,15 @@
 
 ## Version 1.0.7
 
+### New features and APIs
+
+* Enhance modular input to support get configurations from other input.
+
+## Version 1.0.7
+
 ### Bug fixes
 
-* `is_shc_member` returns true on standalone instance
+* `is_shc_member` returns true on standalone instance.
 
 ## Version 1.0.6
 
