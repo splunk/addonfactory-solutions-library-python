@@ -112,14 +112,15 @@ class ClassicEventWriter(EventWriter):
 
     Use sys.stdout as the output.
 
-    :param process_safe: (optional) Flag to indicate if enforce
-        process safe if this event writer will be used in different
-        process, default is False.
-    :type process_safe: ``bool``
+    :param lock: (optional) lock to exclusively access stdout.
+        by default, it is None and it will use threading safe lock.
+        if user would like to make the lock multiple-process safe, user should
+        pass in multiprocessing.Lock() instead
+    :type lock: ``theading.Lock or multiprocessing.Lock``
 
     Usage::
         >>> from solnlib.modular_input import event_writer
-        >>> ew = event_writer.ClassicEventWriter(process_safe=True)
+        >>> ew = event_writer.ClassicEventWriter()
         >>> ew.write_events([event1, event2])
     '''
 
