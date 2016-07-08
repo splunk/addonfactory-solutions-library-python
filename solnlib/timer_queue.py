@@ -114,6 +114,12 @@ class TimerQueueStruct(object):
         return timer
 
     def remove_timer(self, timer):
+        ''' Remove timer from data structure.
+
+        :param timer: Timer object which is returned by ``TimerQueueStruct.add_timer``.
+        :type timer: ``Timer``
+        '''
+
         try:
             self._timers.remove(timer)
         except ValueError:
@@ -123,6 +129,10 @@ class TimerQueueStruct(object):
             self._cancelling_timers[timer.ident] = timer
 
     def get_expired_timers(self):
+        ''' Get a list of expired timers
+        :returns: a list of ``Timer``, empty list if there is no expired timers
+        '''
+
         next_expired_time = 0
         now = time()
         expired_timers = []
@@ -138,6 +148,11 @@ class TimerQueueStruct(object):
         return (next_expired_time, expired_timers)
 
     def reset_timers(self, expired_timers):
+        ''' Re-add the expired periodical timers to data structure for next
+        round scheduling
+        :returns: True if there are timers added, False otherwise
+        '''
+
         has_new_timer = False
         cancelling_timers = self._cancelling_timers
         for timer in expired_timers:
@@ -151,6 +166,21 @@ class TimerQueueStruct(object):
                 has_new_timer = True
         cancelling_timers.clear()
         return has_new_timer
+
+    def check_and_execute(self):
+        ''' Get expired timers and execute callbacks for the timers
+        :returns: duration of next expired timer
+        '''
+
+        (next_expired_time, expired_timers) = self.get_expired_timers()
+        for timer in expired_timers:
+            try:
+                timer()
+            except Exception:
+                logging.error(traceback.format_exc())
+
+        self.reset_timers(expired_timers)
+        return _calc_sleep_time(next_expired_time)
 
 
 class TimerQueue(object):
@@ -251,16 +281,7 @@ class TimerQueue(object):
 
             self._reset_timers(expired_timers)
 
-            # Calc sleep time
-            if next_expired_time:
-                now = time()
-                if now < next_expired_time:
-                    sleep_time = next_expired_time - now
-                else:
-                    sleep_time = 0.1
-            else:
-                sleep_time = 1
-
+            sleep_time = _calc_sleep_time(next_expired_time)
             try:
                 wakeup = wakeup_queue.get(timeout=sleep_time)
                 if wakeup is TEARDOWN_SENTINEL:
@@ -282,3 +303,15 @@ class TimerQueue(object):
 
     def _wakeup(self, something='not_None'):
         self._wakeup_queue.put(something)
+
+
+def _calc_sleep_time(next_expired_time):
+    if next_expired_time:
+        now = time()
+        if now < next_expired_time:
+            sleep_time = next_expired_time - now
+        else:
+            sleep_time = 0.1
+    else:
+        sleep_time = 1
+    return sleep_time
