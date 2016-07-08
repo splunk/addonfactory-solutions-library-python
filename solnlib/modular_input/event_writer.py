@@ -22,8 +22,6 @@ import time
 import threading
 import logging
 import traceback
-import Queue
-import multiprocessing
 from abc import ABCMeta, abstractmethod
 
 from splunklib import binding
@@ -46,12 +44,6 @@ class EventWriter(object):
     __metaclass__ = ABCMeta
 
     description = 'EventWriter'
-
-    def close(self):
-        '''Close event writer.
-        '''
-
-        pass
 
     @abstractmethod
     def create_event(self, data, time=None,
@@ -129,31 +121,13 @@ class ClassicEventWriter(EventWriter):
         >>> from solnlib.modular_input import event_writer
         >>> ew = event_writer.ClassicEventWriter(process_safe=True)
         >>> ew.write_events([event1, event2])
-        >>> ew.close()
     '''
 
     description = 'ClassicEventWriter'
 
-    def __init__(self, process_safe=False, qsize=10):
-        self._mgr = None
-        if process_safe:
-            self._mgr = multiprocessing.Manager()
-            self._events_queue = self._mgr.Queue(qsize)
-        else:
-            self._events_queue = Queue.Queue(qsize)
-        self._events_writer = threading.Thread(target=self._write_events)
-        self._events_writer.start()
-        self._closed = False
-
-    def close(self):
-        self._closed = True
-        try:
-            self._events_queue.put(None)
-            if self._mgr is not None:
-                self._mgr.shutdown()
-        except Exception:
-            pass
-        self._events_writer.join()
+    def __init__(self, lock=None):
+        if lock is None:
+            self._lock = threading.Lock()
 
     def create_event(self, data, time=None,
                      index=None, host=None, source=None, sourcetype=None,
@@ -170,27 +144,12 @@ class ClassicEventWriter(EventWriter):
         if not events:
             return
 
-        if self._closed:
-            logging.error(
-                'Event writer: %s has been closed.', self.description)
-            return
+        stdout = sys.stdout
 
-        for event in XMLEvent.format_events(events):
-            self._events_queue.put(event)
-
-    def _write_events(self):
-        while 1:
-            try:
-                event = self._events_queue.get()
-            except EOFError:
-                break
-
-            if event is None:
-                logging.info('Event writer: %s will exit.', self.description)
-                break
-
-            sys.stdout.write(event)
-            sys.stdout.flush()
+        with self._lock:
+            for event in XMLEvent.format_events(events):
+                stdout.write(event)
+            stdout.flush()
 
 
 class HECEventWriter(EventWriter):
@@ -218,7 +177,6 @@ class HECEventWriter(EventWriter):
         >>> from solnlib.modular_input import event_writer
         >>> ew = event_writer.HECEventWriter(hec_input_name, session_key)
         >>> ew.write_events([event1, event2])
-        >>> ew.close()
     '''
 
     WRITE_EVENT_RETRIES = 3
