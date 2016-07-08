@@ -84,6 +84,75 @@ class Timer(object):
 TEARDOWN_SENTINEL = None
 
 
+class TimerQueueStruct(object):
+    '''
+    The underlying data structure for TimerQueue
+    '''
+
+    def __init__(self):
+        self._timers = sc.SortedSet()
+        self._cancelling_timers = {}
+
+    def add_timer(self, callback, when, interval, ident):
+        ''' Add timer to the data structure.
+
+        :param callback: Arbitrary callable object.
+        :type callback: ``callable object``
+        :param when: The first expiration time, seconds since epoch.
+        :type when: ``integer``
+        :param interval: Timer interval, if equals 0, one time timer, otherwise
+            the timer will be periodically executed
+        :type interval: ``integer``
+        :param ident: (optional) Timer identity.
+        :type ident:  ``integer``
+        :returns: A timer object which should not be manipulated directly by
+            clients. Used to delete/update the timer
+        '''
+
+        timer = Timer(callback, when, interval, ident)
+        self._timers.add(timer)
+        return timer
+
+    def remove_timer(self, timer):
+        try:
+            self._timers.remove(timer)
+        except ValueError:
+            logging.info('Timer=%s is not in queue, move it to cancelling '
+                         'list', timer.ident)
+        else:
+            self._cancelling_timers[timer.ident] = timer
+
+    def get_expired_timers(self):
+        next_expired_time = 0
+        now = time()
+        expired_timers = []
+        for timer in self._timers:
+            if timer.when <= now:
+                expired_timers.append(timer)
+
+        if expired_timers:
+            del self._timers[:len(expired_timers)]
+
+        if self._timers:
+            next_expired_time = self._timers[0].when
+        return (next_expired_time, expired_timers)
+
+    def reset_timers(self, expired_timers):
+        has_new_timer = False
+        cancelling_timers = self._cancelling_timers
+        for timer in expired_timers:
+            if timer.ident in cancelling_timers:
+                logging.INFO('Timer=%s has been cancelled', timer.ident)
+                continue
+            elif timer.interval:
+                # Repeated timer
+                timer.update_expiration()
+                self._timers.add(timer)
+                has_new_timer = True
+        cancelling_timers.clear()
+        return has_new_timer
+
+
 class TimerQueue(object):
     '''A simple timer queue implementation.
 
@@ -109,8 +178,7 @@ class TimerQueue(object):
     '''
 
     def __init__(self):
-        self._timers = sc.SortedSet()
-        self._cancelling_timers = {}
+        self._timers = TimerQueueStruct()
         self._lock = threading.Lock()
         self._wakeup_queue = Queue.Queue()
         self._thr = threading.Thread(target=self._check_and_execute)
@@ -155,9 +223,8 @@ class TimerQueue(object):
             clients. Used to delete/update the timer
         '''
 
-        timer = Timer(callback, when, interval, ident)
         with self._lock:
-            self._timers.add(timer)
+            timer = self._timers.add_timer(callback, when, interval, ident)
         self._wakeup()
         return timer
 
@@ -169,13 +236,7 @@ class TimerQueue(object):
         '''
 
         with self._lock:
-            try:
-                self._timers.remove(timer)
-            except ValueError:
-                logging.info('Timer=%s is not in queue, move it to cancelling '
-                             'list', timer.ident)
-            else:
-                self._cancelling_timers[timer.ident] = timer
+            self._timers.remove_timer(timer)
 
     def _check_and_execute(self):
         wakeup_queue = self._wakeup_queue
@@ -209,35 +270,12 @@ class TimerQueue(object):
         logging.info('TimerQueue stopped.')
 
     def _get_expired_timers(self):
-        next_expired_time = 0
-        now = time()
-        expired_timers = []
         with self._lock:
-            for timer in self._timers:
-                if timer.when <= now:
-                    expired_timers.append(timer)
-
-            if expired_timers:
-                del self._timers[:len(expired_timers)]
-
-            if self._timers:
-                next_expired_time = self._timers[0].when
-        return (next_expired_time, expired_timers)
+            return self._timers.get_expired_timers()
 
     def _reset_timers(self, expired_timers):
-        has_new_timer = False
         with self._lock:
-            cancelling_timers = self._cancelling_timers
-            for timer in expired_timers:
-                if timer.ident in cancelling_timers:
-                    logging.INFO('Timer=%s has been cancelled', timer.ident)
-                    continue
-                elif timer.interval:
-                    # Repeated timer
-                    timer.update_expiration()
-                    self._timers.add(timer)
-                    has_new_timer = True
-            cancelling_timers.clear()
+            has_new_timer = self._timers.reset_timers(expired_timers)
 
         if has_new_timer:
             self._wakeup()

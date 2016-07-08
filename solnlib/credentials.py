@@ -267,7 +267,8 @@ def get_session_key(username, password,
 
     uri = '{scheme}://{host}:{port}/{endpoint}'.format(
         scheme=scheme, host=host, port=port, endpoint='services/auth/login')
-    _rest_client = rest_client.SplunkRestClient(None, '-', **context)
+    _rest_client = rest_client.SplunkRestClient(
+        None, '-', 'nobody', scheme, host, port, **context)
     try:
         response = _rest_client.http.post(
             uri, username=username, password=password, output_mode='json')
