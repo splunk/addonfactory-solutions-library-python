@@ -93,8 +93,10 @@ class ConfManager(object):
             raise ConfManagerException(
                 'Config file: %s does not exist.' % conf_file)
         self._conf_file = conf_file
+        cred_realm = '{app}#{conf_file}'.format(
+            app=app, conf_file=self._conf_file)
         self._cred_mgr = CredentialManager(
-            session_key, app, owner=owner, realm=app,
+            session_key, app, owner=owner, realm=cred_realm,
             scheme=scheme, host=host, port=port, **context)
 
     def _filter_stanza(self, stanza):
