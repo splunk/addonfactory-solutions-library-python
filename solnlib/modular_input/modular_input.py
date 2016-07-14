@@ -435,9 +435,6 @@ class ModularInput(object):
                               self.name, traceback.format_exc(e))
                 return 1
             finally:
-                # Stop event writer if any
-                if self._event_writer:
-                    self._event_writer.close()
                 # Stop orphan monitor if any
                 if self._orphan_monitor:
                     self._orphan_monitor.stop()

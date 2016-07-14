@@ -50,7 +50,6 @@ def test_classic_event_writer(monkeypatch):
                                   unbroken=True,
                                   done=True))
     ew.write_events(events)
-    ew.close()
 
     assert mock_stdout.read() == '<stream><event stanza="test_scheme://test" unbroken="1"><time>1372274622.493</time><index>main</index><host>localhost</host><source>Splunk</source><sourcetype>misc</sourcetype><data>This is a test data1.</data></event><event stanza="test_scheme://test" unbroken="1"><time>1372274622.493</time><index>main</index><host>localhost</host><source>Splunk</source><sourcetype>misc</sourcetype><data>This is a test data2.</data><done /></event></stream>'
 
@@ -95,4 +94,3 @@ def test_hec_event_writer(monkeypatch):
                                   unbroken=True,
                                   done=True))
     ew.write_events(events)
-    ew.close()
