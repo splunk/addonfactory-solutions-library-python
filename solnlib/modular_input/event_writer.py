@@ -129,6 +129,8 @@ class ClassicEventWriter(EventWriter):
     def __init__(self, lock=None):
         if lock is None:
             self._lock = threading.Lock()
+        else:
+            self._lock = lock
 
     def create_event(self, data, time=None,
                      index=None, host=None, source=None, sourcetype=None,
