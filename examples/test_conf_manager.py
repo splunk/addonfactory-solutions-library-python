@@ -25,15 +25,16 @@ def test_conf_manager():
         cfsm.create('test')
 
     cfm = conf_manager.ConfManager(
-        'test', session_key, context.app, owner=context.owner,
+        session_key, context.app, owner=context.owner,
         scheme=context.scheme, host=context.host, port=context.port)
-    cfm.update('test_stanza', {'k1': 1, 'k2': 2}, ['k1'])
-    assert cfm.get('test_stanza')['k1'] == 1
-    assert int(cfm.get('test_stanza')['k2']) == 2
-    assert len(cfm.get_all()) == 1
-    cfm.delete('test_stanza')
+    conf = cfm.get_conf('test')
+    conf.update('test_stanza', {'k1': 1, 'k2': 2}, ['k1'])
+    assert conf.get('test_stanza')['k1'] == 1
+    assert int(conf.get('test_stanza')['k2']) == 2
+    assert len(conf.get_all()) == 1
+    conf.delete('test_stanza')
     with pytest.raises(conf_manager.ConfStanzaNotExistException):
-        cfm.get('test_stanza')
+        conf.get('test_stanza')
     with pytest.raises(conf_manager.ConfStanzaNotExistException):
-        cfm.delete('test_stanza')
-    cfm.reload()
+        conf.delete('test_stanza')
+    conf.reload()
