@@ -146,7 +146,7 @@ class ConfFile(object):
            >>> from solnlib import conf_manager
            >>> cfm = conf_manager.ConfManager(session_key,
                                               'Splunk_TA_test')
-           >>> conf = cfm.get_conf('test.conf')
+           >>> conf = cfm.get_conf('test')
            >>> conf.get('test_stanza')
         '''
 
@@ -180,7 +180,7 @@ class ConfFile(object):
            >>> from solnlib import conf_manager
            >>> cfm = conf_manager.ConfManager(session_key,
                                               'Splunk_TA_test')
-           >>> conf = cfm.get_conf('test.conf')
+           >>> conf = cfm.get_conf('test')
            >>> conf.get_all()
         '''
 
@@ -209,7 +209,7 @@ class ConfFile(object):
            >>> from solnlib import conf_manager
            >>> cfm = conf_manager.ConfManager(session_key,
                                               'Splunk_TA_test')
-           >>> conf = cfm.get_conf('test.conf')
+           >>> conf = cfm.get_conf('test')
            >>> conf.update('test_stanza', {'k1': 1, 'k2': 2}, ['k1'])
         '''
 
@@ -242,7 +242,7 @@ class ConfFile(object):
            >>> from solnlib import conf_manager
            >>> cfm = conf_manager.ConfManager(session_key,
                                               'Splunk_TA_test')
-           >>> conf = cfm.get_conf('test.conf')
+           >>> conf = cfm.get_conf('test')
            >>> conf.delete('test_stanza')
         '''
 
@@ -269,7 +269,7 @@ class ConfFile(object):
            >>> from solnlib import conf_manager
            >>> cfm = conf_manager.ConfManager(session_key,
                                               'Splunk_TA_test')
-           >>> conf = cfm.get_conf('test.conf')
+           >>> conf = cfm.get_conf('test')
            >>> conf.reload()
         '''
 
@@ -316,8 +316,15 @@ class ConfManager(object):
         self._host = host
         self._port = port
         self._context = context
+        self._rest_client = rest_client.SplunkRestClient(
+            self._session_key,
+            self._app,
+            owner=self._owner,
+            scheme=self._scheme,
+            host=self._host,
+            port=self._port,
+            **self._context)
         self._confs = None
-        self._rest_client = None
 
     @retry(exceptions=[binding.HTTPError])
     def get_conf(self, name, refresh=False):
@@ -332,16 +339,6 @@ class ConfManager(object):
 
         :raises ConfManagerException: If `conf_file` does not exist.
         '''
-
-        if self._rest_client is None:
-            self._rest_client = rest_client.SplunkRestClient(
-                self._session_key,
-                self._app,
-                owner=self._owner,
-                scheme=self._scheme,
-                host=self._host,
-                port=self._port,
-                **self._context)
 
         if self._confs is None or refresh:
             self._confs = self._rest_client.confs
