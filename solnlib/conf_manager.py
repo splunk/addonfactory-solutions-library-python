@@ -29,24 +29,23 @@ from solnlib.credentials import CredentialNotExistException
 from solnlib.credentials import CredentialManager
 import solnlib.splunk_rest_client as rest_client
 
-__all__ = ['ConfManagerException',
-           'ConfStanzaNotExistException',
+__all__ = ['ConfStanzaNotExistException',
+           'ConfFile',
+           'ConfManagerException',
            'ConfManager']
-
-
-class ConfManagerException(Exception):
-    pass
 
 
 class ConfStanzaNotExistException(Exception):
     pass
 
 
-class ConfManager(object):
-    '''Configuration file manager.
+class ConfFile(object):
+    '''Configuration file.
 
-    :param conf_file: Configuration file.
-    :type conf_file: ``string``
+    :param name: Configuration file name.
+    :type name: ``string``
+    :param conf: Configuration file object.
+    :type conf: ``splunklib.client.ConfigurationFile``
     :param session_key: Splunk access token.
     :type session_key: ``string``
     :param app: App name of namespace.
@@ -63,39 +62,35 @@ class ConfManager(object):
     :type port: ``integer``
     :param context: Other configurations for Splunk rest client.
     :type context: ``dict``
-
-    :raises ConfManagerException: If `conf_file` does not exist.
-
-    Usage::
-
-       >>> from solnlib import conf_manager
-       >>> cfm = conf_manager.ConfManager('test_conf',
-                                          session_key,
-                                          'Splunk_TA_test')
     '''
 
     ENCRYPTED_TOKEN = '******'
 
     reserved_keys = ('userName', 'appName')
 
-    def __init__(self, conf_file, session_key, app, owner='nobody',
+    def __init__(self, name, conf, session_key, app, owner='nobody',
                  scheme=None, host=None, port=None, **context):
-        try:
-            self._conf_mgr = rest_client.SplunkRestClient(
-                session_key,
-                app,
-                owner=owner,
-                scheme=scheme,
-                host=host,
-                port=port,
-                **context).confs[conf_file]
-        except KeyError:
-            raise ConfManagerException(
-                'Config file: %s does not exist.' % conf_file)
-        self._conf_file = conf_file
-        self._cred_mgr = CredentialManager(
-            session_key, app, owner=owner, realm=app,
-            scheme=scheme, host=host, port=port, **context)
+        self._name = name
+        self._conf = conf
+        self._session_key = session_key
+        self._app = app
+        self._owner = owner
+        self._scheme = scheme
+        self._host = host
+        self._port = port
+        self._context = context
+        self._cred_manager = None
+
+    @property
+    @retry(exceptions=[binding.HTTPError])
+    def _cred_mgr(self):
+        if self._cred_manager is None:
+            self._cred_manager = CredentialManager(
+                self._session_key, self._app, owner=self._owner,
+                realm=self._app, scheme=self._scheme, host=self._host,
+                port=self._port, **self._context)
+
+        return self._cred_manager
 
     def _filter_stanza(self, stanza):
         for k in self.reserved_keys:
@@ -149,21 +144,21 @@ class ConfManager(object):
         Usage::
 
            >>> from solnlib import conf_manager
-           >>> cfm = conf_manager.ConfManager('test_conf',
-                                              session_key,
+           >>> cfm = conf_manager.ConfManager(session_key,
                                               'Splunk_TA_test')
-           >>> cfm.get('test_stanza')
+           >>> conf = cfm.get_conf('test')
+           >>> conf.get('test_stanza')
         '''
 
         try:
-            stanza_mgr = self._conf_mgr.list(name=stanza_name)[0]
+            stanza_mgr = self._conf.list(name=stanza_name)[0]
         except binding.HTTPError as e:
             if e.status != 404:
                 raise
 
             raise ConfStanzaNotExistException(
                 'Stanza: %s does not exist in %s.conf' %
-                (stanza_name, self._conf_file))
+                (stanza_name, self._name))
 
         stanza = self._decrypt_stanza(stanza_mgr.name, stanza_mgr.content)
         return stanza
@@ -183,13 +178,13 @@ class ConfManager(object):
         Usage::
 
            >>> from solnlib import conf_manager
-           >>> cfm = conf_manager.ConfManager('test_conf',
-                                              session_key,
+           >>> cfm = conf_manager.ConfManager(session_key,
                                               'Splunk_TA_test')
-           >>> cfm.get_all()
+           >>> conf = cfm.get_conf('test')
+           >>> conf.get_all()
         '''
 
-        stanza_mgrs = self._conf_mgr.list()
+        stanza_mgrs = self._conf.list()
         return {stanza_mgr.name: self._decrypt_stanza(
             stanza_mgr.name, stanza_mgr.content) for stanza_mgr in stanza_mgrs}
 
@@ -212,10 +207,10 @@ class ConfManager(object):
         Usage::
 
            >>> from solnlib import conf_manager
-           >>> cfm = conf_manager.ConfManager('test_conf',
-                                              session_key,
+           >>> cfm = conf_manager.ConfManager(session_key,
                                               'Splunk_TA_test')
-           >>> cfm.update('test_stanza', {'k1': 1, 'k2': 2}, ['k1'])
+           >>> conf = cfm.get_conf('test')
+           >>> conf.update('test_stanza', {'k1': 1, 'k2': 2}, ['k1'])
         '''
 
         stanza = self._filter_stanza(stanza)
@@ -224,12 +219,12 @@ class ConfManager(object):
                                                 encrypt_keys)
 
         try:
-            stanza_mgr = self._conf_mgr.list(name=stanza_name)[0]
+            stanza_mgr = self._conf.list(name=stanza_name)[0]
         except binding.HTTPError as e:
             if e.status != 404:
                 raise
 
-            stanza_mgr = self._conf_mgr.create(stanza_name)
+            stanza_mgr = self._conf.create(stanza_name)
 
         stanza_mgr.submit(encrypted_stanza)
 
@@ -245,10 +240,10 @@ class ConfManager(object):
         Usage::
 
            >>> from solnlib import conf_manager
-           >>> cfm = conf_manager.ConfManager('test_conf',
-                                              session_key,
+           >>> cfm = conf_manager.ConfManager(session_key,
                                               'Splunk_TA_test')
-           >>> cfm.delete('test_stanza')
+           >>> conf = cfm.get_conf('test')
+           >>> conf.delete('test_stanza')
         '''
 
         try:
@@ -257,13 +252,13 @@ class ConfManager(object):
             pass
 
         try:
-            self._conf_mgr.delete(stanza_name)
+            self._conf.delete(stanza_name)
         except KeyError as e:
             logging.error('Delete stanza: %s error: %s.',
                           stanza_name, traceback.format_exc(e))
             raise ConfStanzaNotExistException(
                 'Stanza: %s does not exist in %s.conf' %
-                (stanza_name, self._conf_file))
+                (stanza_name, self._name))
 
     @retry(exceptions=[binding.HTTPError])
     def reload(self):
@@ -272,10 +267,88 @@ class ConfManager(object):
         Usage::
 
            >>> from solnlib import conf_manager
-           >>> cfm = conf_manager.ConfManager('test_conf',
-                                              session_key,
+           >>> cfm = conf_manager.ConfManager(session_key,
                                               'Splunk_TA_test')
-           >>> cfm.reload()
+           >>> conf = cfm.get_conf('test')
+           >>> conf.reload()
         '''
 
-        self._conf_mgr.get('_reload')
+        self._conf.get('_reload')
+
+
+class ConfManagerException(Exception):
+    pass
+
+
+class ConfManager(object):
+    '''Configuration file manager.
+
+    :param session_key: Splunk access token.
+    :type session_key: ``string``
+    :param app: App name of namespace.
+    :type app: ``string``
+    :param owner: (optional) Owner of namespace, default is `nobody`.
+    :type owner: ``string``
+    :param realm: (optional) Realm of credential, default is None.
+    :type realm: ``string``
+    :param scheme: (optional) The access scheme, default is None.
+    :type scheme: ``string``
+    :param host: (optional) The host name, default is None.
+    :type host: ``string``
+    :param port: (optional) The port number, default is None.
+    :type port: ``integer``
+    :param context: Other configurations for Splunk rest client.
+    :type context: ``dict``
+
+    Usage::
+
+       >>> from solnlib import conf_manager
+       >>> cfm = conf_manager.ConfManager(session_key,
+                                          'Splunk_TA_test')
+    '''
+
+    def __init__(self, session_key, app, owner='nobody',
+                 scheme=None, host=None, port=None, **context):
+        self._session_key = session_key
+        self._app = app
+        self._owner = owner
+        self._scheme = scheme
+        self._host = host
+        self._port = port
+        self._context = context
+        self._rest_client = rest_client.SplunkRestClient(
+            self._session_key,
+            self._app,
+            owner=self._owner,
+            scheme=self._scheme,
+            host=self._host,
+            port=self._port,
+            **self._context)
+        self._confs = None
+
+    @retry(exceptions=[binding.HTTPError])
+    def get_conf(self, name, refresh=False):
+        '''Get conf file.
+
+        :param name: Conf file name.
+        :type name: ``string``
+        :param refresh: (optional) Flag to refresh conf file list, default is False.
+        :type refresh: ``bool``
+        :returns: Conf file object.
+        :rtype: ``solnlib.conf_manager.ConfFile``
+
+        :raises ConfManagerException: If `conf_file` does not exist.
+        '''
+
+        if self._confs is None or refresh:
+            self._confs = self._rest_client.confs
+
+        try:
+            conf = self._confs[name]
+        except KeyError:
+            raise ConfManagerException(
+                'Config file: %s does not exist.' % name)
+
+        return ConfFile(name, conf,
+                        self._session_key, self._app, self._owner,
+                        self._scheme, self._host, self._port, **self._context)

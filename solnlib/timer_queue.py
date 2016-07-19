@@ -25,6 +25,7 @@ from time import time
 import sortedcontainers as sc
 
 __all__ = ['Timer',
+           'TimerQueueStruct',
            'TimerQueue']
 
 
@@ -107,6 +108,7 @@ class TimerQueueStruct(object):
         :type ident:  ``integer``
         :returns: A timer object which should not be manipulated directly by
             clients. Used to delete/update the timer
+        :rtype: ``solnlib.timer_queue.Timer``
         '''
 
         timer = Timer(callback, when, interval, ident)
@@ -129,8 +131,11 @@ class TimerQueueStruct(object):
             self._cancelling_timers[timer.ident] = timer
 
     def get_expired_timers(self):
-        ''' Get a list of expired timers
-        :returns: a list of ``Timer``, empty list if there is no expired timers
+        ''' Get a list of expired timers.
+
+        :returns: a list of ``Timer``, empty list if there is no expired
+            timers.
+        :rtype: ``list``
         '''
 
         next_expired_time = 0
@@ -149,8 +154,10 @@ class TimerQueueStruct(object):
 
     def reset_timers(self, expired_timers):
         ''' Re-add the expired periodical timers to data structure for next
-        round scheduling
-        :returns: True if there are timers added, False otherwise
+        round scheduling.
+
+        :returns: True if there are timers added, False otherwise.
+        :rtype: ``bool``
         '''
 
         has_new_timer = False
@@ -168,8 +175,10 @@ class TimerQueueStruct(object):
         return has_new_timer
 
     def check_and_execute(self):
-        ''' Get expired timers and execute callbacks for the timers
-        :returns: duration of next expired timer
+        ''' Get expired timers and execute callbacks for the timers.
+
+        :returns: duration of next expired timer.
+        :rtype: ``float``
         '''
 
         (next_expired_time, expired_timers) = self.get_expired_timers()
