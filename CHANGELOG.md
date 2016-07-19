@@ -1,6 +1,17 @@
 # Splunk Solution Library for Python Changelog
 
-## Version 1.0.7
+## Version 1.0.9
+
+### New features and APIs
+
+* Enhance conf manager to support multiple conf files management.
+
+### Bug fixes
+
+* Refactor `credentials`, `timer_queue`, `event_writer` and `modular_input`.
+* Fix realm in `conf_manager` for credentials.
+
+## Version 1.0.8
 
 ### New features and APIs
 
