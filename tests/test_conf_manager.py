@@ -118,13 +118,14 @@ def test_conf_manager(monkeypatch):
     monkeypatch.setattr(client.Stanza, 'submit',
                         mock_stanza_submit)
 
-    cfm = conf_manager.ConfManager('test', common.SESSION_KEY, common.app)
-    cfm.update('test_stanza', {'k1': 1, 'k2': 2}, ['k1'])
-    assert cfm.get('test_stanza') == {'k2': 2, 'k1': 1}
-    assert cfm.get_all() == {'test_stanza': {'k2': 2, 'k1': 1}}
-    cfm.delete('test_stanza')
+    cfm = conf_manager.ConfManager(common.SESSION_KEY, common.app)
+    conf = cfm.get_conf('test')
+    conf.update('test_stanza', {'k1': 1, 'k2': 2}, ['k1'])
+    assert conf.get('test_stanza') == {'k2': 2, 'k1': 1}
+    assert conf.get_all() == {'test_stanza': {'k2': 2, 'k1': 1}}
+    conf.delete('test_stanza')
     with pytest.raises(conf_manager.ConfStanzaNotExistException):
-        cfm.get('test_stanza')
+        conf.get('test_stanza')
     with pytest.raises(conf_manager.ConfStanzaNotExistException):
-        cfm.delete('test_stanza')
-    cfm.reload()
+        conf.delete('test_stanza')
+    conf.reload()
