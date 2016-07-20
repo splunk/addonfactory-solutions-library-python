@@ -161,6 +161,7 @@ class ConfFile(object):
                 (stanza_name, self._name))
 
         stanza = self._decrypt_stanza(stanza_mgr.name, stanza_mgr.content)
+        stanza['eai:access'] = stanza_mgr.access
         return stanza
 
     @retry(exceptions=[binding.HTTPError])
