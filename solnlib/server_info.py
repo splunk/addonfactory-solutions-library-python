@@ -73,6 +73,16 @@ class ServerInfo(object):
         return self._server_info()['serverName']
 
     @property
+    def guid(self):
+        '''Get guid for the server.
+
+        :returns: GUID.
+        :rtype: ``string``
+        '''
+
+        return self._server_info()['guid']
+
+    @property
     def version(self):
         '''Get splunk server version.
 
