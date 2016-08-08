@@ -122,6 +122,7 @@ def test_conf_manager(monkeypatch):
 
     cfm = conf_manager.ConfManager(common.SESSION_KEY, common.app)
     conf = cfm.get_conf('test')
+    assert not conf.stanza_exist('test_stanza')
     conf.update('test_stanza', {'k1': 1, 'k2': 2}, ['k1'])
     assert conf.get('test_stanza') == {'k2': 2, 'k1': 1, 'eai:access':[]}
     assert conf.get_all() == {'test_stanza': {'k2': 2, 'k1': 1, 'eai:access':[]}}
