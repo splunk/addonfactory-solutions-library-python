@@ -352,3 +352,21 @@ class ConfManager(object):
         return ConfFile(name, conf,
                         self._session_key, self._app, self._owner,
                         self._scheme, self._host, self._port, **self._context)
+
+    @retry(exceptions=[binding.HTTPError])
+    def create_conf(self, name):
+        '''Create conf file.
+
+        :param name: Conf file name.
+        :type name: ``string``
+        :returns: Conf file object.
+        :rtype: ``solnlib.conf_manager.ConfFile``
+        '''
+
+        if self._confs is None:
+            self._confs = self._rest_client.confs
+
+        conf = self._confs.create(name)
+        return ConfFile(name, conf,
+                        self._session_key, self._app, self._owner,
+                        self._scheme, self._host, self._port, **self._context)
