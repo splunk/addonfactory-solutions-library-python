@@ -5,19 +5,26 @@ import threading
 import multiprocessing
 import time
 import shutil
+import logging
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 from solnlib import log
 
+reset_root_log_path = os.path.join('.', '.root_log')
 
 def setup_module(module):
+    if os.path.isdir('./.log'):
+        shutil.rmtree('./.log')
     os.mkdir('./.log')
     log.Logs.set_context(directory='./.log', namespace='unittest')
+    if os.path.isdir(reset_root_log_path):
+        shutil.rmtree(reset_root_log_path)
+    os.mkdir(reset_root_log_path)
 
 
 def teardown_module(module):
     shutil.rmtree('./.log')
-
+    shutil.rmtree(reset_root_log_path)
 
 def test_log_enter_exit(monkeypatch):
     logger1 = log.Logs().get_logger('enter_exit1')
@@ -94,3 +101,18 @@ class TestLogs(object):
             p.start()
 
         time.sleep(1)
+
+    def test_set_root_log_file(self, monkeypatch):
+        log.Logs.set_context(directory=reset_root_log_path, namespace='unittest')
+        default_root_log_file = os.path.join(reset_root_log_path, '{}_{}.log'.format('unittest', 'solnlib'))
+        assert not os.path.isfile(default_root_log_file)
+        logging.info('This is a INFO log in root logger.')
+        logging.error('This is a ERROR log in root logger.')
+        assert not os.path.isfile(default_root_log_file) # reset is not called yet.
+
+        root_log_file = os.path.join(reset_root_log_path, '{}_{}.log'.format('unittest', 'my_root'))
+        assert not os.path.isfile(root_log_file)
+        log.Logs.set_context(directory=reset_root_log_path, namespace='unittest', root_logger_log_file='my_root')
+        logging.info('This is another INFO log in root logger.')
+        logging.error('This is another ERROR log in root logger.')
+        assert os.path.isfile(root_log_file)
