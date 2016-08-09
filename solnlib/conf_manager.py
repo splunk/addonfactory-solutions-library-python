@@ -127,6 +127,34 @@ class ConfFile(object):
         self._cred_mgr.delete_password(stanza_name)
 
     @retry(exceptions=[binding.HTTPError])
+    def stanza_exist(self, stanza_name):
+        '''Check whether stanza exists.
+
+        :param stanza_name: Stanza name.
+        :type stanza_name: ``string``
+        :returns: True if stanza exists else False.
+        :rtype: ``bool``
+
+        Usage::
+
+           >>> from solnlib import conf_manager
+           >>> cfm = conf_manager.ConfManager(session_key,
+                                              'Splunk_TA_test')
+           >>> conf = cfm.get_conf('test')
+           >>> conf.stanza_exist('test_stanza')
+        '''
+
+        try:
+            self._conf.list(name=stanza_name)[0]
+        except binding.HTTPError as e:
+            if e.status != 404:
+                raise
+
+            return False
+
+        return True
+
+    @retry(exceptions=[binding.HTTPError])
     def get(self, stanza_name):
         '''Get stanza from configuration file.
 

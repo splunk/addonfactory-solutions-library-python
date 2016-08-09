@@ -28,6 +28,7 @@ def test_conf_manager():
         session_key, context.app, owner=context.owner,
         scheme=context.scheme, host=context.host, port=context.port)
     conf = cfm.get_conf('test')
+    assert not conf.stanza_exist('test_stanza')
     conf.update('test_stanza', {'k1': 1, 'k2': 2}, ['k1'])
     assert conf.get('test_stanza')['k1'] == 1
     assert int(conf.get('test_stanza')['k2']) == 2
