@@ -16,18 +16,16 @@ def test_conf_manager():
         context.username, context.password, scheme=context.scheme,
         host=context.host, port=context.port)
 
-    cfsm = rest_client.SplunkRestClient(
-        session_key, context.app, owner=context.owner,
-        scheme=context.scheme, host=context.host, port=context.port).confs
-    try:
-        cfsm.get('test')
-    except client.HTTPError:
-        cfsm.create('test')
-
     cfm = conf_manager.ConfManager(
         session_key, context.app, owner=context.owner,
         scheme=context.scheme, host=context.host, port=context.port)
-    conf = cfm.get_conf('test')
+
+    try:
+        conf = cfm.get_conf('test')
+    except conf_manager.ConfManagerException:
+        conf = cfm.create_conf('test')
+
+    assert not conf.stanza_exist('test_stanza')
     conf.update('test_stanza', {'k1': 1, 'k2': 2}, ['k1'])
     assert conf.get('test_stanza')['k1'] == 1
     assert int(conf.get('test_stanza')['k2']) == 2

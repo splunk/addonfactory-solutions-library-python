@@ -128,8 +128,7 @@ class Logs(object):
             cls._default_backup_count = context['backup_count']
         if 'root_logger_log_file' in context:
             cls._default_root_logger_log_file = context['root_logger_log_file']
-
-        cls._reset_root_logger()
+            cls._reset_root_logger()
 
     @classmethod
     def _reset_root_logger(cls):

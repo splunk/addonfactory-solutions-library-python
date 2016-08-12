@@ -103,10 +103,11 @@ class ConfFile(object):
         if not encrypt_keys:
             return stanza
 
-        encrypt_fields = {key: stanza[key] for key in encrypt_keys}
+        encrypt_stanza_keys = [ k for k in encrypt_keys if k in stanza ]
+        encrypt_fields = {key: stanza[key] for key in encrypt_stanza_keys}
         self._cred_mgr.set_password(stanza_name, json.dumps(encrypt_fields))
 
-        for key in encrypt_keys:
+        for key in encrypt_stanza_keys:
             stanza[key] = self.ENCRYPTED_TOKEN
 
         return stanza
@@ -124,6 +125,34 @@ class ConfFile(object):
 
     def _delete_stanza_creds(self, stanza_name):
         self._cred_mgr.delete_password(stanza_name)
+
+    @retry(exceptions=[binding.HTTPError])
+    def stanza_exist(self, stanza_name):
+        '''Check whether stanza exists.
+
+        :param stanza_name: Stanza name.
+        :type stanza_name: ``string``
+        :returns: True if stanza exists else False.
+        :rtype: ``bool``
+
+        Usage::
+
+           >>> from solnlib import conf_manager
+           >>> cfm = conf_manager.ConfManager(session_key,
+                                              'Splunk_TA_test')
+           >>> conf = cfm.get_conf('test')
+           >>> conf.stanza_exist('test_stanza')
+        '''
+
+        try:
+            self._conf.list(name=stanza_name)[0]
+        except binding.HTTPError as e:
+            if e.status != 404:
+                raise
+
+            return False
+
+        return True
 
     @retry(exceptions=[binding.HTTPError])
     def get(self, stanza_name):
@@ -161,6 +190,7 @@ class ConfFile(object):
                 (stanza_name, self._name))
 
         stanza = self._decrypt_stanza(stanza_mgr.name, stanza_mgr.content)
+        stanza['eai:access'] = stanza_mgr.access
         return stanza
 
     @retry(exceptions=[binding.HTTPError])
@@ -349,6 +379,24 @@ class ConfManager(object):
             raise ConfManagerException(
                 'Config file: %s does not exist.' % name)
 
+        return ConfFile(name, conf,
+                        self._session_key, self._app, self._owner,
+                        self._scheme, self._host, self._port, **self._context)
+
+    @retry(exceptions=[binding.HTTPError])
+    def create_conf(self, name):
+        '''Create conf file.
+
+        :param name: Conf file name.
+        :type name: ``string``
+        :returns: Conf file object.
+        :rtype: ``solnlib.conf_manager.ConfFile``
+        '''
+
+        if self._confs is None:
+            self._confs = self._rest_client.confs
+
+        conf = self._confs.create(name)
         return ConfFile(name, conf,
                         self._session_key, self._app, self._owner,
                         self._scheme, self._host, self._port, **self._context)
