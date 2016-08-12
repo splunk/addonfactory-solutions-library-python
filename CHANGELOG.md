@@ -1,5 +1,24 @@
 # Splunk Solution Library for Python Changelog
 
+## Version 1.0.11
+
+### New features and APIs
+
+* Enhance conf manager to provide stanza access info.
+* Enhance conf manager to provide interface to create conf file.
+* Enhance conf manager to provide interface to check stanza existence.
+
+### Bug fixes
+
+* Reset root logger by root logger file.
+* Con manager throw KeyError exception when updating nonexistent encypted keys
+
+## Version 1.0.10
+
+### New features and APIs
+
+* Enhance server_info to get server guid info.
+
 ## Version 1.0.9
 
 ### New features and APIs
