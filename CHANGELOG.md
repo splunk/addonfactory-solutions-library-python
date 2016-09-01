@@ -1,5 +1,11 @@
 # Splunk Solution Library for Python Changelog
 
+## Version 1.0.12
+
+### Bug fixes
+
+* Conf manager can't return correct app name for each conf file.
+
 ## Version 1.0.11
 
 ### New features and APIs
