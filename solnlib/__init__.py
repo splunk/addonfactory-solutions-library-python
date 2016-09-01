@@ -54,6 +54,7 @@ __all__ = ['acl',
            'time_parser',
            'timer_queue',
            'user_access',
-           'utils']
+           'utils',
+           'swagger']
 
-__version__ = '1.0.11'
+__version__ = '1.0.12-snapshot'
