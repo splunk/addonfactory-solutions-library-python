@@ -246,6 +246,12 @@ class HECEventWriter(EventWriter):
             if context.get('token'):
                 hinput['token'] = context['token']
 
+            if context.get('source'):
+                hinput['source'] = context['source']
+
+            if context.get('host'):
+                hinput['host'] = context['host']
+
             hec_input = hc.create_input(hec_input_name, hinput)
 
         limits = hc.get_limits()
@@ -265,6 +271,10 @@ class HECEventWriter(EventWriter):
             index=index, host=host, source=source, sourcetype=sourcetype)
 
     def write_events(self, events):
+        """Write events to index in bulk.
+        :type events: list of Events
+        :param events: Event type objects to write.
+        """
         if not events:
             return
 
