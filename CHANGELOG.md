@@ -2,7 +2,7 @@
 
 ## Version 1.0.13
 
-### New features and APIs 
+### Improvements
 * Events being written by HECWriter in bulk, need to contain source and host keys
 
 ## Version 1.0.12
