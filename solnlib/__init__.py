@@ -56,4 +56,4 @@ __all__ = ['acl',
            'user_access',
            'utils']
 
-__version__ = '1.0.12'
+__version__ = '1.0.13'
