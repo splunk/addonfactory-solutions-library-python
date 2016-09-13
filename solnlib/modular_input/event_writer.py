@@ -172,7 +172,7 @@ class HECEventWriter(EventWriter):
     :type port: ``integer``
     :param hec_uri: (optional) If hec_uri and hec_token are provided, they will
        higher precedence than hec_input_name
-    :type hec_token: ``integer``
+    :type hec_token: ``string``
     :param context: Other configurations for Splunk rest client.
     :type context: ``dict``
 
