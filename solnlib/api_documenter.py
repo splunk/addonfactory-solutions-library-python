@@ -84,7 +84,7 @@ model classes in which case it should be placed over each model class.
 
 def api_model(is_model_class_used, req=None, ref=None, obj=None):
 	"""
-	Creates a definition based on a model class.
+	Creates a definition based on a model class (pojo).
 	:param is_model_class_used: True if model class (pojo) is being used, false otherwise.
 	:type: ```bool```
 	:param req: A list of required params for api method. This parameter is optional if is_model_class_used is true.
