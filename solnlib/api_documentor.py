@@ -13,7 +13,281 @@ logger = log.Logs().get_logger('swagger')
 logger.setLevel(logging.WARNING)
 
 
-class SwaggerSpecGenerator(object):
+"""
+
+Module for generating splunk custom rest endpoint api documentation
+Currently this module uses swagger (http://swagger.io/) to generate the api documentation.
+Users should add the decorators to the api methods to generate the documentation.
+"""
+
+"""
+Note:
+Whenever placing decorators over and operation, you must have an @api_operation on top
+and an @api_response operation on the bottom. You can stack multiple
+sets of the on top of each other each with different combinations of parameters.
+The @api_model can be placed anywhere on this stack, unless you are using
+model classes in which case it should be placed over each model class.
+"""
+
+
+def api_model(model_class, req=None, ref=None, obj=None):
+	"""
+	Creates a definition based on a schematics class.
+	Params:
+		- model_class (boolean) True if model class is being used, false otherwise. This parameter is required.
+		- req (list) A list of required variables. This parameter is optional if schematics is true.
+		- ref (string) This is the name of the definition in the YAML spec. For example, #/definitions/ref.
+			This parameter is optional if schematics is true.
+		- obj (dictionary) This is the model itself in the form of a dictionary. It is optional if schematics is True.
+	"""
+	def decorator(cls):
+		if not spec.paths:
+				return cls
+		if model_class:
+			params = vars(cls).items()
+			definition = {}
+			name = cls.__name__.replace("Model", "")
+			fields = None
+			# grab fields
+			for param in params:
+				if param[0] == '_field_list':
+					fields = param[1]
+			# create dictionary of definition to be added
+			if fields:
+				for field in fields:
+					definition[field[0]] = field[1]
+			spec.create_model(definition, name, req)
+		else:
+			definition = {'type': 'object', 'required': req, 'properties': obj}
+			spec.add_definition(ref, definition)
+		generator.write_temp()
+		return cls
+	return decorator
+
+
+def api_operation(method, description=None, action=None):
+	"""
+	Documents the operation.
+	Params:
+		- name (string) The name og the operation. Valid values include get, put, post or delete. Required.
+		- description (string) A description of the operation. Optional.
+		- operationId (string) The specific name of the operation, for example get_all. Optional.
+	"""
+	def decorator(fn):
+		def operation(*args, **kwargs):
+			if not spec.paths:
+				return fn(None, method, None, *args, **kwargs)
+			op = {}
+			tag = spec.get_path().replace("/", "")
+			op['tags'] = [tag]
+			if description:
+				op['description'] = description
+			if action:
+				op['operationId'] = action
+			# create empty list for parameters
+			op['parameters'] = []
+			return fn(spec.get_path(), method, op, *args, **kwargs)
+		return operation
+	return decorator
+
+
+def path_param():
+	"""
+	Documents a path parameter
+	"""
+	def decorator(fn):
+		def wrapper(path, name, op, *args, **kwargs):
+			if not spec.paths:
+				return fn(path, name, op, *args, **kwargs)
+			path = path + "/{id}"
+			# add path if it doesn't already exist
+			if path not in spec.paths:
+				spec.add_path(path)
+			param = {
+				"name": "id",
+				"in": "path",
+				"required": True,
+				"type": "string"
+			}
+			op['parameters'].append(param)
+			return fn(path, name, op, *args, **kwargs)
+		return wrapper
+	return decorator
+
+
+def body_param(model_class, ref, is_list=False):
+	"""
+	Documents a body parameter.
+	Params:
+		- model_class (boolean) True is model class is being used and false otherwise. Required.
+		- ref (string) This is the name of the definition in the YAML spec. For example, #/definitions/ref. Required.
+		- isList (boolean) True if the body parameter is in the form of a list or array. Defaults to false.
+	"""
+	def decorator(fn):
+		def wrapper(path, name, op, *args, **kwargs):
+			if not spec.paths:
+				return fn(path, name, op, *args, **kwargs)
+			param = {
+				"name": "body",
+				"in": "body",
+				"required": True
+			}
+			if is_list:
+				param['schema'] = {'type': 'array', 'items': {'$ref': '#/definitions/' + ref}}
+			else:
+				param['schema'] = {'$ref': '#/definitions/' + ref}
+			# add parameter to operation
+			op['parameters'].append(param)
+			return fn(path, name, op, *args, **kwargs)
+		return wrapper
+	return decorator
+
+
+def query_param(param_name, required, param_type):
+	"""
+	Documents a query parameter
+	Params:
+		- param_name (string) Name of the parameter. Required.
+		- required (boolean) True if this param is required. Required.
+		- param-type (string) The type of the parameter. Required.
+	"""
+	def decorator(fn):
+		def wrapper(path, name, op, *args, **kwargs):
+			if not spec.paths:
+				return fn(path, name, op, *args, **kwargs)
+			param = {
+				"name": param_name,
+				"in": "query",
+				"required": required,
+				"type": param_type
+			}
+			# add parameter to operation
+			op['parameters'].append(param)
+			return fn(path, name, op, *args, **kwargs)
+		return wrapper
+	return decorator
+
+
+def api_response(code, ref=None, is_list=None):
+	"""
+	Document the response for an operation.
+	Params
+		- code (int) The api response code ie. 200, 400. Required.
+		- ref (string) This is the name of the definition in the YAML spec. For example, #/definitions/ref. optional
+		- is_list (boolean) True if the body parameter is in the form of a list or array. Defaults to false.
+	"""
+	def decorator(fn):
+		def wrapper(path, name, op, *args, **kwargs):
+			if not spec.paths:
+				if fn.__name__ == 'wrapper':
+					return fn(path, name, op, *args, **kwargs)
+				else:
+					return fn(*args, **kwargs)
+			# response code map
+			code_map = {
+				200: 'OK',
+				201: 'Created',
+				202: 'Accepted',
+				400: 'Bad Request',
+				401: 'Unauthorized',
+				403: 'Forbidden',
+				404: 'Not Found'
+			}
+			# begin making response object
+			response = {code: {'description':code_map[code]}}
+			if ref:
+				if is_list:
+					response[code]['schema'] = {'type': 'array', 'items': {'$ref': '#/definitions/' + ref}}
+				else:
+					response[code]['schema'] = {'$ref': '#/definitions/' + ref}
+			if 'responses' not in op:
+				op['responses'] = response
+			else:
+				op['responses'][code] = response[code]
+			if fn.__name__ == 'wrapper':
+				return fn(path, name, op, *args, **kwargs)
+			elif fn.__name__ == 'operation':
+				spec.add_operation(path, name, op)
+				generator.write_temp()
+				return fn(*args, **kwargs)
+			else:
+				spec.add_operation(path, name, op)
+				generator.write_temp()
+				return fn(*args, **kwargs)
+		return wrapper
+	return decorator
+
+
+def api():
+	"""
+	Sets the info and paths for the specification.
+	This must be place above the __init__ function.
+	"""
+	def decorator(fn):
+		def wrapper(*args, **kwargs):
+			# only write spec if it is asked for
+			if 'spec' not in args[2]['query']:
+				fn(*args, **kwargs)
+				return
+			path_keys = ['', 'services', 'app', 'version', 'api', 'id', 'action']
+			path_params = dict(zip(path_keys, args[2]['path'].split('/')))
+			app = path_params.get('app')
+			version = path_params.get('version')
+			api_name = path_params.get('api')
+			spec.set_version(version)
+			spec.set_title(app)
+			host_url = args[2]['headers']['x-request-url']
+			base_host_url = host_url.split('/services/')[0]
+			url = base_host_url.split('://')
+			spec.set_schemes(url[0])
+			spec.set_host(url[1] + "/services/" + app + "/" + version)
+			spec.add_path("/" + api_name)
+			generator.write_temp()
+			fn(*args, **kwargs)
+			return
+		return wrapper
+	return decorator
+
+
+def get_spec(context, method_list):
+	"""
+	Generates and Returns the spec file data
+	:param context: instance of API context class
+	:param method_list: List of API methods to call
+	:return: generated spec file
+	"""
+	_generate_documentation(context, method_list)
+	with open(tempfile.gettempdir() + op.sep + 'spec.yaml') as stream:
+		try:
+			spec_file = yaml.load(stream)
+		except yaml.YAMLError as ex:
+			raise ex
+		return json.dumps(spec_file)
+
+
+def _update_spec():
+	"""
+	Update specification
+	"""
+	generator.update_spec()
+
+
+def _generate_documentation(context, method_list):
+	"""
+	Generates documentation spec file by calling api methods
+	:param context: instance of API context class
+	:param method_list: List of API methods to call
+	"""
+	uri = '{}/{}/{}'.format(context.get('app'), context.get('version'), context.get('api'))
+	for method in method_list:
+		rest.simpleRequest(uri, context.get('session'), None, None, method)
+	_update_spec()
+
+
+class _SwaggerSpecGenerator(object):
+	"""
+	Private class to generate the swagger spec file.
+	"""
 	def __init__(self, swagger_api):
 		self.api = swagger_api
 		self.order = ["swagger", "info", "host", "schemes", "consumes", "produces", "paths", "definitions"]
@@ -44,7 +318,10 @@ class SwaggerSpecGenerator(object):
 		os.rename(tempfile.gettempdir() + op.sep + 'temp.yaml', tempfile.gettempdir() + op.sep + 'spec.yaml')
 
 
-class SwaggerApi(object):
+class _SwaggerApi(object):
+	"""
+	Private class to generate the swagger documentation and default params values.
+	"""
 	def __init__(self):
 		if op.isfile(tempfile.gettempdir() + op.sep + 'temp.yaml'):
 			with open(tempfile.gettempdir() + op.sep + 'temp.yaml', "r") as stream:
@@ -213,268 +490,5 @@ class SwaggerApi(object):
 			if '$ref' in properties[prop]:
 				properties[prop]['$ref'] = '#/definitions/' + properties[prop]['$ref']
 
-
-spec = SwaggerApi()
-generator = SwaggerSpecGenerator(spec)
-
-"""
-Whenever placing decorators over and operation, you must have an @api_operation on top
-and an @api_response operation on the bottom. You can stack multiple
-sets of the on top of each other each with different combinations of parameters.
-The @api_model can be placed anywhere on this stack, unless you are using
-schematics in which case it should be placed over each schematics class.
-"""
-
-
-def api_model(schematics, req=None, ref=None, obj=None):
-	"""
-	Creates a definition based on a schematics class.
-	Params:
-		- schematics (boolean) True if schematics is being used, false otherwise. This parameter is required.
-		- req (list) A list of required variables. This parameter is optional if schematics is true.
-		- ref (string) This is the name of the definition in the YAML spec. For example, #/definitions/ref.
-			This parameter is optional if schematics is true.
-		- obj (dictionary) This is the model itself in the form of a dictionary. It is optional if schematics is True.
-	"""
-	def decorator(cls):
-		if not spec.paths:
-				return cls
-		if schematics:
-			params = vars(cls).items()
-			definition = {}
-			name = cls.__name__.replace("Model", "")
-			fields = None
-			# grab fields
-			for param in params:
-				if param[0] == '_field_list':
-					fields = param[1]
-			# create dictionary of definition to be added
-			if fields:
-				for field in fields:
-					definition[field[0]] = field[1]
-			spec.create_model(definition, name, req)
-		else:
-			definition = {'type': 'object', 'required': req, 'properties': obj}
-			spec.add_definition(ref, definition)
-		generator.write_temp()
-		return cls
-	return decorator
-
-
-def api_operation(method, description=None, action=None):
-	"""
-	Documents the operation.
-	Params:
-		- name (string) The name og the operation. Valid values include get, put, post or delete. Required.
-		- description (string) A description of the operation. Optional.
-		- operationId (string) The specific name of the operation, for example get_all. Optional.
-	"""
-	def decorator(fn):
-		def operation(*args, **kwargs):
-			if not spec.paths:
-				return fn(None, method, None, *args, **kwargs)
-			op = {}
-			tag = spec.get_path().replace("/", "")
-			op['tags'] = [tag]
-			if description:
-				op['description'] = description
-			if action:
-				op['operationId'] = action
-			# create empty list for parameters
-			op['parameters'] = []
-			return fn(spec.get_path(), method, op, *args, **kwargs)
-		return operation
-	return decorator
-
-
-def path_param():
-	"""
-	Documents a path parameter
-	"""
-	def decorator(fn):
-		def wrapper(path, name, op, *args, **kwargs):
-			if not spec.paths:
-				return fn(path, name, op, *args, **kwargs)
-			path = path + "/{id}"
-			# add path if it doesn't already exist
-			if path not in spec.paths:
-				spec.add_path(path)
-			param = {
-				"name": "id",
-				"in": "path",
-				"required": True,
-				"type": "string"
-			}
-			op['parameters'].append(param)
-			return fn(path, name, op, *args, **kwargs)
-		return wrapper
-	return decorator
-
-
-def body_param(schematics, ref, is_list=False):
-	"""
-	Documents a body parameter.
-	Params:
-		- schematics (boolean) True is schematics is being used and false otherwise. Required.
-		- ref (string) This is the name of the definition in the YAML spec. For example, #/definitions/ref. Required.
-		- isList (boolean) True if the body parameter is in the form of a list or array. Defaults to false.
-	"""
-	def decorator(fn):
-		def wrapper(path, name, op, *args, **kwargs):
-			if not spec.paths:
-				return fn(path, name, op, *args, **kwargs)
-			param = {
-				"name": "body",
-				"in": "body",
-				"required": True
-			}
-			if is_list:
-				param['schema'] = {'type': 'array', 'items': {'$ref': '#/definitions/' + ref}}
-			else:
-				param['schema'] = {'$ref': '#/definitions/' + ref}
-			# add parameter to operation
-			op['parameters'].append(param)
-			return fn(path, name, op, *args, **kwargs)
-		return wrapper
-	return decorator
-
-
-def query_param(param_name, required, param_type):
-	"""
-	Documents a query parameter
-	Params:
-		- param_name (string) Name of the parameter. Required.
-		- required (boolean) True if this param is required. Required.
-		- param-type (string) The type of the parameter. Required.
-	"""
-	def decorator(fn):
-		def wrapper(path, name, op, *args, **kwargs):
-			if not spec.paths:
-				return fn(path, name, op, *args, **kwargs)
-			param = {
-				"name": param_name,
-				"in": "query",
-				"required": required,
-				"type": param_type
-			}
-			# add parameter to operation
-			op['parameters'].append(param)
-			return fn(path, name, op, *args, **kwargs)
-		return wrapper
-	return decorator
-
-
-def api_response(code, ref=None, is_list=None):
-	"""
-	Document the response for an operation.
-	Params
-		- code (int) The api response code ie. 200, 400. Required.
-		- ref (string) This is the name of the definition in the YAML spec. For example, #/definitions/ref. optional
-		- is_list (boolean) True if the body parameter is in the form of a list or array. Defaults to false.
-	"""
-	def decorator(fn):
-		def wrapper(path, name, op, *args, **kwargs):
-			if not spec.paths:
-				if fn.__name__ == 'wrapper':
-					return fn(path, name, op, *args, **kwargs)
-				else:
-					return fn(*args, **kwargs)
-			# response code map
-			code_map = {
-				200: 'OK',
-				201: 'Created',
-				202: 'Accepted',
-				400: 'Bad Request',
-				401: 'Unauthorized',
-				403: 'Forbidden',
-				404: 'Not Found'
-			}
-			# begin making response object
-			response = {code:{'description':code_map[code]}}
-			if ref:
-				if is_list:
-					response[code]['schema'] = {'type': 'array', 'items': {'$ref': '#/definitions/' + ref}}
-				else:
-					response[code]['schema'] = {'$ref': '#/definitions/' + ref}
-			if 'responses' not in op:
-				op['responses'] = response
-			else:
-				op['responses'][code] = response[code]
-			if fn.__name__ == 'wrapper':
-				return fn(path, name, op, *args, **kwargs)
-			elif fn.__name__ == 'operation':
-				spec.add_operation(path, name, op)
-				generator.write_temp()
-				return fn(*args, **kwargs)
-			else:
-				spec.add_operation(path, name, op)
-				generator.write_temp()
-				return fn(*args, **kwargs)
-		return wrapper
-	return decorator
-
-
-def api():
-	"""
-	Sets the info and paths for the specification.
-	This must be place above the __init__ function.
-	"""
-	def decorator(fn):
-		def wrapper(*args, **kwargs):
-			# only write spec if it is asked for
-			if 'spec' not in args[2]['query']:
-				fn(*args, **kwargs)
-				return
-			path_keys = ['', 'services', 'app', 'version', 'api', 'id', 'action']
-			path_params = dict(zip(path_keys, args[2]['path'].split('/')))
-			app = path_params.get('app')
-			version = path_params.get('version')
-			api_name = path_params.get('api')
-			spec.set_version(version)
-			spec.set_title(app)
-			host_url = args[2]['headers']['x-request-url']
-			base_host_url = host_url.split('/services/')[0]
-			url = base_host_url.split('://')
-			spec.set_schemes(url[0])
-			spec.set_host(url[1] + "/services/" + app + "/" + version)
-			spec.add_path("/" + api_name)
-			generator.write_temp()
-			fn(*args, **kwargs)
-			return
-		return wrapper
-	return decorator
-
-
-def update_spec():
-	"""
-	Update specification
-	"""
-	generator.update_spec()
-
-
-def generate_documentation(context, method_list):
-	"""
-	Generates documentation spec file by calling api methods
-	:param context: instance of API context class
-	:param method_list: List of API methods to call
-	"""
-	uri = '{}/{}/{}'.format(context.get('app'), context.get('version'), context.get('api'))
-	for method in method_list:
-		rest.simpleRequest(uri, context.get('session'), None, None, method)
-	update_spec()
-
-
-def get_spec(context, method_list):
-	"""
-	Generates and Returns the spec file data
-	:param context: instance of API context class
-	:param method_list: List of API methods to call
-	:return: generated spec file
-	"""
-	generate_documentation(context, method_list)
-	with open(tempfile.gettempdir() + op.sep + 'spec.yaml') as stream:
-		try:
-			spec_file = yaml.load(stream)
-		except yaml.YAMLError as ex:
-			raise ex
-		return json.dumps(spec_file)
+spec = _SwaggerApi()
+generator = _SwaggerSpecGenerator(spec)

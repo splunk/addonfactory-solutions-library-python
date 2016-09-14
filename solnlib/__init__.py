@@ -37,6 +37,7 @@ from solnlib import user_access
 from solnlib import utils
 
 __all__ = ['acl',
+           'api_documentor',
            'compression',
            'conf_manager',
            'credentials',
@@ -54,7 +55,6 @@ __all__ = ['acl',
            'time_parser',
            'timer_queue',
            'user_access',
-           'utils',
-           'swagger']
+           'utils']
 
 __version__ = '1.0.13'
