@@ -33,12 +33,15 @@ model classes in which case it should be placed over each model class.
 def api_model(model_class, req=None, ref=None, obj=None):
 	"""
 	Creates a definition based on a schematics class.
-	Params:
-		- model_class (boolean) True if model class is being used, false otherwise. This parameter is required.
-		- req (list) A list of required variables. This parameter is optional if schematics is true.
-		- ref (string) This is the name of the definition in the YAML spec. For example, #/definitions/ref.
-			This parameter is optional if schematics is true.
-		- obj (dictionary) This is the model itself in the form of a dictionary. It is optional if schematics is True.
+	:param model_class: True if model class is being used, false otherwise. This parameter is required.
+	:type: ```bool```
+	:param req: A list of required variables. This parameter is optional if model_class is true.
+	:type: ```list```
+	:param ref: This is the name of the definition in the YAML spec. For example, #/definitions/ref.
+			This parameter is optional if model_class is true.
+	:type: ```basestring```
+	:param obj: This is the model itself in the form of a dictionary. It is optional if model_class is True.
+	:type: ```dict```
 	"""
 	def decorator(cls):
 		if not spec.paths:
@@ -68,10 +71,12 @@ def api_model(model_class, req=None, ref=None, obj=None):
 def api_operation(method, description=None, action=None):
 	"""
 	Documents the operation.
-	Params:
-		- name (string) The name og the operation. Valid values include get, put, post or delete. Required.
-		- description (string) A description of the operation. Optional.
-		- operationId (string) The specific name of the operation, for example get_all. Optional.
+	:param method: The name of the operation. Valid values include get, put, post or delete.
+	:type: ```basestring```
+	:param description: (optional) A description of the operation.
+	:type: ```basestring`````
+	:param action: (optional)  The specific name of the operation, for example get_all.
+	:type: ```basestring```
 	"""
 	def decorator(fn):
 		def operation(*args, **kwargs):
@@ -93,7 +98,7 @@ def api_operation(method, description=None, action=None):
 
 def path_param():
 	"""
-	Documents a path parameter
+	Documents the path parameter
 	"""
 	def decorator(fn):
 		def wrapper(path, name, op, *args, **kwargs):
@@ -117,11 +122,13 @@ def path_param():
 
 def body_param(model_class, ref, is_list=False):
 	"""
-	Documents a body parameter.
-	Params:
-		- model_class (boolean) True is model class is being used and false otherwise. Required.
-		- ref (string) This is the name of the definition in the YAML spec. For example, #/definitions/ref. Required.
-		- isList (boolean) True if the body parameter is in the form of a list or array. Defaults to false.
+	Documents the body parameter.
+	:param model_class: True is model class is being used and false otherwise.
+	:type: ```bool```
+	:param ref: This is the name of the definition in the YAML spec. For example, #/definitions/ref.
+	:type: ```basestring```
+	:param is_list: True if the body parameter is in the form of a list or array. Defaults to false.
+	:type: ```bool```
 	"""
 	def decorator(fn):
 		def wrapper(path, name, op, *args, **kwargs):
@@ -145,11 +152,13 @@ def body_param(model_class, ref, is_list=False):
 
 def query_param(param_name, required, param_type):
 	"""
-	Documents a query parameter
-	Params:
-		- param_name (string) Name of the parameter. Required.
-		- required (boolean) True if this param is required. Required.
-		- param-type (string) The type of the parameter. Required.
+	Documents the query parameter
+	:param param_name: Name of the parameter.
+	:type: ```basestring```
+	:param required: True if this param is required.
+	:type: ```bool```
+	:param param_type: The type of the parameter.
+	:type: ```bool```
 	"""
 	def decorator(fn):
 		def wrapper(path, name, op, *args, **kwargs):
@@ -171,10 +180,12 @@ def query_param(param_name, required, param_type):
 def api_response(code, ref=None, is_list=None):
 	"""
 	Document the response for an operation.
-	Params
-		- code (int) The api response code ie. 200, 400. Required.
-		- ref (string) This is the name of the definition in the YAML spec. For example, #/definitions/ref. optional
-		- is_list (boolean) True if the body parameter is in the form of a list or array. Defaults to false.
+	:param code: The api response code ie. 200, 400.
+	:type: ```int```
+	:param ref: (optional) This is the name of the definition in the YAML spec. For example, #/definitions/ref.
+	:type: ```basestring```
+	:param is_list: (optional) True if the body parameter is in the form of a list or array. Defaults to false.
+	:type: ```bool```
 	"""
 	def decorator(fn):
 		def wrapper(path, name, op, *args, **kwargs):
@@ -221,7 +232,7 @@ def api_response(code, ref=None, is_list=None):
 def api():
 	"""
 	Sets the info and paths for the specification.
-	This must be place above the __init__ function.
+	This must be place above the rest.BaseRestHandler subclass's __init__ function.
 	"""
 	def decorator(fn):
 		def wrapper(*args, **kwargs):
@@ -252,9 +263,12 @@ def api():
 def get_spec(context, method_list):
 	"""
 	Generates and Returns the spec file data
-	:param context: Dict with app, session, version and api fields
+	:param context: Dictionary with app, session, version and api fields
+	:type: ```dict```
 	:param method_list: List of API methods to call
+	:type: ```list```
 	:return: generated spec file
+	:rtype: ```basestring```
 	"""
 	_generate_documentation(context, method_list)
 	with open(tempfile.gettempdir() + op.sep + 'spec.yaml') as stream:
