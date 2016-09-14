@@ -16,7 +16,7 @@ logger.setLevel(logging.WARNING)
 """
 
 Module for generating splunk custom rest endpoint api documentation
-Currently this module uses swagger (http://swagger.io/) to generate the api documentation.
+Currently this module is using swagger (http://swagger.io/) to generate the api documentation.
 Users should add the decorators to the api methods to generate the documentation.
 """
 
