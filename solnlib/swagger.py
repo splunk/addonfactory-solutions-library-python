@@ -139,6 +139,9 @@ class SwaggerApi(object):
 	def set_host(self, host):
 		self.host = host
 
+	def set_schemes(self, scheme):
+		self.schemes = [scheme]
+
 	def add_operation(self, path, name, op):
 		"""
 		Add a new operation to the api spec.
@@ -257,7 +260,7 @@ def api_model(schematics, req=None, ref=None, obj=None):
 	return decorator
 
 
-def api_operation(name, description=None, operation_id=None):
+def api_operation(method, description=None, action=None):
 	"""
 	Documents the operation.
 	Params:
@@ -268,17 +271,17 @@ def api_operation(name, description=None, operation_id=None):
 	def decorator(fn):
 		def operation(*args, **kwargs):
 			if not spec.paths:
-				return fn(None, name, None, *args, **kwargs)
+				return fn(None, method, None, *args, **kwargs)
 			op = {}
 			tag = spec.get_path().replace("/", "")
 			op['tags'] = [tag]
 			if description:
 				op['description'] = description
-			if operation_id:
-				op['operationId'] = operation_id
+			if action:
+				op['operationId'] = action
 			# create empty list for parameters
 			op['parameters'] = []
-			return fn(spec.get_path(), name, op, *args, **kwargs)
+			return fn(spec.get_path(), method, op, *args, **kwargs)
 		return operation
 	return decorator
 
@@ -421,15 +424,18 @@ def api():
 			if 'spec' not in args[2]['query']:
 				fn(*args, **kwargs)
 				return
-			# fixme
-			path = args[2]['path'].split('/')
-			app = path[2]
-			version = path[3]
-			api_name = path[4]
+			path_keys = ['', 'services', 'app', 'version', 'api', 'id', 'action']
+			path_params = dict(zip(path_keys, args[2]['path'].split('/')))
+			app = path_params.get('app')
+			version = path_params.get('version')
+			api_name = path_params.get('api')
 			spec.set_version(version)
 			spec.set_title(app)
-			host = "localhost:8000/en-US/splunkd/__raw/services/" + app + "/" + version
-			spec.set_host(host)
+			host_url = args[2]['headers']['x-request-url']
+			base_host_url = host_url.split('/services/')[0]
+			url = base_host_url.split('://')
+			spec.set_schemes(url[0])
+			spec.set_host(url[1] + "/services/" + app + "/" + version)
 			spec.add_path("/" + api_name)
 			generator.write_temp()
 			fn(*args, **kwargs)
