@@ -57,4 +57,4 @@ __all__ = ['acl',
            'utils',
            'swagger']
 
-__version__ = '1.0.12-snapshot'
+__version__ = '1.0.13'
