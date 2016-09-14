@@ -7,6 +7,7 @@ import logging
 import splunk.rest as rest
 import log
 import tempfile
+import json
 
 logger = log.Logs().get_logger('swagger')
 logger.setLevel(logging.WARNING)
@@ -450,3 +451,30 @@ def update_spec():
 	"""
 	generator.update_spec()
 
+
+def generate_documentation(context, method_list):
+	"""
+	Generates documentation spec file by calling api methods
+	:param context: instance of API context class
+	:param method_list: List of API methods to call
+	"""
+	uri = '{}/{}/{}'.format(context.get('app'), context.get('version'), context.get('api'))
+	for method in method_list:
+		rest.simpleRequest(uri, context.get('session'), None, None, method)
+	update_spec()
+
+
+def get_spec(context, method_list):
+	"""
+	Generates and Returns the spec file data
+	:param context: instance of API context class
+	:param method_list: List of API methods to call
+	:return: generated spec file
+	"""
+	generate_documentation(context, method_list)
+	with open(tempfile.gettempdir() + op.sep + 'spec.yaml') as stream:
+		try:
+			spec_file = yaml.load(stream)
+		except yaml.YAMLError as ex:
+			raise ex
+		return json.dumps(spec_file)
