@@ -9,7 +9,7 @@ import log
 import tempfile
 import json
 
-logger = log.Logs().get_logger('swagger')
+logger = log.Logs().get_logger('api_documenter')
 logger.setLevel(logging.WARNING)
 
 
@@ -21,6 +21,7 @@ Users should add the decorators to the api methods to generate the documentation
 
 Usage::
 	from solnlib.api_documenter import api, api_operation, api_response, path_param, body_param, get_spec
+	from schematics.models import Model
 
 	class ApiExampleRestHandler(rest.BaseRestHandler):
 		@api()
@@ -28,7 +29,7 @@ Usage::
 			rest.BaseRestHandler.__init__(self, *args, **kwargs)
 
 
-		@api_operation(method='get', description='get all records', action='get_all')
+		@api_operation(http_method='get', description='get all records', action='get_all')
 		@api_response(code=200, ref='Example', is_list=True)
 		@api_response(code=400)
 		def handle_GET(self):
@@ -40,7 +41,7 @@ Usage::
 				# your code
 				...
 
-		@api_operation('put', 'Create a new record.', 'put')
+		@api_operation(http_method='put', description='Create a new record.', action='create')
 		@body_param(True, 'Example', False)
 		@api_response(200,'Example', False)
 		@api_response(400)
@@ -48,7 +49,7 @@ Usage::
 			# your code
 			...
 
-		@api_operation('post', 'update existing record by id', 'post')
+		@api_operation(http_method='post', description='update existing record by id', action='update')
 		@path_param()
 		@body_param(True, 'Example', False)
 		@api_response(200,'Example', False)
@@ -58,7 +59,7 @@ Usage::
 			...
 
 
-		@api_operation('delete', 'delete a record by its id', 'delete')
+		@api_operation(http_method='delete', description='delete a record by its id', action='delete')
 		@path_param()
 		@api_response(200,'delete', False)
 		@api_response(400)
@@ -67,8 +68,8 @@ Usage::
 			...
 
 	@api_model(True)
-	class Example(object):
-		# your model class (pojo) with all the variables
+	class Example(Model):
+		# your model class (pojo) with all the params
 		...
 """
 
@@ -80,6 +81,17 @@ sets of the on top of each other each with different combinations of parameters.
 The @api_model can be placed anywhere on this stack, unless you are using
 model classes in which case it should be placed over each model class.
 """
+
+__all__ = [
+	"api",
+	"api_model",
+	"api_operation",
+	"api_response",
+	"body_param",
+	"get_spec",
+	"path_param",
+	"query_param"
+]
 
 
 def api_model(is_model_class_used, req=None, ref=None, obj=None):
