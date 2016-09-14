@@ -349,8 +349,8 @@ class _SwaggerApi(object):
 					self.produces = spec["produces"]
 					self.paths = spec["paths"]
 					self.definitions = spec["definitions"]
-				except yaml.YAMLError as exc:
-					print(exc)
+				except yaml.YAMLError as e:
+					raise e
 		else:
 			self.swagger = "2.0"
 			self.info = {
