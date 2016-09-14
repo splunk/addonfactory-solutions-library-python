@@ -37,7 +37,7 @@ from solnlib import user_access
 from solnlib import utils
 
 __all__ = ['acl',
-           'api_documentor',
+           'api_documenter',
            'compression',
            'conf_manager',
            'credentials',
