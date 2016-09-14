@@ -32,7 +32,7 @@ model classes in which case it should be placed over each model class.
 
 def api_model(model_class, req=None, ref=None, obj=None):
 	"""
-	Creates a definition based on a schematics class.
+	Creates a definition based on a model class.
 	:param model_class: True if model class is being used, false otherwise. This parameter is required.
 	:type: ```bool```
 	:param req: A list of required variables. This parameter is optional if model_class is true.
