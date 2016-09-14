@@ -252,7 +252,7 @@ def api():
 def get_spec(context, method_list):
 	"""
 	Generates and Returns the spec file data
-	:param context: instance of API context class
+	:param context: Dict with app, session, version and api fields
 	:param method_list: List of API methods to call
 	:return: generated spec file
 	"""
@@ -275,7 +275,7 @@ def _update_spec():
 def _generate_documentation(context, method_list):
 	"""
 	Generates documentation spec file by calling api methods
-	:param context: instance of API context class
+	:param context: Dict with app, session, version and api fields
 	:param method_list: List of API methods to call
 	"""
 	uri = '{}/{}/{}'.format(context.get('app'), context.get('version'), context.get('api'))
