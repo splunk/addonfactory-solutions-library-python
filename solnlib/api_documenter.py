@@ -18,6 +18,58 @@ logger.setLevel(logging.WARNING)
 Module for generating splunk custom rest endpoint api documentation
 Currently this module generates the api documentation for swagger representation (http://swagger.io/).
 Users should add the decorators to the api methods to generate the documentation.
+
+Usage::
+	from solnlib.api_documenter import api, api_operation, api_response, path_param, body_param, get_spec
+
+	class ApiExampleRestHandler(rest.BaseRestHandler):
+		@api()
+		def __init__(self, *args, **kwargs):
+			rest.BaseRestHandler.__init__(self, *args, **kwargs)
+
+
+		@api_operation(method='get', description='get all records', action='get_all')
+		@api_response(code=200, ref='Example', is_list=True)
+		@api_response(code=400)
+		def handle_GET(self):
+			# This is to generate the spec file for swagger representation
+			if self.context['query'].get('spec'):
+				self.response.write(str(get_spec(self.context, ['GET', 'PUT', 'POST', 'DELETE'])))
+				return
+			else:
+				# your code
+				...
+
+		@api_operation('put', 'Create a new record.', 'put')
+		@body_param(True, 'Example', False)
+		@api_response(200,'Example', False)
+		@api_response(400)
+		def handle_PUT(self):
+			# your code
+			...
+
+		@api_operation('post', 'update existing record by id', 'post')
+		@path_param()
+		@body_param(True, 'Example', False)
+		@api_response(200,'Example', False)
+		@api_response(400)
+		def handle_POST(self):
+			# your code
+			...
+
+
+		@api_operation('delete', 'delete a record by its id', 'delete')
+		@path_param()
+		@api_response(200,'delete', False)
+		@api_response(400)
+		def handle_DELETE(self):
+			# your code
+			...
+
+	@api_model(True)
+	class Example(object):
+		# your model class (pojo) with all the variables
+		...
 """
 
 """
@@ -30,23 +82,23 @@ model classes in which case it should be placed over each model class.
 """
 
 
-def api_model(model_class, req=None, ref=None, obj=None):
+def api_model(is_model_class_used, req=None, ref=None, obj=None):
 	"""
 	Creates a definition based on a model class.
-	:param model_class: True if model class is being used, false otherwise. This parameter is required.
+	:param is_model_class_used: True if model class (pojo) is being used, false otherwise.
 	:type: ```bool```
-	:param req: A list of required variables. This parameter is optional if model_class is true.
+	:param req: A list of required params for api method. This parameter is optional if is_model_class_used is true.
 	:type: ```list```
 	:param ref: This is the name of the definition in the YAML spec. For example, #/definitions/ref.
-			This parameter is optional if model_class is true.
+			This parameter is optional if is_model_class_used is true.
 	:type: ```basestring```
-	:param obj: This is the model itself in the form of a dictionary. It is optional if model_class is True.
+	:param obj: This is the model itself in the form of a dictionary. It is optional if is_model_class_used is True.
 	:type: ```dict```
 	"""
 	def decorator(cls):
 		if not spec.paths:
 				return cls
-		if model_class:
+		if is_model_class_used:
 			params = vars(cls).items()
 			definition = {}
 			name = cls.__name__.replace("Model", "")
@@ -68,10 +120,10 @@ def api_model(model_class, req=None, ref=None, obj=None):
 	return decorator
 
 
-def api_operation(method, description=None, action=None):
+def api_operation(http_method, description=None, action=None):
 	"""
 	Documents the operation.
-	:param method: The name of the operation. Valid values include get, put, post or delete.
+	:param http_method: The http method of the operation. Valid values include get, put, post or delete.
 	:type: ```basestring```
 	:param description: (optional) A description of the operation.
 	:type: ```basestring`````
@@ -81,7 +133,7 @@ def api_operation(method, description=None, action=None):
 	def decorator(fn):
 		def operation(*args, **kwargs):
 			if not spec.paths:
-				return fn(None, method, None, *args, **kwargs)
+				return fn(None, http_method, None, *args, **kwargs)
 			op = {}
 			tag = spec.get_path().replace("/", "")
 			op['tags'] = [tag]
@@ -91,7 +143,7 @@ def api_operation(method, description=None, action=None):
 				op['operationId'] = action
 			# create empty list for parameters
 			op['parameters'] = []
-			return fn(spec.get_path(), method, op, *args, **kwargs)
+			return fn(spec.get_path(), http_method, op, *args, **kwargs)
 		return operation
 	return decorator
 
@@ -120,10 +172,10 @@ def path_param():
 	return decorator
 
 
-def body_param(model_class, ref, is_list=False):
+def body_param(is_model_class_used, ref, is_list=False):
 	"""
 	Documents the body parameter.
-	:param model_class: True is model class is being used and false otherwise.
+	:param is_model_class_used: True is model class is being used and false otherwise.
 	:type: ```bool```
 	:param ref: This is the name of the definition in the YAML spec. For example, #/definitions/ref.
 	:type: ```basestring```
