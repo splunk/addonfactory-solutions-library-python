@@ -8,6 +8,7 @@ import splunk.rest as rest
 import log
 import tempfile
 import json
+import re
 
 logger = log.Logs().get_logger('api_documenter')
 logger.setLevel(logging.WARNING)
@@ -113,6 +114,7 @@ def api_model(is_model_class_used, req=None, ref=None, obj=None):
 		if is_model_class_used:
 			params = vars(cls).items()
 			definition = {}
+			# FixMe: (later) No need to replace.
 			name = cls.__name__.replace("Model", "")
 			fields = None
 			# grab fields
@@ -304,20 +306,24 @@ def api():
 			if 'spec' not in args[2]['query']:
 				fn(*args, **kwargs)
 				return
-			path_keys = ['', 'services', 'app', 'version', 'api', 'id', 'action']
-			path_params = dict(zip(path_keys, args[2]['path'].split('/')))
-			app = path_params.get('app')
-			version = path_params.get('version')
-			api_name = path_params.get('api')
-			spec.set_version(version)
-			spec.set_title(app)
-			host_url = args[2]['headers']['x-request-url']
-			base_host_url = host_url.split('/services/')[0]
-			url = base_host_url.split('://')
-			spec.set_schemes(url[0])
-			spec.set_host(url[1] + "/services/" + app + "/" + version)
-			spec.add_path("/" + api_name)
-			generator.write_temp()
+			if len(args) > 2 and args[2]['path']:
+				path_keys = ['', 'services', 'app', 'version', 'api', 'id', 'action']
+				path_params = dict(zip(path_keys, args[2]['path'].split('/')))
+				app = path_params.get('app')
+				version = path_params.get('version')
+				api_name = path_params.get('api')
+				spec.set_version(version)
+				spec.set_title(app)
+				if args[2]['headers'] and args[2]['headers']['x-request-url']:
+					host_url = args[2]['headers']['x-request-url']
+					if host_url and len(host_url) > 0:
+						base_host_url = host_url.split('/services/')[0]
+						url = base_host_url.split('://')
+						if url and len(url) > 1:
+							spec.set_schemes(url[0])
+							spec.set_host(url[1] + "/services/" + app + "/" + version)
+							spec.add_path("/" + api_name)
+							generator.write_temp()
 			fn(*args, **kwargs)
 			return
 		return wrapper
@@ -343,13 +349,6 @@ def get_spec(context, method_list):
 		return json.dumps(spec_file)
 
 
-def _update_spec():
-	"""
-	Update specification
-	"""
-	generator.update_spec()
-
-
 def _generate_documentation(context, method_list):
 	"""
 	Generates documentation spec file by calling api methods
@@ -359,7 +358,7 @@ def _generate_documentation(context, method_list):
 	uri = '{}/{}/{}'.format(context.get('app'), context.get('version'), context.get('api'))
 	for method in method_list:
 		rest.simpleRequest(uri, context.get('session'), None, None, method)
-	_update_spec()
+	generator.update_spec()
 
 
 class _SwaggerSpecGenerator(object):
@@ -375,14 +374,14 @@ class _SwaggerSpecGenerator(object):
 		Stores changes to the spec in a temp file.
 		"""
 		spec = {
-				"swagger": self.api.get_swagger(),
-				"info": self.api.get_info(),
-				"host": self.api.get_host(),
-				"schemes": self.api.get_schemes(),
-				"consumes": self.api.get_consumes(),
-				"produces": self.api.get_produces(),
-				"paths": self.api.get_paths(),
-				"definitions": self.api.get_definitions()
+				"swagger": self.api.__getattribute__('swagger'),
+				"info": self.api.__getattribute__('info'),
+				"host": self.api.__getattribute__('host'),
+				"schemes": self.api.__getattribute__('schemes'),
+				"consumes": self.api.__getattribute__('consumes'),
+				"produces": self.api.__getattribute__('produces'),
+				"paths": self.api.__getattribute__('paths'),
+				"definitions": self.api.__getattribute__('definitions')
 				}
 
 		stream = file((tempfile.gettempdir() + op.sep + 'temp.yaml'), 'w')
@@ -414,7 +413,7 @@ class _SwaggerApi(object):
 					self.paths = spec["paths"]
 					self.definitions = spec["definitions"]
 				except yaml.YAMLError as e:
-					raise e
+					raise Exception("Please retry again. Exception: {}".format(e))
 		else:
 			self.swagger = "2.0"
 			self.info = {
@@ -436,7 +435,7 @@ class _SwaggerApi(object):
 			"LongType": "long",
 			"DateTimeType": "dateTime"
 		}
-		self.default_dict = {
+		self.default_values = {
 			'integer': 0,
 			'float': 0.0,
 			'double': 0.0,
@@ -445,7 +444,7 @@ class _SwaggerApi(object):
 			'boolean': False,
 			'long': 0L,
 			'dateTime': 0.0,
-			'byte': 'dGVzdGluZyBkYXRhIDENCnRlc3RpbmcgZGF0YSAy'
+			'byte': ''
 		}
 		self.swagger_types = {
 			"integer": "integer",
@@ -459,55 +458,68 @@ class _SwaggerApi(object):
 			"byte": "string"
 		}
 
-	def get_info(self):
-		return self.info
-
-	def get_swagger(self):
-		return self.swagger
-
-	def get_host(self):
-		return self.host
-
-	def get_schemes(self):
-		return self.schemes
-
-	def get_consumes(self):
-		return self.consumes
-
-	def get_produces(self):
-		return self.produces
-
-	def get_paths(self):
-		return self.paths
-
-	def get_definitions(self):
-		return self.definitions
-
 	def get_path(self):
-		name = self.paths.keys()[0].split("/")[1]
-		return "/" + name
+		"""
+		gets the API name from paths keys
+		:return: api path
+		:rtype: ```basestring```
+		"""
+		if self.paths and self.paths.keys() and len(self.paths.keys()) > 0:
+			path_params = self.paths.keys()[0].split("/")
+			if path_params and len(path_params) > 1:
+				name = path_params[1]
+				return "/" + name
 
 	def set_title(self, title):
+		"""
+		Sets API title
+		:param title: title
+		:type: ```basestring```
+		"""
 		self.info['title'] = title
 
 	def set_version(self, version):
+		"""
+		Sets API version
+		:param version: version
+		:type: ```basestring```
+		"""
 		self.info['version'] = version
 
 	def set_host(self, host):
+		"""
+		Sets the HOST name
+		:param host: host name
+		:type: ```basestring```
+		"""
 		self.host = host
 
 	def set_schemes(self, scheme):
+		"""
+		sets schemes for host (http/https)
+		:param scheme: scheme
+		:type: ```basestring```
+		"""
 		self.schemes = [scheme]
 
 	def add_operation(self, path, name, op):
 		"""
 		Add a new operation to the api spec.
+		:param path: API path
+		:type: ```basestring```
+		:param name: name of the operation
+		:type: ```basestring```
+		:param op: operation
+		:type: ```basestring```
 		"""
-		self.paths[path][name] = op
+		if path and name:
+			self.paths[path][name] = op
 
 	def add_path(self, path):
 		"""
 		Add a new path to the api spec.
+		:param path: API path
+		:type: ```basestring```
 		"""
 		if path not in self.paths:
 			self.paths[path] = {}
@@ -515,6 +527,10 @@ class _SwaggerApi(object):
 	def add_definition(self, name, definition):
 		"""
 		Add a new definition to the api spec.
+		:param name: name of the input
+		:type: ```basestring```
+		:param definition: definition properties
+		:type: ```dict```
 		"""
 		self.add_examples(definition['properties'])
 		self.fix_types(definition['properties'])
@@ -523,6 +539,12 @@ class _SwaggerApi(object):
 	def create_model(self, params, name, req):
 		"""
 		Create a model to be added to the definitions of the spec.
+		:param params: Request params
+		:type: ```dict```
+		:param name: name of the class
+		:type: ```basestring```
+		:param req:  list of required params for api method
+		:type: ```list```
 		"""
 		# convert given dict to a formatted one
 		definition = {"properties": {}}
@@ -531,35 +553,40 @@ class _SwaggerApi(object):
 			definition["requirements"] = req
 		for param in params:
 			# get type of property
-			info = str(params.get(param)).split(" ")
-			type_info = info[0].replace("<", "")
-			prop_type = type_info[:type_info.index('(')]
+			type_info = re.findall('\((.*?)\)\s', str(params.get(param)), re.DOTALL)
+			if type_info and len(type_info) > 0:
+				type_info = type_info[0]
+			prop_type = re.findall('\<(.*?)\(', str(params.get(param)), re.DOTALL)
+			if prop_type and len(prop_type) > 0:
+				prop_type = prop_type[0]
 			if prop_type in self.type_converter:
 				definition["properties"][param] = {"type": self.type_converter[prop_type]}
 			# check for array
 			elif prop_type == 'ListType':
-				items = type_info[type_info.index('(') + 1: type_info.index(')')]
-				if items != 'ModelType':
+				if type_info != 'ModelType':
 					definition["properties"][param] = {"type": 'array'}
-					definition["properties"][param]['items'] = {'type': self.type_converter[items]}
+					definition["properties"][param]['items'] = {'type': self.type_converter[type_info]}
 			else:
-				start, end = type_info.index("(") + 1, type_info.index(")")
-				ref = type_info[start:end].replace("Model", "")
+				ref = type_info.replace("Model", "")
 				definition["properties"][param] = {"$ref": ref}
 		self.add_definition(name, definition)
 
 	def add_examples(self, properties):
 		"""
 		Add examples to documentation for a definition
+		:param properties: Default request params
+		:type: ```dict```
 		"""
 		for prop in properties:
-			if 'type' in properties[prop] and properties[prop]['type'] in self.default_dict\
+			if 'type' in properties[prop] and properties[prop]['type'] in self.default_values\
 					and 'example' not in properties[prop]:
-				properties[prop]['example'] = self.default_dict[properties[prop]['type']]
+				properties[prop]['example'] = self.default_values[properties[prop]['type']]
 
 	def fix_types(self, properties):
 		"""
 		Fix types to make the spec Open API compliant.
+		:param properties: Default request param properties
+		:type: ```dict```
 		"""
 		for prop in properties:
 			if 'type' in properties[prop] and properties[prop]['type'] in self.swagger_types:
@@ -571,3 +598,4 @@ class _SwaggerApi(object):
 
 spec = _SwaggerApi()
 generator = _SwaggerSpecGenerator(spec)
+
