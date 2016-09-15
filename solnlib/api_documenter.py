@@ -23,6 +23,11 @@ Usage::
 	from solnlib.api_documenter import api, api_operation, api_response, path_param, body_param, get_spec
 	from schematics.models import Model
 
+	@api_model(True)
+	class Example(Model):
+		# your model class (pojo) with all the params
+		...
+
 	class ApiExampleRestHandler(rest.BaseRestHandler):
 		@api()
 		def __init__(self, *args, **kwargs):
@@ -42,18 +47,18 @@ Usage::
 				...
 
 		@api_operation(http_method='put', description='Create a new record.', action='create')
-		@body_param(True, 'Example', False)
-		@api_response(200,'Example', False)
-		@api_response(400)
+		@body_param(is_model_class_used=True, ref='Example', is_list=False)
+		@api_response(code=200, ref='Example', is_list=False)
+		@api_response(code=400)
 		def handle_PUT(self):
 			# your code
 			...
 
 		@api_operation(http_method='post', description='update existing record by id', action='update')
 		@path_param()
-		@body_param(True, 'Example', False)
-		@api_response(200,'Example', False)
-		@api_response(400)
+		@body_param(is_model_class_used=True, ref='Example', is_list=False)
+		@api_response(code=200, ref='Example', is_list=False)
+		@api_response(code=400)
 		def handle_POST(self):
 			# your code
 			...
@@ -61,16 +66,11 @@ Usage::
 
 		@api_operation(http_method='delete', description='delete a record by its id', action='delete')
 		@path_param()
-		@api_response(200,'delete', False)
-		@api_response(400)
+		@api_response(code=200, ref='delete', is_list=False)
+		@api_response(code=400)
 		def handle_DELETE(self):
 			# your code
 			...
-
-	@api_model(True)
-	class Example(Model):
-		# your model class (pojo) with all the params
-		...
 """
 
 """
