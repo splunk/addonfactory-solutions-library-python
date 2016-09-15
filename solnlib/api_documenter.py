@@ -429,6 +429,7 @@ class _SwaggerApi(object):
 		self.type_converter = {
 			"BooleanType": "boolean",
 			"CustomStringType": "string",
+			"StringType": "string",
 			"IntType": "integer",
 			"FloatType": "float",
 			"DictType": "object",
