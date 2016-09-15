@@ -134,7 +134,7 @@ def api_model(is_model_class_used, req=None, ref=None, obj=None):
 
 def api_operation(http_method, description=None, action=None):
 	"""
-	Documents the operation.
+	Specify the http method used by the api
 	:param http_method: The http method of the operation. Valid values include get, put, post or delete.
 	:type: ```basestring```
 	:param description: (optional) A description of the operation.
