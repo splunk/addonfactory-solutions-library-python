@@ -75,9 +75,9 @@ Usage::
 
 """
 Note:
-Whenever placing decorators over and operation, you must have an @api_operation on top
+Whenever placing decorators over an operation, you must have an @api_operation on top
 and an @api_response operation on the bottom. You can stack multiple
-sets of the on top of each other each with different combinations of parameters.
+sets of the decorators on top of each other, each with different combinations of parameters.
 The @api_model can be placed anywhere on this stack, unless you are using
 model classes in which case it should be placed over each model class.
 """
