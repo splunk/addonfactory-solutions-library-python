@@ -345,7 +345,7 @@ def get_spec(context, method_list):
 		try:
 			spec_file = yaml.load(stream)
 		except yaml.YAMLError as ex:
-			raise ex
+			raise Exception("Please try again. Exception: {}".format(ex))
 		return json.dumps(spec_file)
 
 
@@ -392,7 +392,10 @@ class _SwaggerSpecGenerator(object):
 		"""
 		Updates the specification from the temp file.
 		"""
-		os.rename(tempfile.gettempdir() + op.sep + 'temp.yaml', tempfile.gettempdir() + op.sep + 'spec.yaml')
+		try:
+			os.rename(tempfile.gettempdir() + op.sep + 'temp.yaml', tempfile.gettempdir() + op.sep + 'spec.yaml')
+		except Exception as e:
+			raise Exception("Spec file not found, please try again. Exception: {}".format(e))
 
 
 class _SwaggerApi(object):
