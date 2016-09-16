@@ -303,7 +303,7 @@ def api():
 	def decorator(fn):
 		def wrapper(*args, **kwargs):
 			# only write spec if it is asked for
-			if 'spec' not in args[2]['query']:
+			if len(args) > 2 and 'spec' not in args[2]['query']:
 				fn(*args, **kwargs)
 				return
 			if len(args) > 2 and args[2]['path']:
