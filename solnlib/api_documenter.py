@@ -149,7 +149,7 @@ def api_operation(http_method, description=None, action=None):
 			if not spec.paths:
 				return fn(None, http_method, None, *args, **kwargs)
 			op = {}
-			tag = spec.get_path().replace("/", "")
+			tag = spec.get_path().replace("/{id}", "").replace("/", "-")
 			op['tags'] = [tag]
 			if description:
 				op['description'] = description
@@ -170,7 +170,9 @@ def path_param():
 		def wrapper(path, name, op, *args, **kwargs):
 			if not spec.paths:
 				return fn(path, name, op, *args, **kwargs)
-			path = path + "/{id}"
+			if path.find("/{id}") == -1:
+				path = path + "/{id}"
+
 			# add path if it doesn't already exist
 			if path not in spec.paths:
 				spec.add_path(path)
@@ -321,8 +323,8 @@ def api():
 						url = base_host_url.split('://')
 						if url and len(url) > 1:
 							spec.set_schemes(url[0])
-							spec.set_host(url[1] + "/services/" + app + "/" + version)
-							spec.add_path("/" + api_name)
+							spec.set_host(url[1] + "/services/")
+							spec.add_path(app + "/" + version + "/" + api_name)
 							generator.write_temp()
 			fn(*args, **kwargs)
 			return
@@ -468,10 +470,7 @@ class _SwaggerApi(object):
 		:rtype: ```basestring```
 		"""
 		if self.paths and self.paths.keys() and len(self.paths.keys()) > 0:
-			path_params = self.paths.keys()[0].split("/")
-			if path_params and len(path_params) > 1:
-				name = path_params[1]
-				return "/" + name
+			return self.paths.keys()[0]
 
 	def set_title(self, title):
 		"""
