@@ -315,7 +315,7 @@ def api():
 				version = path_params.get('version')
 				api_name = path_params.get('api')
 				spec.set_version(version)
-				spec.set_title(app)
+				spec.set_title("services")
 				if args[2]['headers'] and args[2]['headers']['x-request-url']:
 					host_url = args[2]['headers']['x-request-url']
 					if host_url and len(host_url) > 0:
@@ -422,7 +422,7 @@ class _SwaggerApi(object):
 		else:
 			self.swagger = "2.0"
 			self.info = {
-				"description": "A Splunk REST API"
+				"description": "Splunk REST API(s)"
 			}
 			self.host = None
 			self.schemes = ["http"]
