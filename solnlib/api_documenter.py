@@ -21,7 +21,7 @@ Currently this module generates the api documentation for swagger representation
 Users should add the decorators to the api methods to generate the documentation.
 
 Usage::
-	from solnlib.api_documenter import api, api_operation, api_response, path_param, body_param, get_spec
+	from solnlib.api_documenter import api, api_operation, api_response, api_path_param, api_body_param, api_get_spec
 	from schematics.models import Model
 
 	@api_model(True)
@@ -48,7 +48,7 @@ Usage::
 				...
 
 		@api_operation(http_method='put', description='Create a new record.', action='create')
-		@body_param(is_model_class_used=True, ref='Example', is_list=False)
+		@api_body_param(is_model_class_used=True, ref='Example', is_list=False)
 		@api_response(code=200, ref='Example', is_list=False)
 		@api_response(code=400)
 		def handle_PUT(self):
@@ -56,8 +56,8 @@ Usage::
 			...
 
 		@api_operation(http_method='post', description='update existing record by id', action='update')
-		@path_param()
-		@body_param(is_model_class_used=True, ref='Example', is_list=False)
+		@api_path_param()
+		@api_body_param(is_model_class_used=True, ref='Example', is_list=False)
 		@api_response(code=200, ref='Example', is_list=False)
 		@api_response(code=400)
 		def handle_POST(self):
@@ -66,7 +66,7 @@ Usage::
 
 
 		@api_operation(http_method='delete', description='delete a record by its id', action='delete')
-		@path_param()
+		@api_path_param()
 		@api_response(code=200, ref='delete', is_list=False)
 		@api_response(code=400)
 		def handle_DELETE(self):
@@ -88,10 +88,10 @@ __all__ = [
 	"api_model",
 	"api_operation",
 	"api_response",
-	"body_param",
-	"get_spec",
-	"path_param",
-	"query_param"
+	"api_body_param",
+	"api_get_spec",
+	"api_path_param",
+	"api_query_param"
 ]
 
 
@@ -162,7 +162,7 @@ def api_operation(http_method, description=None, action=None):
 	return decorator
 
 
-def path_param():
+def api_path_param():
 	"""
 	Documents the path parameter
 	"""
@@ -188,7 +188,7 @@ def path_param():
 	return decorator
 
 
-def body_param(is_model_class_used, ref, is_list=False):
+def api_body_param(is_model_class_used, ref, is_list=False):
 	"""
 	Documents the body parameter.
 	:param is_model_class_used: True is model class is being used and false otherwise.
@@ -218,7 +218,7 @@ def body_param(is_model_class_used, ref, is_list=False):
 	return decorator
 
 
-def query_param(params):
+def api_query_param(params):
 	"""
 	Documents the query parameters
 	:param params: parameters list
@@ -330,7 +330,7 @@ def api():
 	return decorator
 
 
-def get_spec(context, method_list):
+def api_get_spec(context, method_list):
 	"""
 	Generates and Returns the spec file data
 	:param context: Dictionary with app, session, version and api fields
