@@ -218,28 +218,26 @@ def body_param(is_model_class_used, ref, is_list=False):
 	return decorator
 
 
-def query_param(param_name, required, param_type):
+def query_param(params):
 	"""
-	Documents the query parameter
-	:param param_name: Name of the parameter.
-	:type: ```basestring```
-	:param required: True if this param is required.
-	:type: ```bool```
-	:param param_type: The type of the parameter.
-	:type: ```bool```
+	Documents the query parameters
+	:param params: parameters list
+	:type: ```list```
 	"""
 	def decorator(fn):
 		def wrapper(path, name, op, *args, **kwargs):
 			if not spec.paths:
 				return fn(path, name, op, *args, **kwargs)
-			param = {
-				"name": param_name,
-				"in": "query",
-				"required": required,
-				"type": param_type
-			}
-			# add parameter to operation
-			op['parameters'].append(param)
+			for k in params:
+				param = {
+					"name": k,
+					"in": "query",
+					"required": False,
+					"type": 'string'
+				}
+				# add parameter to operation
+				op['parameters'].append(param)
+
 			return fn(path, name, op, *args, **kwargs)
 		return wrapper
 	return decorator
