@@ -89,6 +89,8 @@ import log
 import tempfile
 import json
 import re
+# import solnlib.splunk_rest_client as rest_client
+
 
 __all__ = [
 	"api",
@@ -361,6 +363,24 @@ def _generate_documentation(context, method_list):
 	Generates documentation spec file by calling api methods
 	:param context: Dict with app, session, version and api fields
 	:param method_list: List of API methods to call
+	'''
+	'''
+	# PUT is not supported
+	uri = '/services/{}/{}/{}'.format(context.get('app'), context.get('version'), context.get('api'))
+	_rest_client = rest_client.SplunkRestClient(context.get('session'), app='-')
+
+	for method in method_list:
+		try:
+			if method.upper() == 'GET':
+				_rest_client.get(uri, context.get('session'), None, None)
+			elif method.upper() == 'PUT':
+				_rest_client.put(uri, context.get('session'), None, None)
+			elif method.upper() == 'POST':
+				_rest_client.post(uri, context.get('session'), None, None)
+			elif method.upper() == 'DELETE':
+				_rest_client.delete(uri, context.get('session'), None, None)
+		except :
+			pass
 	'''
 	uri = '{}/{}/{}'.format(context.get('app'), context.get('version'), context.get('api'))
 	for method in method_list:
