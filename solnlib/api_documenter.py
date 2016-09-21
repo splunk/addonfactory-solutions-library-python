@@ -1,21 +1,18 @@
-import yaml
-import os
-import os.path as op
-import sys
-import inspect
-import logging
-import splunk.rest as rest
-import log
-import tempfile
-import json
-import re
+# Copyright 2016 Splunk, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the 'License'): you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an 'AS IS' BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
 
-logger = log.Logs().get_logger('api_documenter')
-logger.setLevel(logging.WARNING)
-
-
-"""
-
+'''
 Module for generating splunk custom rest endpoint api documentation
 Currently this module generates the api documentation for swagger representation (http://swagger.io/).
 Users should add the decorators to the api methods to generate the documentation.
@@ -72,16 +69,26 @@ Usage::
 		def handle_DELETE(self):
 			# your code
 			...
-"""
 
-"""
 Note:
 Whenever placing decorators over an operation, you must have an @api_operation on top
 and an @api_response operation on the bottom. You can stack multiple
 sets of the decorators on top of each other, each with different combinations of parameters.
 The @api_model can be placed anywhere on this stack, unless you are using
 model classes in which case it should be placed over each model class.
-"""
+'''
+
+import yaml
+import os
+import os.path as op
+import sys
+import inspect
+import logging
+import splunk.rest as rest
+import log
+import tempfile
+import json
+import re
 
 __all__ = [
 	"api",
@@ -96,7 +103,7 @@ __all__ = [
 
 
 def api_model(is_model_class_used, req=None, ref=None, obj=None):
-	"""
+	'''
 	Creates a definition based on a model class (pojo).
 	:param is_model_class_used: True if model class (pojo) is being used, false otherwise.
 	:type: ```bool```
@@ -107,7 +114,7 @@ def api_model(is_model_class_used, req=None, ref=None, obj=None):
 	:type: ```basestring```
 	:param obj: This is the model itself in the form of a dictionary. It is optional if is_model_class_used is True.
 	:type: ```dict```
-	"""
+	'''
 	def decorator(cls):
 		if not spec.paths:
 				return cls
@@ -135,7 +142,7 @@ def api_model(is_model_class_used, req=None, ref=None, obj=None):
 
 
 def api_operation(http_method, description=None, action=None):
-	"""
+	'''
 	Specify the http method used by the api
 	:param http_method: The http method of the operation. Valid values include get, put, post or delete.
 	:type: ```basestring```
@@ -143,7 +150,7 @@ def api_operation(http_method, description=None, action=None):
 	:type: ```basestring`````
 	:param action: (optional)  The specific name of the operation, for example get_all.
 	:type: ```basestring```
-	"""
+	'''
 	def decorator(fn):
 		def operation(*args, **kwargs):
 			if not spec.paths:
@@ -163,9 +170,9 @@ def api_operation(http_method, description=None, action=None):
 
 
 def api_path_param():
-	"""
+	'''
 	Documents the path parameter
-	"""
+	'''
 	def decorator(fn):
 		def wrapper(path, name, op, *args, **kwargs):
 			if not spec.paths:
@@ -189,7 +196,7 @@ def api_path_param():
 
 
 def api_body_param(is_model_class_used, ref, is_list=False):
-	"""
+	'''
 	Documents the body parameter.
 	:param is_model_class_used: True is model class is being used and false otherwise.
 	:type: ```bool```
@@ -197,7 +204,7 @@ def api_body_param(is_model_class_used, ref, is_list=False):
 	:type: ```basestring```
 	:param is_list: True if the body parameter is in the form of a list or array. Defaults to false.
 	:type: ```bool```
-	"""
+	'''
 	def decorator(fn):
 		def wrapper(path, name, op, *args, **kwargs):
 			if not spec.paths:
@@ -219,11 +226,11 @@ def api_body_param(is_model_class_used, ref, is_list=False):
 
 
 def api_query_param(params):
-	"""
+	'''
 	Documents the query parameters
 	:param params: parameters list
 	:type: ```list```
-	"""
+	'''
 	def decorator(fn):
 		def wrapper(path, name, op, *args, **kwargs):
 			if not spec.paths:
@@ -244,7 +251,7 @@ def api_query_param(params):
 
 
 def api_response(code, ref=None, is_list=None):
-	"""
+	'''
 	Document the response for an operation.
 	:param code: The api response code ie. 200, 400.
 	:type: ```int```
@@ -252,7 +259,7 @@ def api_response(code, ref=None, is_list=None):
 	:type: ```basestring```
 	:param is_list: (optional) True if the body parameter is in the form of a list or array. Defaults to false.
 	:type: ```bool```
-	"""
+	'''
 	def decorator(fn):
 		def wrapper(path, name, op, *args, **kwargs):
 			if not spec.paths:
@@ -296,10 +303,10 @@ def api_response(code, ref=None, is_list=None):
 
 
 def api():
-	"""
+	'''
 	Sets the info and paths for the specification.
 	This must be place above the rest.BaseRestHandler subclass's __init__ function.
-	"""
+	'''
 	def decorator(fn):
 		def wrapper(*args, **kwargs):
 			# only write spec if it is asked for
@@ -331,7 +338,7 @@ def api():
 
 
 def api_get_spec(context, method_list):
-	"""
+	'''
 	Generates and Returns the spec file data
 	:param context: Dictionary with app, session, version and api fields
 	:type: ```dict```
@@ -339,7 +346,7 @@ def api_get_spec(context, method_list):
 	:type: ```list```
 	:return: generated spec file
 	:rtype: ```basestring```
-	"""
+	'''
 	_generate_documentation(context, method_list)
 	with open(tempfile.gettempdir() + op.sep + 'spec.yaml') as stream:
 		try:
@@ -350,11 +357,11 @@ def api_get_spec(context, method_list):
 
 
 def _generate_documentation(context, method_list):
-	"""
+	'''
 	Generates documentation spec file by calling api methods
 	:param context: Dict with app, session, version and api fields
 	:param method_list: List of API methods to call
-	"""
+	'''
 	uri = '{}/{}/{}'.format(context.get('app'), context.get('version'), context.get('api'))
 	for method in method_list:
 		rest.simpleRequest(uri, context.get('session'), None, None, method)
@@ -362,17 +369,17 @@ def _generate_documentation(context, method_list):
 
 
 class _SwaggerSpecGenerator(object):
-	"""
+	'''
 	Private class to generate the swagger spec file.
-	"""
+	'''
 	def __init__(self, swagger_api):
 		self.api = swagger_api
 		self.order = ["swagger", "info", "host", "schemes", "consumes", "produces", "paths", "definitions"]
 
 	def write_temp(self):
-		"""
+		'''
 		Stores changes to the spec in a temp file.
-		"""
+		'''
 		spec = {
 				"swagger": self.api.__getattribute__('swagger'),
 				"info": self.api.__getattribute__('info'),
@@ -389,9 +396,9 @@ class _SwaggerSpecGenerator(object):
 			yaml.dump({x: spec[x]}, stream, default_flow_style=False)
 
 	def update_spec(self):
-		"""
+		'''
 		Updates the specification from the temp file.
-		"""
+		'''
 		try:
 			os.rename(tempfile.gettempdir() + op.sep + 'temp.yaml', tempfile.gettempdir() + op.sep + 'spec.yaml')
 		except Exception as e:
@@ -399,9 +406,9 @@ class _SwaggerSpecGenerator(object):
 
 
 class _SwaggerApi(object):
-	"""
+	'''
 	Private class to generate the swagger documentation and default params values.
-	"""
+	'''
 	def __init__(self):
 		if op.isfile(tempfile.gettempdir() + op.sep + 'temp.yaml'):
 			with open(tempfile.gettempdir() + op.sep + 'temp.yaml', "r") as stream:
@@ -462,48 +469,48 @@ class _SwaggerApi(object):
 		}
 
 	def get_path(self):
-		"""
+		'''
 		gets the API name from paths keys
 		:return: api path
 		:rtype: ```basestring```
-		"""
+		'''
 		if self.paths and self.paths.keys() and len(self.paths.keys()) > 0:
 			return self.paths.keys()[0]
 
 	def set_title(self, title):
-		"""
+		'''
 		Sets API title
 		:param title: title
 		:type: ```basestring```
-		"""
+		'''
 		self.info['title'] = title
 
 	def set_version(self, version):
-		"""
+		'''
 		Sets API version
 		:param version: version
 		:type: ```basestring```
-		"""
+		'''
 		self.info['version'] = version
 
 	def set_host(self, host):
-		"""
+		'''
 		Sets the HOST name
 		:param host: host name
 		:type: ```basestring```
-		"""
+		'''
 		self.host = host
 
 	def set_schemes(self, scheme):
-		"""
+		'''
 		sets schemes for host (http/https)
 		:param scheme: scheme
 		:type: ```basestring```
-		"""
+		'''
 		self.schemes = [scheme]
 
 	def add_operation(self, path, name, op):
-		"""
+		'''
 		Add a new operation to the api spec.
 		:param path: API path
 		:type: ```basestring```
@@ -511,33 +518,33 @@ class _SwaggerApi(object):
 		:type: ```basestring```
 		:param op: operation
 		:type: ```basestring```
-		"""
+		'''
 		if path and name:
 			self.paths[path][name] = op
 
 	def add_path(self, path):
-		"""
+		'''
 		Add a new path to the api spec.
 		:param path: API path
 		:type: ```basestring```
-		"""
+		'''
 		if path not in self.paths:
 			self.paths[path] = {}
 
 	def add_definition(self, name, definition):
-		"""
+		'''
 		Add a new definition to the api spec.
 		:param name: name of the input
 		:type: ```basestring```
 		:param definition: definition properties
 		:type: ```dict```
-		"""
+		'''
 		self.add_examples(definition['properties'])
 		self.fix_types(definition['properties'])
 		self.definitions[name] = definition
 
 	def create_model(self, params, name, req):
-		"""
+		'''
 		Create a model to be added to the definitions of the spec.
 		:param params: Request params
 		:type: ```dict```
@@ -545,7 +552,7 @@ class _SwaggerApi(object):
 		:type: ```basestring```
 		:param req:  list of required params for api method
 		:type: ```list```
-		"""
+		'''
 		# convert given dict to a formatted one
 		definition = {"properties": {}}
 		# add requirements if given
@@ -572,22 +579,22 @@ class _SwaggerApi(object):
 		self.add_definition(name, definition)
 
 	def add_examples(self, properties):
-		"""
+		'''
 		Add examples to documentation for a definition
 		:param properties: Default request params
 		:type: ```dict```
-		"""
+		'''
 		for prop in properties:
 			if 'type' in properties[prop] and properties[prop]['type'] in self.default_values\
 					and 'example' not in properties[prop]:
 				properties[prop]['example'] = self.default_values[properties[prop]['type']]
 
 	def fix_types(self, properties):
-		"""
+		'''
 		Fix types to make the spec Open API compliant.
 		:param properties: Default request param properties
 		:type: ```dict```
-		"""
+		'''
 		for prop in properties:
 			if 'type' in properties[prop] and properties[prop]['type'] in self.swagger_types:
 				if properties[prop]['type'] != self.swagger_types[properties[prop]['type']]:
