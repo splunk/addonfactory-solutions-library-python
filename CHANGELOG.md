@@ -1,5 +1,10 @@
 # Splunk Solution Library for Python Changelog
 
+## Version 1.0.14
+
+### New features
+* Rest api documenter with swagger standard
+
 ## Version 1.0.13
 
 ### Improvements
