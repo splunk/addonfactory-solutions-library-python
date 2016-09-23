@@ -4,3 +4,6 @@ pytest-cov==2.2.1
 requests==2.9.1
 splunk-sdk==1.6.0
 sortedcontainers==1.5.2
+schematics==2.0.0a1
+PyYAML==3.11
+mock==2.0.0

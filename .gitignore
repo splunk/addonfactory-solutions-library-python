@@ -19,3 +19,5 @@ htmlcov
 junit_report.xml
 run_all_tests.sh
 solnlib.egg-info/
+
+*.log
