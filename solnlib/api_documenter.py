@@ -88,7 +88,7 @@ The @api_model can be placed anywhere on this stack, unless you are using
 model classes in which case it should be placed over each model class.
 '''
 
-import yaml
+import simpleyaml as yaml
 import os
 import os.path as op
 import sys

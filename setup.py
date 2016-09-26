@@ -126,7 +126,7 @@ setup(
                       'requests==2.9.1',
                       'sortedcontainers==1.5.2',
                       'schematics==2.0.0a1',
-                      'PyYAML==3.11'],
+                      'simpleyaml==1.0'],
 
     cmdclass={'test': TestCommand,
               'jtest': JTestCommand,
