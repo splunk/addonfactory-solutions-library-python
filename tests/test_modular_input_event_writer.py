@@ -8,6 +8,9 @@ import common
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 from solnlib.modular_input import ClassicEventWriter
 from solnlib.modular_input import HECEventWriter
+from solnlib.modular_input import create_hec_writer_from_input
+from solnlib.modular_input import create_hec_writer_from_token_with_session_key
+from solnlib.modular_input import create_hec_writer_from_token
 
 
 def test_classic_event_writer(monkeypatch):
@@ -72,25 +75,41 @@ def test_hec_event_writer(monkeypatch):
     monkeypatch.setattr(binding.Context, 'post', mock_post)
     monkeypatch.setattr(HECEventWriter, '_get_hec_config', mock_get_hec_config)
 
-    ew = HECEventWriter('HECTestInput', common.SESSION_KEY)
+    for i in range(4):
+        ew = create_hec_event_writer(i)
 
-    events = []
-    events.append(ew.create_event(data='This is a test data1.',
-                                  time=1372274622.493,
-                                  index='main',
-                                  host='localhost',
-                                  source='Splunk',
-                                  sourcetype='misc',
-                                  stanza='test_scheme://test',
-                                  unbroken=True,
-                                  done=False))
-    events.append(ew.create_event(data='This is a test data2.',
-                                  time=1372274622.493,
-                                  index='main',
-                                  host='localhost',
-                                  source='Splunk',
-                                  sourcetype='misc',
-                                  stanza='test_scheme://test',
-                                  unbroken=True,
-                                  done=True))
-    ew.write_events(events)
+        events = []
+        events.append(ew.create_event(data='This is a test data1.',
+                                      time=1372274622.493,
+                                      index='main',
+                                      host='localhost',
+                                      source='Splunk',
+                                      sourcetype='misc',
+                                      stanza='test_scheme://test',
+                                      unbroken=True,
+                                      done=False))
+        events.append(ew.create_event(data='This is a test data2.',
+                                      time=1372274622.493,
+                                      index='main',
+                                      host='localhost',
+                                      source='Splunk',
+                                      sourcetype='misc',
+                                      stanza='test_scheme://test',
+                                      unbroken=True,
+                                      done=True))
+        ew.write_events(events)
+
+
+def create_hec_event_writer(i):
+    if i == 1:
+        return create_hec_writer_from_input(
+            'HECTestInput', 'https://localhost:8089', common.SESSION_KEY)
+    elif i == 2:
+        return create_hec_writer_from_token_with_session_key(
+            'https://localhost:8089', common.SESSION_KEY,
+            'https://localhost:8090', 'test_token')
+    elif i == 3:
+        return create_hec_writer_from_token(
+            'https://localhost:8090', 'test_token')
+    else:
+        return HECEventWriter('HECTestInput', common.SESSION_KEY)
