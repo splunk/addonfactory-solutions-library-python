@@ -8,9 +8,6 @@ import common
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 from solnlib.modular_input import ClassicEventWriter
 from solnlib.modular_input import HECEventWriter
-from solnlib.modular_input import create_hec_writer_from_input
-from solnlib.modular_input import create_hec_writer_from_token_with_session_key
-from solnlib.modular_input import create_hec_writer_from_token
 
 
 def test_classic_event_writer(monkeypatch):
@@ -102,14 +99,14 @@ def test_hec_event_writer(monkeypatch):
 
 def create_hec_event_writer(i):
     if i == 1:
-        return create_hec_writer_from_input(
+        return HECEventWriter.create_from_input(
             'HECTestInput', 'https://localhost:8089', common.SESSION_KEY)
     elif i == 2:
-        return create_hec_writer_from_token_with_session_key(
+        return HECEventWriter.create_from_token_with_session_key(
             'https://localhost:8089', common.SESSION_KEY,
             'https://localhost:8090', 'test_token')
     elif i == 3:
-        return create_hec_writer_from_token(
+        return HECEventWriter.create_from_token(
             'https://localhost:8090', 'test_token')
     else:
         return HECEventWriter('HECTestInput', common.SESSION_KEY)

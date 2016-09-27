@@ -34,10 +34,7 @@ from solnlib.utils import retry
 from solnlib.modular_input.event import XMLEvent, HECEvent
 
 __all__ = ['ClassicEventWriter',
-           'HECEventWriter',
-           'create_hec_writer_from_input',
-           'create_hec_writer_from_token_with_session_key',
-           'create_hec_writer_from_token']
+           'HECEventWriter']
 
 
 class EventWriter(object):
@@ -223,6 +220,71 @@ class HECEventWriter(EventWriter):
                                                          port=hec_port,
                                                          **context)
 
+    @staticmethod
+    def create_from_token(hec_uri, hec_token, **context):
+        '''Given HEC URI and HEC token, create HECEventWriter object.
+        This function simplifies the standalone mode HECEventWriter usage
+        (not in a modinput)
+
+        :param hec_uri: Http Event Collector URI, like https://localhost:8088
+        :type hec_uri: ``string``
+        :param hec_token: Http Event Collector token
+        :type hec_token: ``string``
+        :param context: Other configurations.
+        :type context: ``dict``
+        '''
+
+        return HECEventWriter(
+            None, None, None, None, None, hec_uri=hec_uri, hec_token=hec_token,
+            **context)
+
+    @staticmethod
+    def create_from_input(hec_input_name, splunkd_uri, session_key, **context):
+        '''Given HEC input stanza name, splunkd URI and splunkd session key,
+        create HECEventWriter object. HEC URI and token etc will be discovered
+        from HEC input stanza. When hitting HEC event limit, the underlying
+        code will increase the HEC event limit automatically by calling
+        corresponding REST API against splunkd_uri by using session_key
+
+        :param hec_input_name: Splunk HEC input name.
+        :type hec_input_name: ``string``
+        :param splunkd_uri: Splunkd URI, like https://localhost:8089
+        :type splunkd_uri: ``string``
+        :param session_key: Splunkd access token.
+        :type session_key: ``string``
+        :param context: Other configurations.
+        :type context: ``dict``
+        '''
+
+        scheme, host, port = utils.extract_http_scheme_host_port(splunkd_uri)
+        return HECEventWriter(
+            hec_input_name, session_key, scheme, host, port, **context)
+
+    @staticmethod
+    def create_from_token_with_session_key(
+            splunkd_uri, session_key, hec_uri, hec_token, **context):
+        '''Given Splunkd URI, Splunkd session key, HEC URI and HEC token,
+        create HECEventWriter object. When hitting HEC event limit, the event
+        writer will increase the HEC event limit automatically by calling
+        corresponding REST API against splunkd_uri by using session_key
+
+        :param splunkd_uri: Splunkd URI, like https://localhost:8089
+        :type splunkd_uri: ``string``
+        :param session_key: Splunkd access token.
+        :type session_key: ``string``
+        :param hec_uri: Http Event Collector URI, like https://localhost:8088
+        :type hec_uri: ``string``
+        :param hec_token: Http Event Collector token
+        :type hec_token: ``string``
+        :param context: Other configurations.
+        :type context: ``dict``
+        '''
+
+        scheme, host, port = utils.extract_http_scheme_host_port(splunkd_uri)
+        return HECEventWriter(
+            None, session_key, scheme, host, port, hec_uri=hec_uri,
+            hec_token=hec_token, **context)
+
     @retry(exceptions=[binding.HTTPError])
     def _get_hec_config(self, hec_input_name, session_key,
                         scheme, host, port, **context):
@@ -301,68 +363,3 @@ class HECEventWriter(EventWriter):
                 # When failed after retry, we reraise the exception
                 # to exit the function to let client handle this situation
                 raise last_ex
-
-
-def create_hec_writer_from_input(hec_input_name, splunkd_uri, session_key,
-                                 **context):
-    '''Given HEC input stanza name, splunkd URI and splunkd session key, create
-    HECEventWriter object. HEC URI and token etc will be discovered from HEC
-    input stanza. When hitting HEC event limit, the underlying code
-    will increase the HEC event limit automatically by calling
-    corresponding REST API against splunkd_uri by using session_key
-
-    :param hec_input_name: Splunk HEC input name.
-    :type hec_input_name: ``string``
-    :param splunkd_uri: Splunkd URI, like https://localhost:8089
-    :type splunkd_uri: ``string``
-    :param session_key: Splunkd access token.
-    :type session_key: ``string``
-    :param context: Other configurations.
-    :type context: ``dict``
-    '''
-
-    scheme, host, port = utils.extract_http_scheme_host_port(splunkd_uri)
-    return HECEventWriter(
-        hec_input_name, session_key, scheme, host, port, **context)
-
-
-def create_hec_writer_from_token_with_session_key(
-        splunkd_uri, session_key, hec_uri, hec_token, **context):
-    '''Given Splunkd URI, Splunkd session key, HEC URI and HEC token,
-    create HECEventWriter object. When hitting HEC event limit, the event
-    writer will increase the HEC event limit automatically by calling
-    corresponding REST API against splunkd_uri by using session_key
-
-    :param splunkd_uri: Splunkd URI, like https://localhost:8089
-    :type splunkd_uri: ``string``
-    :param session_key: Splunkd access token.
-    :type session_key: ``string``
-    :param hec_uri: Http Event Collector URI, like https://localhost:8088
-    :type hec_uri: ``string``
-    :param hec_token: Http Event Collector token
-    :type hec_token: ``string``
-    :param context: Other configurations.
-    :type context: ``dict``
-    '''
-
-    scheme, host, port = utils.extract_http_scheme_host_port(splunkd_uri)
-    return HECEventWriter(
-        None, session_key, scheme, host, port, hec_uri=hec_uri,
-        hec_token=hec_token, **context)
-
-
-def create_hec_writer_from_token(hec_uri, hec_token, **context):
-    '''Given HEC URI and HEC token, create HECEventWriter object. This function
-    simplifies the standalone mode HECEventWriter usage (not in a modinput)
-
-    :param hec_uri: Http Event Collector URI, like https://localhost:8088
-    :type hec_uri: ``string``
-    :param hec_token: Http Event Collector token
-    :type hec_token: ``string``
-    :param context: Other configurations.
-    :type context: ``dict``
-    '''
-
-    return HECEventWriter(
-        None, None, None, None, None, hec_uri=hec_uri, hec_token=hec_token,
-        **context)

@@ -21,9 +21,6 @@ from solnlib.modular_input.event import XMLEvent
 from solnlib.modular_input.event import HECEvent
 from solnlib.modular_input.event_writer import ClassicEventWriter
 from solnlib.modular_input.event_writer import HECEventWriter
-from solnlib.modular_input.event_writer import create_hec_writer_from_input
-from solnlib.modular_input.event_writer import create_hec_writer_from_token_with_session_key
-from solnlib.modular_input.event_writer import create_hec_writer_from_token
 from solnlib.modular_input.checkpointer import CheckpointerException
 from solnlib.modular_input.checkpointer import KVStoreCheckpointer
 from solnlib.modular_input.checkpointer import FileCheckpointer
@@ -36,9 +33,6 @@ __all__ = ['EventException',
            'HECEvent',
            'ClassicEventWriter',
            'HECEventWriter',
-           'create_hec_writer_from_input',
-           'create_hec_writer_from_token_with_session_key',
-           'create_hec_writer_from_token',
            'CheckpointerException',
            'KVStoreCheckpointer',
            'FileCheckpointer',
