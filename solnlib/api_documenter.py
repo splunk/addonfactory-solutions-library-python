@@ -13,77 +13,80 @@
 # under the License.
 
 '''
+This module provides decorators for api documentation.
+
+
 Module for generating splunk custom rest endpoint api documentation
 Currently this module generates the api documentation for
- swagger representation (http://swagger.io/).
+swagger representation (http://swagger.io/).
 Users should add the decorators to the api methods
- to generate the documentation.
+to generate the documentation.
 
 Usage::
-    from solnlib.api_documenter import api, api_operation,
-     api_response, api_path_param, api_body_param, api_get_spec
-    from schematics.models import Model
+    >>> from solnlib.api_documenter import api, api_operation,\
+      api_response, api_path_param, api_body_param, api_get_spec
+    >>> from schematics.models import Model
 
-    @api_model(True)
-    class Example(Model):
-        # your model class (pojo) with all the params
-        ...
+    >>> @api_model(True)
+    >>> class Example(Model):
+    >>>     # your model class (pojo) with all the params
+    >>>     pass
 
-    class ApiExampleRestHandler(rest.BaseRestHandler):
-        @api()
-        def __init__(self, *args, **kwargs):
-            rest.BaseRestHandler.__init__(self, *args, **kwargs)
-
-
-        @api_operation(http_method='get',
-         description='get all records', action='get_all')
-        @api_response(code=200, ref='Example', is_list=True)
-        @api_response(code=400)
-        def handle_GET(self):
-            # This is to generate the spec file for swagger representation
-            if self.context['query'].get('spec'):
-                self.response.write(str(get_spec(self.context,
-                 ['GET', 'PUT', 'POST', 'DELETE'])))
-                return
-            else:
-                # your code
-                ...
-
-        @api_operation(http_method='put',
-         description='Create a new record.', action='create')
-        @api_body_param(is_model_class_used=True, ref='Example', is_list=False)
-        @api_response(code=200, ref='Example', is_list=False)
-        @api_response(code=400)
-        def handle_PUT(self):
-            # your code
-            ...
-
-        @api_operation(http_method='post',
-         description='update existing record by id', action='update')
-        @api_path_param()
-        @api_body_param(is_model_class_used=True, ref='Example', is_list=False)
-        @api_response(code=200, ref='Example', is_list=False)
-        @api_response(code=400)
-        def handle_POST(self):
-            # your code
-            ...
+    >>> class ApiExampleRestHandler(rest.BaseRestHandler):
+    >>>     @api()
+    >>>     def __init__(self, *args, **kwargs):
+    >>>        rest.BaseRestHandler.__init__(self, *args, **kwargs)
 
 
-        @api_operation(http_method='delete',
-         description='delete a record by its id', action='delete')
-        @api_path_param()
-        @api_response(code=200, ref='delete', is_list=False)
-        @api_response(code=400)
-        def handle_DELETE(self):
-            # your code
-            ...
+    >>>     @api_operation(http_method='get',\
+    description='get all records', action='get_all')
+    >>>     @api_response(code=200, ref='Example', is_list=True)
+    >>>     @api_response(code=400)
+    >>>     def handle_GET(self):
+    >>>         # This is to generate the spec file for swagger representation
+    >>>         if self.context['query'].get('spec'):
+    >>>             self.response.write(str(get_spec(self.context,\
+    ['GET', 'PUT', 'POST', 'DELETE'])))
+    >>>             return
+    >>>         else:
+    >>>             # your code
+    >>>             pass
+
+    >>>     @api_operation(http_method='put',\
+    description='Create a new record.', action='create')
+    >>>     @api_body_param(is_model_class_used=True, ref='Example', is_list=False)
+    >>>     @api_response(code=200, ref='Example', is_list=False)
+    >>>     @api_response(code=400)
+    >>>     def handle_PUT(self):
+    >>>         # your code
+    >>>         pass
+
+    >>>     @api_operation(http_method='post',\
+    description='update existing record by id', action='update')
+    >>>     @api_path_param()
+    >>>     @api_body_param(is_model_class_used=True, ref='Example', is_list=False)
+    >>>     @api_response(code=200, ref='Example', is_list=False)
+    >>>     @api_response(code=400)
+    >>>     def handle_POST(self):
+    >>>         # your code
+    >>>         pass
+
+
+    >>>     @api_operation(http_method='delete',\
+    description='delete a record by its id', action='delete')
+    >>>     @api_path_param()
+    >>>     @api_response(code=200, ref='delete', is_list=False)
+    >>>     @api_response(code=400)
+    >>>     def handle_DELETE(self):
+    >>>         # your code
+    >>>         pass
 
 Note:
 Whenever placing decorators over an operation,
- you must have an @api_operation on top
+you must have an @api_operation on top
 and an @api_response operation on the bottom. You can stack multiple
 sets of the decorators on top of each other,
- each with different combinations of parameters.
+each with different combinations of parameters.
 The @api_model can be placed anywhere on this stack, unless you are using
 model classes in which case it should be placed over each model class.
 '''
@@ -102,33 +105,31 @@ import splunk_rest_client as rest
 # import solnlib.splunk_rest_client as rest_client
 
 
-__all__ = [
-    "api",
-    "api_model",
-    "api_operation",
-    "api_response",
-    "api_body_param",
-    "api_get_spec",
-    "api_path_param",
-    "api_query_param"
-]
+__all__ = ['api',
+           'api_model',
+           'api_operation',
+           'api_response',
+           'api_body_param',
+           'api_get_spec',
+           'api_path_param',
+           'api_query_param']
 
 
 def api_model(is_model_class_used, req=None, ref=None, obj=None):
-    '''
-    Creates a definition based on a model class (pojo).
+    '''Creates a definition based on a model class (pojo).
+
     :param is_model_class_used: True if model class (pojo) is being used,
      false otherwise.
     :type: ```bool```
     :param req: A list of required params for api method.
      This parameter is optional if is_model_class_used is true.
     :type: ```list```
-    :param ref: This is the name of the definition in the YAML spec.
-     For example, #/definitions/ref.
-                    This parameter is optional if is_model_class_used is true.
+    :param ref: This is the name of the definition in the YAML spec.\
+    For example, #/definitions/ref.\
+    This parameter is optional if is_model_class_used is true.
     :type: ```basestring```
-    :param obj: This is the model itself in the form of a dictionary.
-     It is optional if is_model_class_used is True.
+    :param obj: This is the model itself in the form of a dictionary.\
+    It is optional if is_model_class_used is True.
     :type: ```dict```
     '''
     def decorator(cls):
@@ -158,15 +159,15 @@ def api_model(is_model_class_used, req=None, ref=None, obj=None):
 
 
 def api_operation(http_method, description=None, action=None):
-    '''
-    Specify the http method used by the api
-    :param http_method: The http method of the operation.
-     Valid values include get, put, post or delete.
+    '''Specify the http method used by the api
+
+    :param http_method: The http method of the operation.\
+    Valid values include get, put, post or delete.
     :type: ```basestring```
     :param description: (optional) A description of the operation.
     :type: ```basestring`````
-    :param action: (optional)  The specific name of the operation,
-     for example get_all.
+    :param action: (optional)  The specific name of the operation,\
+    for example get_all.
     :type: ```basestring```
     '''
     def decorator(fn):
@@ -188,8 +189,8 @@ def api_operation(http_method, description=None, action=None):
 
 
 def api_path_param():
-    '''
-    Documents the path parameter
+    '''Documents the path parameter
+
     '''
     def decorator(fn):
         def wrapper(path, name, op, *args, **kwargs):
@@ -214,17 +215,17 @@ def api_path_param():
 
 
 def api_body_param(is_model_class_used, ref, is_list=False):
-    '''
-    Documents the body parameter.
-    :param is_model_class_used:
-     True is model class is being used and false otherwise.
+    '''Documents the body parameter.
+
+    :param is_model_class_used:\
+    True is model class is being used and false otherwise.
     :type: ```bool```
-    :param ref: This is the name of the definition in the YAML spec.
-     For example, #/definitions/ref.
+    :param ref: This is the name of the definition in the YAML spec.\
+    For example, #/definitions/ref.
     :type: ```basestring```
-    :param is_list:
-    True if the body parameter is in the form of a list or array.
-     Defaults to false.
+    :param is_list:\
+    True if the body parameter is in the form of a list or array.\
+    Defaults to false.
     :type: ```bool```
     '''
     def decorator(fn):
@@ -250,8 +251,8 @@ def api_body_param(is_model_class_used, ref, is_list=False):
 
 
 def api_query_param(params):
-    '''
-    Documents the query parameters
+    '''Documents the query parameters
+
     :param params: parameters list
     :type: ```list```
     '''
@@ -275,17 +276,17 @@ def api_query_param(params):
 
 
 def api_response(code, ref=None, is_list=None):
-    '''
-    Document the response for an operation.
+    '''Document the response for an operation.
+
     :param code: The api response code ie. 200, 400.
     :type: ```int```
-    :param ref: (optional)
-     This is the name of the definition in the YAML spec.
-     For example, #/definitions/ref.
+    :param ref: (optional)\
+    This is the name of the definition in the YAML spec.\
+    For example, #/definitions/ref.
     :type: ```basestring```
-    :param is_list: (optional)
-    True if the body parameter is in the form of a list or array.
-     Defaults to false.
+    :param is_list: (optional)\
+    True if the body parameter is in the form of a list or array.\
+    Defaults to false.
     :type: ```bool```
     '''
     def decorator(fn):
@@ -334,8 +335,8 @@ def api_response(code, ref=None, is_list=None):
 
 
 def api():
-    '''
-    Sets the info and paths for the specification.
+    '''Sets the info and paths for the specification.
+
     This must be place above the
     rest.BaseRestHandler subclass's __init__ function.
     '''
@@ -377,8 +378,7 @@ def api():
 
 
 def api_get_spec(context, method_list):
-    '''
-    Generates and Returns the spec file data
+    '''Generates and Returns the spec file data
     :param context: Dictionary with app, session, version and api fields
     :type: ```dict```
     :param method_list: List of API methods to call
@@ -396,8 +396,7 @@ def api_get_spec(context, method_list):
 
 
 def _generate_documentation(context, method_list):
-    '''
-    Generates documentation spec file by calling api methods
+    '''Generates documentation spec file by calling api methods
     :param context: Dict with app, session, version and api fields
     :param method_list: List of API methods to call
     '''
@@ -416,8 +415,7 @@ def _generate_documentation(context, method_list):
 
 
 class _SwaggerSpecGenerator(object):
-    '''
-    Private class to generate the swagger spec file.
+    '''Private class to generate the swagger spec file.
     '''
 
     def __init__(self, swagger_api):

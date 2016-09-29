@@ -21,3 +21,4 @@ run_all_tests.sh
 solnlib.egg-info/
 
 *.log
+tools/solution_lib_release_env/*
