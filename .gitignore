@@ -19,6 +19,6 @@ htmlcov
 junit_report.xml
 run_all_tests.sh
 solnlib.egg-info/
-
+venv/*
 *.log
 tools/solution_lib_release_env/*

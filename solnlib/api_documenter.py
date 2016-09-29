@@ -54,7 +54,8 @@ Usage::
 
     >>>     @api_operation(http_method='put',\
     description='Create a new record.', action='create')
-    >>>     @api_body_param(is_model_class_used=True, ref='Example', is_list=False)
+    >>>     @api_body_param(is_model_class_used=True, ref='Example',\
+     is_list=False)
     >>>     @api_response(code=200, ref='Example', is_list=False)
     >>>     @api_response(code=400)
     >>>     def handle_PUT(self):
@@ -64,7 +65,8 @@ Usage::
     >>>     @api_operation(http_method='post',\
     description='update existing record by id', action='update')
     >>>     @api_path_param()
-    >>>     @api_body_param(is_model_class_used=True, ref='Example', is_list=False)
+    >>>     @api_body_param(is_model_class_used=True, ref='Example',\
+     is_list=False)
     >>>     @api_response(code=200, ref='Example', is_list=False)
     >>>     @api_response(code=400)
     >>>     def handle_POST(self):
