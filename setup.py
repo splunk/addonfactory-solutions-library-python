@@ -124,7 +124,9 @@ setup(
 
     install_requires=['splunk-sdk==1.6.0',
                       'requests==2.9.1',
-                      'sortedcontainers==1.5.2'],
+                      'sortedcontainers==1.5.2',
+                      'schematics==2.0.0a1',
+                      'simpleyaml==1.0'],
 
     cmdclass={'test': TestCommand,
               'jtest': JTestCommand,

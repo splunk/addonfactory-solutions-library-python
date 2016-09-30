@@ -105,6 +105,8 @@ class ConfFile(object):
 
         encrypt_stanza_keys = [ k for k in encrypt_keys if k in stanza ]
         encrypt_fields = {key: stanza[key] for key in encrypt_stanza_keys}
+        if not encrypt_fields:
+            return stanza
         self._cred_mgr.set_password(stanza_name, json.dumps(encrypt_fields))
 
         for key in encrypt_stanza_keys:
