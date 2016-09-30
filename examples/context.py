@@ -8,6 +8,6 @@ owner = 'nobody'
 app = 'solnlib_demo'
 
 username = 'admin'
-password = 'admin'
+password = 'changeme'
 
 scheme, host, port = get_splunkd_access_info()
