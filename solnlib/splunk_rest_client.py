@@ -22,6 +22,7 @@ import logging
 import traceback
 from cStringIO import StringIO
 import urllib2
+import os
 
 import splunklib.binding as binding
 import splunklib.client as client
@@ -180,7 +181,8 @@ class SplunkRestClient(client.Service):
 
     def __init__(self, session_key, app, owner='nobody',
                  scheme=None, host=None, port=None, **context):
-        if not all([scheme, host, port]):
+        # Only do splunkd URI discovery in SPLUNK env (SPLUNK_HOME is set)
+        if not all([scheme, host, port]) and os.environ.get('SPLUNK_HOME'):
             scheme, host, port = get_splunkd_access_info()
 
         handler = _request_handler(context)
