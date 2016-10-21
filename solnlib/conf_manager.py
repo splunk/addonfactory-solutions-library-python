@@ -22,12 +22,11 @@ import json
 import logging
 import traceback
 
-from splunklib import binding
-
-from solnlib.utils import retry
-from solnlib.credentials import CredentialNotExistException
-from solnlib.credentials import CredentialManager
-import solnlib.splunk_rest_client as rest_client
+from . import splunk_rest_client as rest_client
+from .credentials import CredentialManager
+from .credentials import CredentialNotExistException
+from .packages.splunklib import binding
+from .utils import retry
 
 __all__ = ['ConfStanzaNotExistException',
            'ConfFile',

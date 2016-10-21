@@ -16,14 +16,13 @@
 This module contains Splunk credential related interfaces.
 '''
 
-import re
 import json
+import re
 
-from splunklib import binding
-
-from solnlib.utils import retry
-from solnlib.splunkenv import get_splunkd_access_info
-import solnlib.splunk_rest_client as rest_client
+from . import splunk_rest_client as rest_client
+from .packages.splunklib import binding
+from .splunkenv import get_splunkd_access_info
+from .utils import retry
 
 __all__ = ['CredentialException',
            'CredentialNotExistException',

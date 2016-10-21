@@ -18,14 +18,14 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 # Absolute imports
 
-from splunklib.client import Service
+from ..client import Service
 
 
 from collections import namedtuple
 try:
     from collections import OrderedDict  # must be python 2.7
 except ImportError:
-    from splunklib.ordereddict import OrderedDict
+    from ..ordereddict import OrderedDict
 from copy import deepcopy
 from cStringIO import StringIO
 from itertools import chain, ifilter, imap, islice, izip

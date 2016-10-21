@@ -17,21 +17,20 @@ This module provides two kinds of event writers (ClassicEventWriter,
 HECEventWriter) to write Splunk modular input events.
 '''
 
-import sys
-import time
-import threading
 import logging
+import sys
+import threading
+import time
 import traceback
 from abc import ABCMeta, abstractmethod
 
-from splunklib import binding
-import solnlib.splunk_rest_client as rest_client
-from solnlib.splunkenv import get_splunkd_access_info
-
-import solnlib.utils as utils
-from solnlib.hec_config import HECConfig
-from solnlib.utils import retry
-from solnlib.modular_input.event import XMLEvent, HECEvent
+from .event import XMLEvent, HECEvent
+from .. import splunk_rest_client as rest_client
+from .. import utils
+from ..hec_config import HECConfig
+from ..packages.splunklib import binding
+from ..splunkenv import get_splunkd_access_info
+from ..utils import retry
 
 __all__ = ['ClassicEventWriter',
            'HECEventWriter']

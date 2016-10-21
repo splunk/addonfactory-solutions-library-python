@@ -26,7 +26,7 @@ import traceback
 import os.path as op
 from abc import ABCMeta, abstractmethod
 
-from splunklib import binding
+from ..packages.splunklib import binding
 
 from solnlib.utils import retry
 import solnlib.splunk_rest_client as rest_client
