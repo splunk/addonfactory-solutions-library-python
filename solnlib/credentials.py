@@ -16,14 +16,18 @@
 This module contains Splunk credential related interfaces.
 '''
 
-import re
 import json
+import re
 
 from splunklib import binding
 
-from solnlib.utils import retry
-from solnlib.splunkenv import get_splunkd_access_info
 import solnlib.splunk_rest_client as rest_client
+from solnlib.net_utils import check_css_params
+from solnlib.net_utils import is_valid_hostname
+from solnlib.net_utils import is_valid_port
+from solnlib.net_utils import is_valid_scheme
+from solnlib.splunkenv import get_splunkd_access_info
+from solnlib.utils import retry
 
 __all__ = ['CredentialException',
            'CredentialNotExistException',
@@ -235,6 +239,8 @@ class CredentialManager(object):
 
 
 @retry(exceptions=[binding.HTTPError])
+@check_css_params(scheme=is_valid_scheme, host=is_valid_hostname,
+                  port=is_valid_port)
 def get_session_key(username, password,
                     scheme=None, host=None, port=None, **context):
     '''Get splunkd access token.

@@ -19,14 +19,18 @@ call instead of calling splunklib SDK directly in business logic code.
 '''
 
 import logging
-import traceback
-from cStringIO import StringIO
-import urllib2
 import os
+import traceback
+import urllib2
+from cStringIO import StringIO
 
 import splunklib.binding as binding
 import splunklib.client as client
 
+from solnlib.net_utils import check_css_params
+from solnlib.net_utils import is_valid_hostname
+from solnlib.net_utils import is_valid_port
+from solnlib.net_utils import is_valid_scheme
 from solnlib.splunkenv import get_splunkd_access_info
 
 __all__ = ['SplunkRestClient']
@@ -179,6 +183,8 @@ class SplunkRestClient(client.Service):
     :type context: ``dict``
     '''
 
+    @check_css_params(scheme=is_valid_scheme, host=is_valid_hostname,
+                      port=is_valid_port)
     def __init__(self, session_key, app, owner='nobody',
                  scheme=None, host=None, port=None, **context):
         # Only do splunkd URI discovery in SPLUNK env (SPLUNK_HOME is set)
