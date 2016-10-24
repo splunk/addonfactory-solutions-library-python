@@ -1,7 +1,5 @@
-import sys
 import os.path as op
-
-from splunklib.binding import HTTPError
+import sys
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 from solnlib import server_info

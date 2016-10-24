@@ -1,17 +1,17 @@
+import json
+import os.path as op
 import sys
 import time
-import json
 import uuid
-import pytest
-import os.path as op
 
-from splunklib import binding
-from splunklib import client
-from splunklib.binding import HTTPError
+import pytest
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 from solnlib.credentials import get_session_key
 import context
+from solnlib.packages.splunklib import binding
+from solnlib.packages.splunklib import client
+from solnlib.packages.splunklib.binding import HTTPError
 
 
 def test_kvstore():

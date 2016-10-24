@@ -51,7 +51,7 @@ class AutoDoc(object):
             '   to your liking, but it should at least contain the root `toctree`\n'
             '   directive.\n\n'
             '{lib_welcome_msg}\n'
-            '=========================================================\n\n'
+            '==========================================================\n\n'
             '.. toctree::\n'
             '   :maxdepth: 2\n'
             '   :numbered:\n\n'
@@ -92,7 +92,7 @@ class AutoDoc(object):
             if sub_module.endswith('.py'):
                 content += '   {sub_rst}\n'.format(
                     sub_rst=sub_module.replace('.py', '.rst'))
-            else:
+            elif sub_module != 'packages':
                 content += '   {sub_rst}\n'.format(
                     sub_rst=op.join(sub_module, 'init.rst'))
 
@@ -144,6 +144,9 @@ class AutoDoc(object):
         return content
 
     def _recursive_create_docs(self, source_dir, dest_dir, package_names):
+        if 'packages' in package_names:
+            return
+
         os.mkdir(dest_dir)
 
         sub_modules = os.listdir(source_dir)
