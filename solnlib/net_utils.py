@@ -19,6 +19,7 @@ import inspect
 import itertools
 import re
 import socket
+from functools import wraps
 
 from solnlib import ip_math
 
@@ -83,7 +84,7 @@ def is_valid_port(port):
     '''
 
     try:
-        return 0 <= int(port) <= 65535
+        return 0 < int(port) <= 65535
     except ValueError:
         return False
 
@@ -97,7 +98,7 @@ def is_valid_scheme(scheme):
     :rtype: ``bool``
     '''
 
-    return scheme in ('http', 'https')
+    return scheme.lower() in ('http', 'https')
 
 
 def check_css_params(**validators):
@@ -109,12 +110,11 @@ def check_css_params(**validators):
     '''
 
     def decorator(f):
+        @wraps(f)
         def wrapper(*args, **kwargs):
             arg_spec = inspect.getargspec(f)
-            # Get all actual received arguments
             actual_args = dict(list(itertools.izip(arg_spec.args, args)) +
                                list(kwargs.iteritems()))
-            # Get function optional arguments
             dfs = arg_spec.defaults
             optional = dict(zip(arg_spec.args[-len(dfs):], dfs)) if dfs else {}
 
@@ -124,12 +124,10 @@ def check_css_params(**validators):
                 value = actual_args[arg]
                 if arg in optional and optional[arg] == value:
                     continue
-                if func(value) is not True:
-                    raise ValueError('Illegal argument: {}={}'
-                                     .format(arg, value))
+                if not func(value):
+                    raise ValueError(
+                        'Illegal argument: {}={}'.format(arg, value))
             return f(*args, **kwargs)
-
-        wrapper.__name__ = f.__name__
         return wrapper
 
     return decorator

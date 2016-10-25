@@ -45,8 +45,8 @@ def test_is_valid_hostname():
 
 
 def test_is_valid_port():
-    assert net_utils.is_valid_port(0)
-    assert net_utils.is_valid_port('0')
+    assert not net_utils.is_valid_port(0)
+    assert not net_utils.is_valid_port('0')
     assert net_utils.is_valid_port('1')
     assert net_utils.is_valid_port(1)
     assert net_utils.is_valid_port(8080)
@@ -61,6 +61,9 @@ def test_is_valid_port():
 def test_is_valid_scheme():
     assert net_utils.is_valid_scheme('http')
     assert net_utils.is_valid_scheme('https')
+    assert net_utils.is_valid_scheme('HTTP')
+    assert net_utils.is_valid_scheme('HTTPS')
+    assert net_utils.is_valid_scheme('HTTp')
     assert not net_utils.is_valid_scheme('non-http')
 
 
