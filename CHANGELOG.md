@@ -5,6 +5,10 @@
 ### New features
 * Rest api documenter with swagger standard
 
+### Bug fixes
+
+* Credentials are no longer stored when the stanza doesn't contain encrypted fields
+
 ## Version 1.0.13
 
 ### Improvements
