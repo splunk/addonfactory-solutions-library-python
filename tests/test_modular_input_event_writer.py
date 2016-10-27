@@ -14,6 +14,7 @@ def test_classic_event_writer(monkeypatch):
     class MockStdout(object):
         def __init__(self):
             self._buf = ''
+            self.write_count = 0
 
         def read(self, size=None):
             content = self._buf
@@ -22,6 +23,7 @@ def test_classic_event_writer(monkeypatch):
 
         def write(self, event):
             self._buf += event
+            self.write_count += 1
 
         def flush(self):
             pass
@@ -52,6 +54,7 @@ def test_classic_event_writer(monkeypatch):
     ew.write_events(events)
 
     assert mock_stdout.read() == '<stream><event stanza="test_scheme://test" unbroken="1"><time>1372274622.493</time><index>main</index><host>localhost</host><source>Splunk</source><sourcetype>misc</sourcetype><data>This is a test data1.</data></event><event stanza="test_scheme://test" unbroken="1"><time>1372274622.493</time><index>main</index><host>localhost</host><source>Splunk</source><sourcetype>misc</sourcetype><data>This is a test data2.</data><done /></event></stream>'
+    assert mock_stdout.write_count == 1
 
 
 def test_hec_event_writer(monkeypatch):

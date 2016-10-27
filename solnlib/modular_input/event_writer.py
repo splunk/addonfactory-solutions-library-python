@@ -149,9 +149,9 @@ class ClassicEventWriter(EventWriter):
 
         stdout = sys.stdout
 
+        data = ''.join([event for event in XMLEvent.format_events(events)])
         with self._lock:
-            for event in XMLEvent.format_events(events):
-                stdout.write(event)
+            stdout.write(data)
             stdout.flush()
 
 
