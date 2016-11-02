@@ -79,3 +79,20 @@ def test_get_session_key(monkeypatch):
 
     assert credentials.get_session_key(
         'user', 'password') == common.SESSION_KEY
+
+    with pytest.raises(ValueError):
+        credentials.get_session_key('user', 'password', scheme='non-http')
+    credentials.get_session_key('user', 'password', scheme='http')
+    credentials.get_session_key('user', 'password', scheme='https')
+    with pytest.raises(ValueError):
+        credentials.get_session_key('user', 'password', scheme='http',
+                                    host='==')
+    credentials.get_session_key('user', 'password', scheme='http',
+                                host='localhost')
+    with pytest.raises(ValueError):
+        credentials.get_session_key('user', 'password', scheme='http',
+                                    host='localhost', port=-10)
+    credentials.get_session_key('user', 'password', scheme='http',
+                                host='localhost', port=10)
+    credentials.get_session_key('user', 'password', scheme='HTTP')
+    credentials.get_session_key('user', 'password', scheme='HTTPS')
