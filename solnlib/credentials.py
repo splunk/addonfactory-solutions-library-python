@@ -20,6 +20,10 @@ import json
 import re
 
 from . import splunk_rest_client as rest_client
+from .net_utils import check_css_params
+from .net_utils import is_valid_hostname
+from .net_utils import is_valid_port
+from .net_utils import is_valid_scheme
 from .packages.splunklib import binding
 from .splunkenv import get_splunkd_access_info
 from .utils import retry
@@ -234,6 +238,8 @@ class CredentialManager(object):
 
 
 @retry(exceptions=[binding.HTTPError])
+@check_css_params(scheme=is_valid_scheme, host=is_valid_hostname,
+                  port=is_valid_port)
 def get_session_key(username, password,
                     scheme=None, host=None, port=None, **context):
     '''Get splunkd access token.

@@ -24,6 +24,10 @@ import traceback
 import urllib2
 from cStringIO import StringIO
 
+from .net_utils import check_css_params
+from .net_utils import is_valid_hostname
+from .net_utils import is_valid_port
+from .net_utils import is_valid_scheme
 from .packages.splunklib import binding
 from .packages.splunklib import client
 from .splunkenv import get_splunkd_access_info
@@ -178,6 +182,8 @@ class SplunkRestClient(client.Service):
     :type context: ``dict``
     '''
 
+    @check_css_params(scheme=is_valid_scheme, host=is_valid_hostname,
+                      port=is_valid_port)
     def __init__(self, session_key, app, owner='nobody',
                  scheme=None, host=None, port=None, **context):
         # Only do splunkd URI discovery in SPLUNK env (SPLUNK_HOME is set)
