@@ -24,14 +24,13 @@ import traceback
 import urllib2
 from cStringIO import StringIO
 
-import splunklib.binding as binding
-import splunklib.client as client
-
-from solnlib.net_utils import check_css_params
-from solnlib.net_utils import is_valid_hostname
-from solnlib.net_utils import is_valid_port
-from solnlib.net_utils import is_valid_scheme
-from solnlib.splunkenv import get_splunkd_access_info
+from .net_utils import check_css_params
+from .net_utils import is_valid_hostname
+from .net_utils import is_valid_port
+from .net_utils import is_valid_scheme
+from .packages.splunklib import binding
+from .packages.splunklib import client
+from .splunkenv import get_splunkd_access_info
 
 __all__ = ['SplunkRestClient']
 
@@ -74,7 +73,7 @@ def _request_handler(context):
     '''
 
     try:
-        import requests
+        from .packages import requests
     except ImportError:
         # FIXME proxy ?
         return binding.handler(

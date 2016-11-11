@@ -21,7 +21,7 @@ import re
 import socket
 from functools import wraps
 
-from solnlib import ip_math
+from . import ip_math
 
 __all__ = ['resolve_hostname']
 

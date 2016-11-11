@@ -19,15 +19,14 @@ This module contains Splunk credential related interfaces.
 import json
 import re
 
-from splunklib import binding
-
-import solnlib.splunk_rest_client as rest_client
-from solnlib.net_utils import check_css_params
-from solnlib.net_utils import is_valid_hostname
-from solnlib.net_utils import is_valid_port
-from solnlib.net_utils import is_valid_scheme
-from solnlib.splunkenv import get_splunkd_access_info
-from solnlib.utils import retry
+from . import splunk_rest_client as rest_client
+from .net_utils import check_css_params
+from .net_utils import is_valid_hostname
+from .net_utils import is_valid_port
+from .net_utils import is_valid_scheme
+from .packages.splunklib import binding
+from .splunkenv import get_splunkd_access_info
+from .utils import retry
 
 __all__ = ['CredentialException',
            'CredentialNotExistException',

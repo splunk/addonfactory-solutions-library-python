@@ -16,7 +16,7 @@
 
 import re
 import os.path as op
-from setuptools import setup, Command
+from setuptools import setup, Command, find_packages
 
 with open('solnlib/__init__.py', 'r') as fd:
     version = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]',
@@ -119,14 +119,9 @@ setup(
 
     url='https://git.splunk.com/scm/solnsc/lib-solutions-python.git',
 
-    packages=['solnlib',
-              'solnlib.modular_input'],
+    packages=find_packages(exclude=['tests', 'examples']),
 
-    install_requires=['splunk-sdk==1.6.0',
-                      'requests==2.9.1',
-                      'sortedcontainers==1.5.2',
-                      'schematics==2.0.0a1',
-                      'simpleyaml==1.0'],
+    install_requires=[],
 
     cmdclass={'test': TestCommand,
               'jtest': JTestCommand,

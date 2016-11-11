@@ -93,19 +93,14 @@ The @api_model can be placed anywhere on this stack, unless you are using
 model classes in which case it should be placed over each model class.
 '''
 
-import simpleyaml as yaml
+import json
 import os
 import os.path as op
-import sys
-import inspect
-import logging
-import log
-import tempfile
-import json
 import re
-import splunk_rest_client as rest
-# import solnlib.splunk_rest_client as rest_client
+import tempfile
 
+from . import splunk_rest_client as rest
+from .packages import simpleyaml as yaml
 
 __all__ = ['api',
            'api_model',

@@ -1,12 +1,11 @@
-import sys
 import os.path as op
-
-from splunklib import binding
+import sys
 
 import common
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 from solnlib import server_info
+from solnlib.packages.splunklib import binding
 
 
 class TestServerInfo(object):

@@ -17,8 +17,7 @@ virtualenv ${RELEASE_CHECK_ENV}
 
 source ${RELEASE_CHECK_ENV}/bin/activate
 
-pip install pytest
-pip install pytest-cov
+pip install -r requirements.txt -i http://repo.splunk.com/artifactory/api/pypi/pypi-virtual/simple --trusted-host repo.splunk.com
 
 pushd ${CUR_DIR}/..
 
