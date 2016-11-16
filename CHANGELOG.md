@@ -1,5 +1,12 @@
 # Splunk Solution Library for Python Changelog
 
+## Version 1.0.15
+
+### New feature
+* Change the way dependencies are handled.
+* Package all of solnlib's dependencies in its own packages foler.
+* Changes import statements to use relative imports.
+
 ## Version 1.0.14
 
 ### New features
