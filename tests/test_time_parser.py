@@ -1,14 +1,14 @@
-import sys
 import datetime
-import pytest
 import os.path as op
+import sys
 
-from splunklib import binding
+import pytest
 
 import common
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 import solnlib.time_parser as stp
+from solnlib.packages.splunklib import binding
 
 
 def test_time_parser(monkeypatch):

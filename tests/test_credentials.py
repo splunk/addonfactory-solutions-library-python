@@ -1,16 +1,16 @@
-import sys
 import hashlib
 import os.path as op
-import pytest
+import sys
 
-from splunklib import binding
-from splunklib import client
-from splunklib.data import record
+import pytest
 
 import common
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 from solnlib import credentials
+from solnlib.packages.splunklib import binding
+from solnlib.packages.splunklib import client
+from solnlib.packages.splunklib.data import record
 
 
 def test_credential_manager(monkeypatch):
@@ -79,3 +79,20 @@ def test_get_session_key(monkeypatch):
 
     assert credentials.get_session_key(
         'user', 'password') == common.SESSION_KEY
+
+    with pytest.raises(ValueError):
+        credentials.get_session_key('user', 'password', scheme='non-http')
+    credentials.get_session_key('user', 'password', scheme='http')
+    credentials.get_session_key('user', 'password', scheme='https')
+    with pytest.raises(ValueError):
+        credentials.get_session_key('user', 'password', scheme='http',
+                                    host='==')
+    credentials.get_session_key('user', 'password', scheme='http',
+                                host='localhost')
+    with pytest.raises(ValueError):
+        credentials.get_session_key('user', 'password', scheme='http',
+                                    host='localhost', port=-10)
+    credentials.get_session_key('user', 'password', scheme='http',
+                                host='localhost', port=10)
+    credentials.get_session_key('user', 'password', scheme='HTTP')
+    credentials.get_session_key('user', 'password', scheme='HTTPS')

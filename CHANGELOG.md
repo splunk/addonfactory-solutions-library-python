@@ -1,9 +1,22 @@
 # Splunk Solution Library for Python Changelog
 
+## Version 1.0.15
+
+### New feature
+* Change the way dependencies are handled.
+* Package all of solnlib's dependencies in its own packages folder.
+* Changes import statements to use relative imports.
+* Performance improvement for ClassicEventWriter
+* Simplify HECEventWriter creation with options
+
 ## Version 1.0.14
 
 ### New features
 * Rest api documenter with swagger standard
+
+### Bug fixes
+
+* Credentials are no longer stored when the stanza doesn't contain encrypted fields
 
 ## Version 1.0.13
 

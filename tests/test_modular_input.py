@@ -1,14 +1,11 @@
 import os
-import sys
-import shutil
-import pytest
 import os.path as op
+import shutil
+import sys
 
 import common
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-from solnlib import splunkenv
-from solnlib import log
 from solnlib.modular_input import *
 
 checkpoint_dir = op.join(op.dirname(op.abspath(__file__)), '.checkpoint_dir')

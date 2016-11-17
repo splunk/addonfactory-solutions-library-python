@@ -1,11 +1,9 @@
-import sys
 import os.path as op
+import sys
+
 import pytest
 
-from splunklib import client
-
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-import solnlib.splunk_rest_client as rest_client
 from solnlib import credentials
 from solnlib import conf_manager
 import context
