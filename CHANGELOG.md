@@ -4,8 +4,10 @@
 
 ### New feature
 * Change the way dependencies are handled.
-* Package all of solnlib's dependencies in its own packages foler.
+* Package all of solnlib's dependencies in its own packages folder.
 * Changes import statements to use relative imports.
+* Performance improvement for ClassicEventWriter
+* Simplify HECEventWriter creation with options
 
 ## Version 1.0.14
 
