@@ -121,7 +121,7 @@ setup(
 
     packages=find_packages(exclude=['tests', 'examples']),
 
-    package_data={'solnlib': ['LICENSE']},
+    package_data={'': ['LICENSE']},
 
     install_requires=[],
 
