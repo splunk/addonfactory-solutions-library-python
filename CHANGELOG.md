@@ -8,6 +8,7 @@
 * Changes import statements to use relative imports.
 * Performance improvement for ClassicEventWriter
 * Simplify HECEventWriter creation with options
+* Add licenses for all packaged dependencies
 
 ## Version 1.0.14
 
