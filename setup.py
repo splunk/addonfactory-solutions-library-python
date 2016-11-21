@@ -121,6 +121,8 @@ setup(
 
     packages=find_packages(exclude=['tests', 'examples']),
 
+    package_data={'solnlib': ['LICENSE']},
+
     install_requires=[],
 
     cmdclass={'test': TestCommand,
