@@ -154,7 +154,8 @@ def retry(retries=3, reraise=True, default_return=None, exceptions=None):
                     if not exceptions or \
                        any([isinstance(e, exception) for exception in exceptions]):
                         last_ex = e
-                        time.sleep(2 ** (i + 1))
+                        if i < retries - 1:
+                            time.sleep(2 ** (i + 1))
                     else:
                         raise
 
