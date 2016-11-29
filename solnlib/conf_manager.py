@@ -216,8 +216,13 @@ class ConfFile(object):
         '''
 
         stanza_mgrs = self._conf.list()
-        return {stanza_mgr.name: self._decrypt_stanza(
-            stanza_mgr.name, stanza_mgr.content) for stanza_mgr in stanza_mgrs}
+        res = {}
+        for stanza_mgr in stanza_mgrs:
+            name = stanza_mgr.name
+            key_values = self._decrypt_stanza(name, stanza_mgr.content)
+            key_values["eai:appName"] = stanza_mgr.access.app
+            res[name] = key_values
+        return res
 
     @retry(exceptions=[binding.HTTPError])
     def update(self, stanza_name, stanza, encrypt_keys=None):
