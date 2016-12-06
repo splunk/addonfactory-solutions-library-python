@@ -152,9 +152,10 @@ def retry(retries=3, reraise=True, default_return=None, exceptions=None):
                     logging.error('Run function: %s failed: %s.',
                                   func.__name__, traceback.format_exc(e))
                     if not exceptions or \
-                       any([isinstance(e, exception) for exception in exceptions]):
+                            any(isinstance(e, exception) for exception in exceptions):
                         last_ex = e
-                        time.sleep(2 ** (i + 1))
+                        if i < retries - 1:
+                            time.sleep(2 ** (i + 1))
                     else:
                         raise
 
