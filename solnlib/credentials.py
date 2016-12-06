@@ -179,12 +179,9 @@ class CredentialManager(object):
             self._storage_passwords.create(password, user, self._realm)
         except binding.HTTPError as ex:
             if ex.status == 409:
-                print self._realm
                 if self._realm:
                     user = self._realm + ':'+ user + ':'
-                print user
                 response = self._storage_passwords.get(name=user)
-                print response
                 if response.status != 200:
                     raise ValueError("Unexpected status code %s returned when try to get the password %s" %
                                      (response.status, user))
