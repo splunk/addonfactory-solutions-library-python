@@ -78,8 +78,8 @@ class CredentialManager(object):
     SEP = '``splunk_cred_sep``'
 
     # Splunk credential end mark
-    END_MARK = '``splunk_cred_sep``S``splunk_cred_sep``P``splunk_cred_sep``L``splunk_cred_sep``U``splunk_cred_sep``N' \
-               '``splunk_cred_sep``K``splunk_cred_sep``'
+    END_MARK = '``splunk_cred_sep``S``splunk_cred_sep``P``splunk_cred_sep``L``splunk_cred_sep``' \
+               'U``splunk_cred_sep``N``splunk_cred_sep``K``splunk_cred_sep``'
 
     def __init__(self, session_key, app, owner='nobody', realm=None,
                  scheme=None, host=None, port=None, **context):
@@ -155,8 +155,6 @@ class CredentialManager(object):
         # Append another stanza to mark the end of the password
         partial_user = self.SEP.join([user, str(index)])
         self._update_password(partial_user, self.END_MARK)
-
-
 
     @retry(exceptions=[binding.HTTPError])
     def _update_password(self, user, password):
