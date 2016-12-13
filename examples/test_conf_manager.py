@@ -27,6 +27,7 @@ def test_conf_manager():
     conf.update('test_stanza', {'k1': 1, 'k2': 2}, ['k1'])
     assert conf.get('test_stanza')['k1'] == 1
     assert int(conf.get('test_stanza')['k2']) == 2
+    assert conf.get('test_stanza')['eai:appName'] == 'solnlib_demo'
     assert len(conf.get_all()) == 1
     conf.delete('test_stanza')
     with pytest.raises(conf_manager.ConfStanzaNotExistException):

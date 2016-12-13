@@ -192,6 +192,7 @@ class ConfFile(object):
 
         stanza = self._decrypt_stanza(stanza_mgr.name, stanza_mgr.content)
         stanza['eai:access'] = stanza_mgr.access
+        stanza['eai:appName'] = stanza_mgr.access.app
         return stanza
 
     @retry(exceptions=[binding.HTTPError])
@@ -220,7 +221,8 @@ class ConfFile(object):
         for stanza_mgr in stanza_mgrs:
             name = stanza_mgr.name
             key_values = self._decrypt_stanza(name, stanza_mgr.content)
-            key_values["eai:appName"] = stanza_mgr.access.app
+            key_values['eai:access'] = stanza_mgr.access
+            key_values['eai:appName'] = stanza_mgr.access.app
             res[name] = key_values
         return res
 
