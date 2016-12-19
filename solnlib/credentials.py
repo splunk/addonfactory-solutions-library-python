@@ -25,7 +25,6 @@ from .net_utils import is_valid_hostname
 from .net_utils import is_valid_port
 from .net_utils import is_valid_scheme
 from .packages.splunklib import binding
-from .packages.splunklib import client
 from .splunkenv import get_splunkd_access_info
 from .utils import retry
 
@@ -178,16 +177,15 @@ class CredentialManager(object):
         except binding.HTTPError as ex:
             if ex.status == 409:
                 if self._realm:
-                    user = self._realm + ':'+ user + ':'
-                response = self._storage_passwords.get(name=user)
-                if response.status != 200:
-                    raise ValueError("Unexpected status code %s returned when try to get the password %s" %
-                                     (response.status, user))
-                entries = client._load_atom_entries(response)
-                state = client._parse_atom_entry(entries[0])
-                sp = client.StoragePassword(self.service, self._storage_passwords._entity_path(state),
-                                            state=state, skip_refresh=True)
-                sp.update(password=password)
+                    all_passwords = self._storage_passwords.list(search="realm={}"
+                                                                 .format(self._realm))
+                else:
+                    all_passwords = self._storage_passwords.list()
+                for pwd_stanza in all_passwords:
+                    if pwd_stanza.realm == self._realm and pwd_stanza.username == user:
+                        pwd_stanza.update(password=password)
+                        return
+                raise ValueError("Can not get the password object for realm: %s user: %s" %(self._realm, user))
             else:
                 raise ex
 
@@ -210,24 +208,25 @@ class CredentialManager(object):
                                                   realm='realm_test')
            >>> cm.delete_password('testuser1')
         '''
-
-        try:
-            return self._storage_passwords.delete(user, self._realm)
-        except (binding.HTTPError, KeyError):
-            ent_pattern = re.compile('.*:(%s%s\d+):' % (user, self.SEP))
+        if self._realm:
+            all_passwords = self._storage_passwords.list(search="realm={}"
+                                                         .format(self._realm))
+        else:
             all_passwords = self._storage_passwords.list()
 
-            deleted = False
-            for password in all_passwords:
-                match = ent_pattern.match(password.name)
-                if match and password.realm == self._realm:
-                    self._storage_passwords.delete(match.group(1), self._realm)
-                    deleted = True
+        deleted = False
+        ent_pattern = re.compile('(%s%s\d+)' % (user, self.SEP))
+        for password in all_passwords:
+            match = (user == password.username) \
+                    or ent_pattern.match(password.username)
+            if match and password.realm == self._realm:
+                password.delete()
+                deleted = True
 
-            if not deleted:
-                raise CredentialNotExistException(
-                    'Failed to delete password of realm=%s, user=%s' %
-                    (self._realm, user))
+        if not deleted:
+            raise CredentialNotExistException(
+                'Failed to delete password of realm=%s, user=%s' %
+                (self._realm, user))
 
     @retry(exceptions=[binding.HTTPError])
     def _get_all_passwords(self):
@@ -272,9 +271,9 @@ class CredentialManager(object):
                 for index in sorted(field_clear.keys()):
                     if field_clear[index] != self.END_MARK:
                         clear_password += field_clear[index]
-                        values['clear_password'] = clear_password
                     else:
                         break
+                values['clear_password'] = clear_password
 
                 del values['clears']
 
