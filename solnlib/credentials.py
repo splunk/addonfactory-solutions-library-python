@@ -177,10 +177,10 @@ class CredentialManager(object):
         except binding.HTTPError as ex:
             if ex.status == 409:
                 if self._realm:
-                    all_passwords = self._storage_passwords.list(search="realm={}"
+                    all_passwords = self._storage_passwords.list(count=-1, search="realm={}"
                                                                  .format(self._realm))
                 else:
-                    all_passwords = self._storage_passwords.list()
+                    all_passwords = self._storage_passwords.list(count=-1)
                 for pwd_stanza in all_passwords:
                     if pwd_stanza.realm == self._realm and pwd_stanza.username == user:
                         pwd_stanza.update(password=password)
@@ -212,7 +212,7 @@ class CredentialManager(object):
             all_passwords = self._storage_passwords.list(search="realm={}"
                                                          .format(self._realm))
         else:
-            all_passwords = self._storage_passwords.list()
+            all_passwords = self._storage_passwords.list(count=-1)
 
         deleted = False
         ent_pattern = re.compile('(%s%s\d+)' % (user.replace('\\','\\\\'), self.SEP))
@@ -230,7 +230,7 @@ class CredentialManager(object):
 
     @retry(exceptions=[binding.HTTPError])
     def _get_all_passwords(self):
-        all_passwords = self._storage_passwords.list()
+        all_passwords = self._storage_passwords.list(count=-1)
 
         results = {}
         ptn = re.compile(r'(.+){cred_sep}(\d+)'.format(cred_sep=self.SEP))
