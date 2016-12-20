@@ -183,9 +183,6 @@ class ModularInput(object):
             checkpointer_name = ':'.join(
                 [self.app, self.config_name,
                  self.kvstore_checkpointer_collection_name])
-            checkpointer_name = ':'.join(
-                [self.app, self.config_name,
-                 self.kvstore_checkpointer_collection_name])
             try:
                 return checkpointer.KVStoreCheckpointer(
                     checkpointer_name, self.session_key,
