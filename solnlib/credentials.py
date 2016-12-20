@@ -215,7 +215,7 @@ class CredentialManager(object):
             all_passwords = self._storage_passwords.list()
 
         deleted = False
-        ent_pattern = re.compile('(%s%s\d+)' % (user, self.SEP))
+        ent_pattern = re.compile('(%s%s\d+)' % (user.replace('\\','\\\\'), self.SEP))
         for password in all_passwords:
             match = (user == password.username) \
                     or ent_pattern.match(password.username)
