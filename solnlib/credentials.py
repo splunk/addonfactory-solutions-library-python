@@ -176,11 +176,7 @@ class CredentialManager(object):
             self._storage_passwords.create(password, user, self._realm)
         except binding.HTTPError as ex:
             if ex.status == 409:
-                if self._realm:
-                    all_passwords = self._storage_passwords.list(count=-1, search="realm={}"
-                                                                 .format(self._realm))
-                else:
-                    all_passwords = self._storage_passwords.list(count=-1)
+                all_passwords = self._get_all_passwords_in_realm()
                 for pwd_stanza in all_passwords:
                     if pwd_stanza.realm == self._realm and pwd_stanza.username == user:
                         pwd_stanza.update(password=password)
@@ -208,12 +204,7 @@ class CredentialManager(object):
                                                   realm='realm_test')
            >>> cm.delete_password('testuser1')
         '''
-        if self._realm:
-            all_passwords = self._storage_passwords.list(search="realm={}"
-                                                         .format(self._realm))
-        else:
-            all_passwords = self._storage_passwords.list(count=-1)
-
+        all_passwords = self._get_all_passwords_in_realm()
         deleted = False
         ent_pattern = re.compile('(%s%s\d+)' % (user.replace('\\','\\\\'), self.SEP))
         for password in all_passwords:
@@ -227,6 +218,14 @@ class CredentialManager(object):
             raise CredentialNotExistException(
                 'Failed to delete password of realm=%s, user=%s' %
                 (self._realm, user))
+
+    def _get_all_passwords_in_realm(self):
+        if self._realm:
+            all_passwords = self._storage_passwords.list(count=-1, search="realm={}"
+                                                                     .format(self._realm))
+        else:
+            all_passwords = self._storage_passwords.list(count=-1, search='')
+        return all_passwords
 
     @retry(exceptions=[binding.HTTPError])
     def _get_all_passwords(self):
