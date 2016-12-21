@@ -44,6 +44,12 @@ def test_conf_manager(monkeypatch):
         else:
             raise KeyError('No such entity %s' % username)
 
+    def mock_storage_password_delete(self):
+        if self.name in credentials_store:
+            del credentials_store[self.name]
+        else:
+            raise KeyError('No such entity %s' % self.name)
+
     def mock_configuration_get(
             self, name='', owner=None, app=None, sharing=None, **query):
         return common.make_response_record('')
@@ -107,6 +113,8 @@ def test_conf_manager(monkeypatch):
                         mock_storage_passwords_create)
     monkeypatch.setattr(client.StoragePasswords, 'delete',
                         mock_storage_passwords_delete)
+    monkeypatch.setattr(client.StoragePassword, 'delete',
+                        mock_storage_password_delete)
     monkeypatch.setattr(client.Configurations, 'get',
                         mock_configuration_get)
     monkeypatch.setattr(client.ConfigurationFile, 'get',

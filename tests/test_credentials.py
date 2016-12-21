@@ -44,6 +44,12 @@ def test_credential_manager(monkeypatch):
         else:
             raise KeyError('No such entity %s' % username)
 
+    def mock_storage_password_delete(self):
+        if self.name in credentials_store:
+            del credentials_store[self.name]
+        else:
+            raise KeyError('No such entity %s' % self.name)
+
     common.mock_splunkhome(monkeypatch)
     monkeypatch.setattr(
         client.StoragePasswords, 'list', mock_storage_passwords_list)
@@ -51,6 +57,8 @@ def test_credential_manager(monkeypatch):
         client.StoragePasswords, 'create', mock_storage_passwords_create)
     monkeypatch.setattr(
         client.StoragePasswords, 'delete', mock_storage_passwords_delete)
+    monkeypatch.setattr(
+        client.StoragePassword, 'delete', mock_storage_password_delete)
 
     cm = credentials.CredentialManager(
         common.SESSION_KEY, common.app, realm='realm_test')
