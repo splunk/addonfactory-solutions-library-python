@@ -6,7 +6,9 @@ import sys
 import common
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-from solnlib.modular_input import *
+from solnlib.modular_input import checkpointer
+from solnlib.modular_input.modular_input import ModularInput
+from solnlib.modular_input import Argument
 
 checkpoint_dir = op.join(op.dirname(op.abspath(__file__)), '.checkpoint_dir')
 
@@ -127,7 +129,7 @@ def test_modular_input(monkeypatch):
     mock_stdin = open('.validate-arguments.xml', 'rb')
     monkeypatch.setattr(sys, 'stdin', mock_stdin)
     md.execute()
-    mock_stdin.close
+    mock_stdin.close()
     os.remove('.validate-arguments.xml')
 
     sys.argv = [None, '--validate-arguments']
@@ -138,7 +140,7 @@ def test_modular_input(monkeypatch):
     monkeypatch.setattr(sys, 'stdin', mock_stdin)
     # with pytest.raises(AssertionError):
     md.execute()
-    mock_stdin.close
+    mock_stdin.close()
     os.remove('.validate-arguments.xml')
 
     sys.argv = [None]
@@ -149,8 +151,27 @@ def test_modular_input(monkeypatch):
     monkeypatch.setattr(sys, 'stdin', mock_stdin)
     md.execute()
     assert sys.stdout.read() == '<stream><event><time>1461394857.301</time><source>unittestapp</source><sourcetype>unittestapp</sourcetype><data>{"id": 12345, "time": 1461394857.301}</data></event><event><time>1461394857.301</time><source>unittestapp</source><sourcetype>unittestapp</sourcetype><data>12345</data></event></stream>'
-    mock_stdin.close
+    mock_stdin.close()
     os.remove('.run.xml')
 
     sys.argv = [None, 'invalid-argument']
     md.execute()
+
+
+def test_modular_input_create_checkpointer(monkeypatch):
+    collections = [0]
+    def mock_kvstore_checkpointer_init(self, collection_name,
+                                       session_key, app, owner='nobody',
+                                       scheme=None, host=None, port=None, **context):
+        collections[0] = collection_name
+
+    monkeypatch.setattr(checkpointer.KVStoreCheckpointer, '__init__',
+                        mock_kvstore_checkpointer_init)
+    md = CustomModularInput()
+    md.use_kvstore_checkpointer = True
+    md.kvstore_checkpointer_collection_name = 'kv_store_checkpointer_test'
+    md.config_name = 'config_test'
+
+    checkpoint = md._create_checkpointer()
+    assert collections[0] == 'UnittestApp:config_test:kv_store_checkpointer_test'
+    assert isinstance(checkpoint, checkpointer.KVStoreCheckpointer)
