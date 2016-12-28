@@ -67,7 +67,7 @@ def test_conf_manager(monkeypatch):
                         skip_refresh=True)
                     stanza_mgr._state = common.record(
                         {'title': kwargs['name'],
-                         'access': [],
+                         'access': common.record({'app': 'test'}),
                          'content': all_stanzas[kwargs['name']]})
                     return [stanza_mgr]
                 else:
@@ -81,7 +81,7 @@ def test_conf_manager(monkeypatch):
                         'configs/conf-test/{0}/'.format(stanza_name),
                         skip_refresh=True)
                     stanza_mgr._state = common.record({'title': stanza_name,
-                                                       'access': [],
+                                                       'access': common.record({'app': 'test'}),
                                                        'content': stanza})
                     stanza_mgrs.append(stanza_mgr)
 
@@ -132,8 +132,9 @@ def test_conf_manager(monkeypatch):
     conf = cfm.get_conf('test')
     assert not conf.stanza_exist('test_stanza')
     conf.update('test_stanza', {'k1': 1, 'k2': 2}, ['k1', 'key_not_exist'])
-    assert conf.get('test_stanza') == {'k2': 2, 'k1': 1, 'eai:access':[]}
-    assert conf.get_all() == {'test_stanza': {'k2': 2, 'k1': 1, 'eai:access':[]}}
+    assert conf.get('test_stanza') == {'k2': 2, 'k1': 1, 'eai:access':common.record({'app': 'test'}), 'eai:appName': 'test'}
+    assert conf.get_all() == {'test_stanza': {'k2': 2, 'k1': 1, 'eai:access':common.record({'app': 'test'}), 'eai:appName': 'test'}}
+
     conf.delete('test_stanza')
     with pytest.raises(conf_manager.ConfStanzaNotExistException):
         conf.get('test_stanza')
