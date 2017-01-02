@@ -1,4 +1,5 @@
 import datetime
+import logging
 import os
 import os.path as op
 import signal
@@ -93,6 +94,21 @@ def test_retry(monkeypatch):
     mock_func()
     assert hit[0] == tries
     assert mock_sleep_time[0] == sum(2 ** (i + 1) for i in range(tries - 1))
+
+    record = [0, 0]
+
+    def mock_warning(msg, *args, **kwargs):
+        record[0] += 1
+
+    def mock_error(msg, *args, **kwargs):
+        record[1] += 1
+
+    monkeypatch.setattr(logging, 'warning', mock_warning)
+    monkeypatch.setattr(logging, 'error', mock_error)
+    mock_func()
+
+    assert record[0] == 3
+    assert record[1] == 0
 
 
 def test_extract_http_scheme_host_port(monkeypatch):
