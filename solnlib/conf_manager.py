@@ -182,7 +182,9 @@ class ConfFile(object):
 
         try:
             if only_current_app:
-                stanza_mgrs = self._conf.list(name=stanza_name, search='eai:acl.app={}'.format(self._app))
+                stanza_mgrs = self._conf.list(
+                    search='eai:acl.app={} name={}'.format(
+                        self._app, stanza_name.replace('=', r'\=')))
             else:
                 stanza_mgrs = self._conf.list(name=stanza_name)
         except binding.HTTPError as e:
