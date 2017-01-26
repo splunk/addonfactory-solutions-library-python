@@ -180,13 +180,11 @@ class ConfFile(object):
            >>> conf.get('test_stanza')
         '''
 
-        if only_current_app:
-            search_options = 'name={} eai:acl.app={}'.format(stanza_name, self._app)
-        else:
-            search_options = 'name={}'.format(stanza_name, self._app)
-
         try:
-            stanza_mgrs = self._conf.list(search=search_options)
+            if only_current_app:
+                stanza_mgrs = self._conf.list(name=stanza_name, search='eai:acl.app={}'.format(self._app))
+            else:
+                stanza_mgrs = self._conf.list(name=stanza_name)
         except binding.HTTPError as e:
             if e.status != 404:
                 raise
