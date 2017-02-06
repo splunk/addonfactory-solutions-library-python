@@ -82,17 +82,17 @@ def test_retry(monkeypatch):
 
     monkeypatch.setattr(time, 'sleep', mock_sleep)
 
-    tries = 3
-    hit = [0]
+    retries = 3
+    tried = [0]
 
-    @utils.retry(retries=tries, reraise=False)
+    @utils.retry(retries=retries, reraise=False)
     def mock_func():
-        hit[0] += 1
+        tried[0] += 1
         raise ValueError()
 
     mock_func()
-    assert hit[0] == tries
-    assert mock_sleep_time[0] == sum(2 ** (i + 1) for i in range(tries - 1))
+    assert tried[0] == retries + 1
+    assert mock_sleep_time[0] == sum(2 ** i for i in xrange(retries))
 
 
 def test_extract_http_scheme_host_port(monkeypatch):
