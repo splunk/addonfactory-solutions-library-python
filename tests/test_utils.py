@@ -107,7 +107,7 @@ def test_retry(monkeypatch):
     monkeypatch.setattr(logging, 'error', mock_error)
     mock_func()
 
-    assert record[0] == 3
+    assert record[0] == 4
     assert record[1] == 0
 
 
