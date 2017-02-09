@@ -16,11 +16,11 @@
 Common utilities.
 '''
 
-import os
-import time
 import datetime
-import signal
 import logging
+import os
+import signal
+import time
 import traceback
 import urllib2
 from functools import wraps
@@ -56,7 +56,7 @@ def datetime_to_seconds(dt):
     '''Convert UTC datatime to seconds since epoch.
 
     :param dt: Date time.
-    :type dt: datatime.
+    :type dt: datetime.
     :returns: Seconds since epoch.
     :rtype: ``float``
     '''
@@ -134,18 +134,22 @@ def retry(retries=3, reraise=True, default_return=None, exceptions=None):
     if there is exception.
 
     :param retries: (optional) Max retries times, default is 3.
-    :param reraise: ``integer``
+    :type retries: ``integer``
+    :param reraise: Whether exception should be reraised, default is True.
+    :type reraise: ``bool``
     :param default_return: (optional) Default return value for function
         run after max retries and reraise is False.
     :param exceptions: (optional) List of exceptions that should retry.
     :type exceptions: ``list``
     '''
 
+    max_tries = max(retries, 0) + 1
+
     def do_retry(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
             last_ex = None
-            for i in xrange(retries):
+            for i in xrange(max_tries):
                 try:
                     return func(*args, **kwargs)
                 except Exception as e:
@@ -154,8 +158,8 @@ def retry(retries=3, reraise=True, default_return=None, exceptions=None):
                     if not exceptions or \
                             any(isinstance(e, exception) for exception in exceptions):
                         last_ex = e
-                        if i < retries - 1:
-                            time.sleep(2 ** (i + 1))
+                        if i < max_tries - 1:
+                            time.sleep(2 ** i)
                     else:
                         raise
 
