@@ -1,8 +1,18 @@
 # Splunk Solution Library for Python Changelog
 
+## Version 1.0.16
+
+### Bug fixes
+* Change log level to `warning` for `retry` failure.
+* Remove duplicated variable `checkpointer_name` in `ModularInput._create_checkpointer`.
+* Fix concurrency conflict for encrypting and decrypting password.
+* Cancel redundant `sleep` after last `retry` failed.
+* Fix app name in returned conf file.
+* Performance improvement for getting stanzas in app.
+
 ## Version 1.0.15
 
-### New feature
+### New features
 * Change the way dependencies are handled.
 * Package all of solnlib's dependencies in its own packages folder.
 * Changes import statements to use relative imports.
