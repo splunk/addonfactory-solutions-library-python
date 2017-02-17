@@ -156,7 +156,7 @@ class ConfFile(object):
         return True
 
     @retry(exceptions=[binding.HTTPError])
-    def get(self, stanza_name):
+    def get(self, stanza_name, only_current_app=False):
         '''Get stanza from configuration file.
 
         :param stanza_name: Stanza name.
@@ -181,7 +181,12 @@ class ConfFile(object):
         '''
 
         try:
-            stanza_mgr = self._conf.list(name=stanza_name)[0]
+            if only_current_app:
+                stanza_mgrs = self._conf.list(
+                    search='eai:acl.app={} name={}'.format(
+                        self._app, stanza_name.replace('=', r'\=')))
+            else:
+                stanza_mgrs = self._conf.list(name=stanza_name)
         except binding.HTTPError as e:
             if e.status != 404:
                 raise
@@ -190,12 +195,18 @@ class ConfFile(object):
                 'Stanza: %s does not exist in %s.conf' %
                 (stanza_name, self._name))
 
-        stanza = self._decrypt_stanza(stanza_mgr.name, stanza_mgr.content)
-        stanza['eai:access'] = stanza_mgr.access
+        if len(stanza_mgrs) == 0:
+            raise ConfStanzaNotExistException(
+                'Stanza: %s does not exist in %s.conf' %
+                (stanza_name, self._name))
+
+        stanza = self._decrypt_stanza(stanza_mgrs[0].name, stanza_mgrs[0].content)
+        stanza['eai:access'] = stanza_mgrs[0].access
+        stanza['eai:appName'] = stanza_mgrs[0].access.app
         return stanza
 
     @retry(exceptions=[binding.HTTPError])
-    def get_all(self):
+    def get_all(self, only_current_app=False):
         '''Get all stanzas from configuration file.
 
         :returns: All stanzas, like: {'test': {
@@ -215,9 +226,18 @@ class ConfFile(object):
            >>> conf.get_all()
         '''
 
-        stanza_mgrs = self._conf.list()
-        return {stanza_mgr.name: self._decrypt_stanza(
-            stanza_mgr.name, stanza_mgr.content) for stanza_mgr in stanza_mgrs}
+        if only_current_app:
+            stanza_mgrs = self._conf.list(search='eai:acl.app={}'.format(self._app))
+        else:
+            stanza_mgrs = self._conf.list()
+        res = {}
+        for stanza_mgr in stanza_mgrs:
+            name = stanza_mgr.name
+            key_values = self._decrypt_stanza(name, stanza_mgr.content)
+            key_values['eai:access'] = stanza_mgr.access
+            key_values['eai:appName'] = stanza_mgr.access.app
+            res[name] = key_values
+        return res
 
     @retry(exceptions=[binding.HTTPError])
     def update(self, stanza_name, stanza, encrypt_keys=None):

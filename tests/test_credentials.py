@@ -4,9 +4,10 @@ import sys
 
 import pytest
 
+sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
+
 import common
 
-sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 from solnlib import credentials
 from solnlib.packages.splunklib import binding
 from solnlib.packages.splunklib import client
@@ -43,6 +44,12 @@ def test_credential_manager(monkeypatch):
         else:
             raise KeyError('No such entity %s' % username)
 
+    def mock_storage_password_delete(self):
+        if self.name in credentials_store:
+            del credentials_store[self.name]
+        else:
+            raise KeyError('No such entity %s' % self.name)
+
     common.mock_splunkhome(monkeypatch)
     monkeypatch.setattr(
         client.StoragePasswords, 'list', mock_storage_passwords_list)
@@ -50,6 +57,8 @@ def test_credential_manager(monkeypatch):
         client.StoragePasswords, 'create', mock_storage_passwords_create)
     monkeypatch.setattr(
         client.StoragePasswords, 'delete', mock_storage_passwords_delete)
+    monkeypatch.setattr(
+        client.StoragePassword, 'delete', mock_storage_password_delete)
 
     cm = credentials.CredentialManager(
         common.SESSION_KEY, common.app, realm='realm_test')
@@ -60,6 +69,66 @@ def test_credential_manager(monkeypatch):
     cm.set_password('testuser2', long_password)
     assert cm.get_password('testuser2') == long_password
 
+    # change short password to long password
+    long_password = ''.join(['1111111111' for i in xrange(30)])
+    cm.set_password('testuser1', long_password)
+    assert cm.get_password('testuser1') == long_password
+
+    # change to longer password
+    longer_password = ''.join(['1111111111' for i in xrange(120)])
+    cm.set_password('testuser1', longer_password)
+    assert cm.get_password('testuser1') == longer_password
+
+    # change longer password to long password
+    long_password = ''.join(['1111111111' for i in xrange(30)])
+    cm.set_password('testuser1', long_password)
+    assert cm.get_password('testuser1') == long_password
+
+    # change long password to short password
+    cm.set_password('testuser1', 'shortpwd')
+    assert cm.get_password('testuser1') == 'shortpwd'
+
+    # password length  = 1
+    cm.set_password('testuser1', 'a')
+    assert cm.get_password('testuser1') == 'a'
+
+    # password length = 255
+    pwd_255 = ''.join(['a' for i in xrange(255)])
+    cm.set_password('testuser1', pwd_255)
+    assert cm.get_password('testuser1') == pwd_255
+
+    # password length = 256
+    pwd_256 = ''.join(['a' for i in xrange(256)])
+    cm.set_password('testuser1', pwd_256)
+    assert cm.get_password('testuser1') == pwd_256
+
+    # password length = 255 * 2
+    pwd_510 = ''.join(['a' for i in xrange(510)])
+    cm.set_password('testuser1', pwd_510)
+    assert cm.get_password('testuser1') == pwd_510
+
+    # password is empty
+    cm.set_password('testuser1', '')
+    assert cm.get_password('testuser1') == ''
+
+    # password = '`'
+    cm.set_password('testuser1', '`')
+    assert cm.get_password('testuser1') == '`'
+
+    # password is substring of END_MARK
+    pwd_substr = '``splunk_cred_sep``S``splunk_cred_sep``P``'
+    cm.set_password('testuser1', pwd_substr)
+    assert cm.get_password('testuser1') == pwd_substr
+
+    # test _update_password
+    # Update a password which does not exist. create a new one.
+    cm._update_password('testuser3', 'beforechange')
+    assert cm.get_password('testuser3') == 'beforechange'
+
+    # update an existed password
+    cm._update_password('testuser3', 'changed')
+    assert cm.get_password('testuser3') == 'changed'
+
     cm.delete_password('testuser1')
     with pytest.raises(Exception):
         cm.get_password('testuser1')
@@ -67,6 +136,10 @@ def test_credential_manager(monkeypatch):
     cm.delete_password('testuser2')
     with pytest.raises(Exception):
         cm.get_password('testuser2')
+
+    cm.delete_password('testuser3')
+    with pytest.raises(Exception):
+        cm.get_password('testuser3')
 
 
 def test_get_session_key(monkeypatch):

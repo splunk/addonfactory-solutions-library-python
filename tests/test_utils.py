@@ -1,9 +1,12 @@
-import sys
-import os
-import signal
 import datetime
-import pytest
+import logging
+import os
 import os.path as op
+import signal
+import sys
+import time
+
+import pytest
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 from solnlib import utils
@@ -69,6 +72,43 @@ def test_retry(monkeypatch):
     _new_func = utils.retry(retries=1)(_old_func)
     with pytest.raises(ValueError):
         _new_func()
+    _new_func = utils.retry(retries=1, exceptions=[TypeError])(_old_func)
+    with pytest.raises(ValueError):
+        _new_func()
+
+    mock_sleep_time = [0]
+
+    def mock_sleep(seconds):
+        mock_sleep_time[0] += seconds
+
+    monkeypatch.setattr(time, 'sleep', mock_sleep)
+
+    retries = 3
+    tried = [0]
+
+    @utils.retry(retries=retries, reraise=False)
+    def mock_func():
+        tried[0] += 1
+        raise ValueError()
+
+    mock_func()
+    assert tried[0] == retries + 1
+    assert mock_sleep_time[0] == sum(2 ** i for i in xrange(retries))
+
+    record = [0, 0]
+
+    def mock_warning(msg, *args, **kwargs):
+        record[0] += 1
+
+    def mock_error(msg, *args, **kwargs):
+        record[1] += 1
+
+    monkeypatch.setattr(logging, 'warning', mock_warning)
+    monkeypatch.setattr(logging, 'error', mock_error)
+    mock_func()
+
+    assert record[0] == 4
+    assert record[1] == 0
 
 
 def test_extract_http_scheme_host_port(monkeypatch):
