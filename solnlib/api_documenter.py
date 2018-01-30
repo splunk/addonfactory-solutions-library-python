@@ -386,7 +386,7 @@ def api_get_spec(context, method_list):
     _generate_documentation(context, method_list)
     with open(tempfile.gettempdir() + op.sep + 'spec.yaml') as stream:
         try:
-            spec_file = yaml.load(stream)
+            spec_file = yaml.safe_load(stream)
         except yaml.YAMLError as ex:
             raise Exception("Please try again. Exception: {}".format(ex))
         return json.dumps(spec_file)
@@ -475,7 +475,7 @@ class _SwaggerApi(object):
             with open(tempfile.gettempdir() + op.sep + 'temp.yaml', "r")\
                     as stream:
                 try:
-                    spec = yaml.load(stream)
+                    spec = yaml.safe_load(stream)
                     self.swagger = spec["swagger"]
                     self.info = spec["info"]
                     self.host = spec["host"]
