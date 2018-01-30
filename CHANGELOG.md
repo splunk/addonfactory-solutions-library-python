@@ -1,7 +1,7 @@
 # Splunk Solution Library for Python Changelog
 
 ## Version 1.0.17
-* Security vulnerability fix APPSC-240
+* Security vulnerability fix APPSC-2406
  
 ## Version 1.0.16
 
