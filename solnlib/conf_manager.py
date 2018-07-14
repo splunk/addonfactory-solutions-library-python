@@ -68,7 +68,7 @@ class ConfFile(object):
     reserved_keys = ('userName', 'appName')
 
     def __init__(self, name, conf, session_key, app, owner='nobody',
-                 scheme=None, host=None, port=None, **context):
+                 scheme=None, host=None, port=None, realm=None,**context):
         self._name = name
         self._conf = conf
         self._session_key = session_key
@@ -79,6 +79,11 @@ class ConfFile(object):
         self._port = port
         self._context = context
         self._cred_manager = None
+        ### 'realm' is set to provided 'realm' argument otherwise as default behaviour it is set to 'APP_NAME'.
+        if realm is None:
+            self._realm = self._app
+        else:
+            self._realm = realm
 
     @property
     @retry(exceptions=[binding.HTTPError])
@@ -86,7 +91,7 @@ class ConfFile(object):
         if self._cred_manager is None:
             self._cred_manager = CredentialManager(
                 self._session_key, self._app, owner=self._owner,
-                realm=self._app, scheme=self._scheme, host=self._host,
+                realm=self._realm, scheme=self._scheme, host=self._host,
                 port=self._port, **self._context)
 
         return self._cred_manager
@@ -356,10 +361,19 @@ class ConfManager(object):
        >>> from solnlib import conf_manager
        >>> cfm = conf_manager.ConfManager(session_key,
                                           'Splunk_TA_test')
+
+       EXAMPLE:
+            If stanza in passwords.conf is formatted as below:
+
+            [credential:__REST_CREDENTIAL__#Splunk_TA_test#configs/conf-CONF_FILENAME:STANZA_NAME``splunk_cred_sep``1:]
+
+            >>> from solnlib import conf_manager
+            >>> cfm = conf_manager.ConfManager(session_key,
+                                              'Splunk_TA_test', realm='__REST_CREDENTIAL__#Splunk_TA_test#configs/conf-CONF_FILENAME')
     '''
 
     def __init__(self, session_key, app, owner='nobody',
-                 scheme=None, host=None, port=None, **context):
+                 scheme=None, host=None, port=None, realm=None, **context):
         self._session_key = session_key
         self._app = app
         self._owner = owner
@@ -376,6 +390,7 @@ class ConfManager(object):
             port=self._port,
             **self._context)
         self._confs = None
+        self._realm = realm
 
     @retry(exceptions=[binding.HTTPError])
     def get_conf(self, name, refresh=False):
@@ -406,7 +421,7 @@ class ConfManager(object):
 
         return ConfFile(name, conf,
                         self._session_key, self._app, self._owner,
-                        self._scheme, self._host, self._port, **self._context)
+                        self._scheme, self._host, self._port, self._realm, **self._context)
 
     @retry(exceptions=[binding.HTTPError])
     def create_conf(self, name):
@@ -424,4 +439,4 @@ class ConfManager(object):
         conf = self._confs.create(name)
         return ConfFile(name, conf,
                         self._session_key, self._app, self._owner,
-                        self._scheme, self._host, self._port, **self._context)
+                        self._scheme, self._host, self._port, self._realm, **self._context)

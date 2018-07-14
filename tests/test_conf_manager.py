@@ -141,3 +141,17 @@ def test_conf_manager(monkeypatch):
     with pytest.raises(conf_manager.ConfStanzaNotExistException):
         conf.delete('test_stanza')
     conf.reload()
+
+    cfm = conf_manager.ConfManager(common.SESSION_KEY,common.app,realm='__REST_CREDENTIAL__#{}#configs/conf-test'.format(common.app))
+    conf = cfm.get_conf('test')
+    assert not conf.stanza_exist('test_stanza')
+    conf.update('test_stanza', {'k1': 1, 'k2': 2}, ['k1','key_not_exist'])
+    assert conf.get('test_stanza') == {'k2': 2, 'k1': 1, 'eai:access':common.record({'app': 'test'}), 'eai:appName': 'test'}
+    assert conf.get_all() == {'test_stanza': {'k2': 2, 'k1': 1, 'eai:access':common.record({'app': 'test'}), 'eai:appName': 'test'}}
+
+    conf.delete('test_stanza')
+    with pytest.raises(conf_manager.ConfStanzaNotExistException):
+        conf.get('test_stanza')
+    with pytest.raises(conf_manager.ConfStanzaNotExistException):
+        conf.delete('test_stanza')
+    conf.reload()
