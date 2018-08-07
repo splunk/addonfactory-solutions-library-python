@@ -1,6 +1,8 @@
 # Splunk Solution Library for Python Changelog
 
+
 ## Version 1.0.17
+* Support for reading encrypted passwords using REALMs other than app-name (ADDON-18553)(APPSC-2429)
 * Security vulnerability fix APPSC-2406
  
 ## Version 1.0.16
