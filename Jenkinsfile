@@ -23,7 +23,7 @@ withSplunkWrapNode("master") {
     def version_postfix = params.version_postfix
     def jobs = [:]
     if (branchName == "develop") {
-        stage("PUblish Document") {
+        stage("Publish Document") {
             withCredentials([file(credentialsId: 'app_common_publish_doc_key', variable: 'FILE')]) {
                 splunkPrepareAndCheckOut imageName: buildImage,
                                     repoName: env.GIT_SSH_URL,
@@ -33,12 +33,13 @@ withSplunkWrapNode("master") {
 
             splunkRunScript imageName: buildImage,
                             script: """
-                                pip install appjenkinstool;
-                                npm install;
+                                npm install --unsafe-perm;
+                                pip install Sphinx;
                                 npm run docs;
                                 mkdir doc;
-                                mv docs/_build/html/ doc/;
-                                uploadAppCommonLib publish_doc -i /build/app_common_publish_doc_key;
+                                mv docs/_build/html/* doc/;
+                                chmod 400 /build/app_common_publish_doc_key
+                                scp -i /build/app_common_publish_doc_key -r docs/_build/html/* bamboo@sc-build.sv.splunk.com:/usr/local/bamboo/releases/app_shared_components/lib-solutions-python
                              """
         }
     }
@@ -49,11 +50,7 @@ withSplunkWrapNode("master") {
                         branchName: branchName;
 
             splunkRunScript imageName: buildImage,
-                            script: """
-                            npm install;
-                            npm run build;
-                            npm run jtest;
-                            """
+                            script: "sh tests/run_test.sh"
         }
 
         if (Boolean.valueOf(PUBLISH)) {
@@ -75,16 +72,13 @@ withSplunkWrapNode("master") {
                                     branchName: branchName;
 
                 splunkRunScript imageName: buildImage,
-                                script: """ 
-                                    pip install appjenkinstool;
-                                    uploadAppCommonLib update_version pypi ${version_postfix} --check_file upload_check.json
-                                    mv upload_check.json ../
-                                    """
+                                script: "sh tests/before_publish.sh"
 
                 splunkCopyFromDocker files: "upload_check.json",
                                     remotePath: "/build"
                 def props = readJSON file: "target/upload_check.json"
                 exist = props['exists']
+                version = props['version']
             }
             if (exist) {
                 ansiColor("xterm") {
