@@ -58,9 +58,9 @@ withSplunkWrapNode("master") {
                 if (branchName == "master"){
                     version_postfix = ""
                 } else if (branchName == "develop"){
-                    version_postfix = "--postfix " +"dev${env.BUILD_ID}"
+                    version_postfix = "--postfix " +"dev.${env.BUILD_ID}"
                 } else {
-                    version_postfix = "--postfix " +"${branchName}${env.BUILD_ID}".replaceAll('/','.')
+                    version_postfix = "--postfix " +"${branchName}.${env.BUILD_ID}".replaceAll('/','.')
                 }
             } else {
                 version_postfix = "--postfix " + version_postfix.replaceAll('/','.')
@@ -72,10 +72,11 @@ withSplunkWrapNode("master") {
                                     branchName: branchName;
 
                 splunkRunScript imageName: buildImage,
-                                script: "sh tests/before_publish.sh"
+                                script: "sh tests/before_publish.sh --postfix ${version_postfix}"
 
                 splunkCopyFromDocker files: "upload_check.json",
-                                    remotePath: "/build"
+                                    persistOriginal: false,
+                                    remotePath: "/build/lib-solutions-python"
                 def props = readJSON file: "target/upload_check.json"
                 exist = props['exists']
                 version = props['version']
