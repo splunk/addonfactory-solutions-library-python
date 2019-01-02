@@ -12,11 +12,12 @@ name=`awk '/^Name: .*$/ {print $2}' solnlib.egg-info/PKG-INFO`
 version=`awk '/^__version__.*$/ {print $3}' solnlib/__init__.py | tr -d "\'"`
 new_version=`echo $version | sed -e 's/-dev./.dev/g'`
 new_version="${new_version}-${version_postfix}"
+sed -i 's/'$version'/'$new_version'/g' solnlib/__init__.py
 
 uri=$(curl -Ssu $cred -GET https://repo.splunk.com/artifactory/api/storage/pypi/$name/$version/$name-$version.tar.gz | node -pe "JSON.parse(require('fs').readFileSync('/dev/stdin').toString()).uri")
 if [[ $uri == "undefined" ]]
 then
-    echo {\"exists\": true, \"version\":\"${new_version}\"} > upload_check.json
-else
     echo {\"exists\": false, \"version\":\"${new_version}\"} > upload_check.json
+else
+    echo {\"exists\": true, \"version\":\"${new_version}\"} > upload_check.json
 fi

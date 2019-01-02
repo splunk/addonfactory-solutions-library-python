@@ -72,7 +72,7 @@ withSplunkWrapNode("master") {
                                     branchName: branchName;
 
                 splunkRunScript imageName: buildImage,
-                                script: "sh tests/before_publish.sh --postfix ${version_postfix}"
+                                script: "sh tests/before_publish.sh ${version_postfix}"
 
                 splunkCopyFromDocker files: "upload_check.json",
                                     persistOriginal: false,
