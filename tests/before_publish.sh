@@ -15,7 +15,7 @@ if [[ ! -z "$new_version" ]]
 then
     new_version="${new_version}-${version_postfix}"
 fi
-sed -i 's/'$version'/'$new_version'/g' solnlib/__init__.py
+sed -i s/"${version}"/"${new_version}"/g solnlib/__init__.py
 
 uri=$(curl -Ssu $cred -GET https://repo.splunk.com/artifactory/api/storage/pypi/$name/$version/$name-$version.tar.gz | node -pe "JSON.parse(require('fs').readFileSync('/dev/stdin').toString()).uri")
 if [[ $uri == "undefined" ]]
