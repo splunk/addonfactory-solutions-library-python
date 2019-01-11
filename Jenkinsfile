@@ -39,7 +39,7 @@ withSplunkWrapNode("master") {
                                 mkdir doc;
                                 mv docs/_build/html/* doc/;
                                 chmod 400 /build/app_common_publish_doc_key
-                                scp -i /build/app_common_publish_doc_key -r docs/_build/html/* bamboo@sc-build.sv.splunk.com:/usr/local/bamboo/releases/app_shared_components/lib-solutions-python
+                                scp -C -o StrictHostKeyChecking=no -i /build/app_common_publish_doc_key -r doc/* bamboo@sc-build.sv.splunk.com:/usr/local/bamboo/releases/app_shared_components/lib-solutions-python
                              """
         }
     }
