@@ -1,5 +1,8 @@
 # Splunk Solution Library for Python Changelog
 
+## Version 1.0.18
+* Requests vulnerability fix APPSC-2436
+* Moved build plan to Jenkins
 
 ## Version 1.0.17
 * Support for reading encrypted passwords using REALMs other than app-name (ADDON-18553)(APPSC-2429)
