@@ -81,7 +81,7 @@ def _request_handler(context):
             cert_file=context.get('cert_file'))
 
     try:
-        requests.packages.urllib3.disable_warnings()
+        requests.urllib3.disable_warnings()
     except AttributeError:
         pass
 
