@@ -61,7 +61,10 @@ def mock_gethostname(monkeypatch):
 def make_response_record(body, status=200):
     class _MocBufReader(object):
         def __init__(self, buf):
-            self._buf = buf
+            if isinstance(buf, str):
+                self._buf = buf.encode('utf-8')
+            else:
+                self._buf = buf
 
         def read(self, size=None):
             return self._buf

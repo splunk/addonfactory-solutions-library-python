@@ -103,7 +103,10 @@ def test_modular_input(monkeypatch):
             return content
 
         def write(self, event):
-            self._buf += event
+            if isinstance(event, bytes):
+                self._buf += event.decode('utf-8')
+            else:
+                self._buf += event
 
         def flush(self):
             pass

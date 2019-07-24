@@ -256,8 +256,11 @@ class FileCheckpointer(Checkpointer):
     def __init__(self, checkpoint_dir):
         self._checkpoint_dir = checkpoint_dir
 
+    def encode_key(self, key):
+        return base64.b64encode(key.encode()).decode()
+
     def update(self, key, state):
-        file_name = op.join(self._checkpoint_dir, base64.b64encode(key))
+        file_name = op.join(self._checkpoint_dir, self.encode_key(key))
         with open(file_name + '_new', 'w') as fp:
             json.dump(state, fp)
 
@@ -274,7 +277,7 @@ class FileCheckpointer(Checkpointer):
             self.update(state['_key'], state['state'])
 
     def get(self, key):
-        file_name = op.join(self._checkpoint_dir, base64.b64encode(key))
+        file_name = op.join(self._checkpoint_dir, self.encode_key(key))
         try:
             with open(file_name, 'r') as fp:
                 return json.load(fp)
@@ -282,7 +285,7 @@ class FileCheckpointer(Checkpointer):
             return None
 
     def delete(self, key):
-        file_name = op.join(self._checkpoint_dir, base64.b64encode(key))
+        file_name = op.join(self._checkpoint_dir, self.encode_key(key))
         try:
             os.remove(file_name)
         except OSError:

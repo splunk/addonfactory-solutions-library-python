@@ -23,8 +23,10 @@ import socket
 
 try:
     from ConfigParser import ConfigParser
+    CONF_PARSER_KWARGS = {}
 except ImportError:
     from configparser import ConfigParser
+    CONF_PARSER_KWARGS = { 'strict': False }
 
 from io import StringIO
 
@@ -276,7 +278,7 @@ def get_conf_stanzas(conf_name):
     out, _ = p.communicate()
 
     out = StringIO(unicode(out))
-    parser = ConfigParser()
+    parser = ConfigParser(**CONF_PARSER_KWARGS)
     parser.optionxform = str
     parser.readfp(out)
 

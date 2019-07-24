@@ -19,7 +19,12 @@ This module provides a base class of Splunk modular input.
 import logging
 import sys
 import traceback
-import urllib2
+
+try:
+    from urllib import parse as urlparse
+except ImportError:
+    from urllib2 import urlparse
+
 from abc import ABCMeta, abstractmethod
 
 try:
@@ -190,7 +195,7 @@ class ModularInput(object):
                     host=self.server_host, port=self.server_port)
             except binding.HTTPError as e:
                 logging.error('Failed to init kvstore checkpointer: %s.',
-                              traceback.format_exc(e))
+                              traceback.format_exc())
                 raise
         else:
             return checkpointer.FileCheckpointer(self._checkpoint_dir)
@@ -223,14 +228,14 @@ class ModularInput(object):
                     port=self.server_port)
             except binding.HTTPError as e:
                 logging.error('Failed to init HECEventWriter: %s.',
-                              traceback.format_exc(e))
+                              traceback.format_exc())
                 raise
         else:
             return event_writer.ClassicEventWriter()
 
     def _update_metadata(self, metadata):
         self.server_host_name = metadata['server_host']
-        splunkd = urllib2.urlparse.urlsplit(metadata['server_uri'])
+        splunkd = urlparse.urlsplit(metadata['server_uri'])
         self.server_uri = splunkd.geturl()
         self.server_scheme = splunkd.scheme
         self.server_host = splunkd.hostname
@@ -424,13 +429,13 @@ class ModularInput(object):
                 if self.use_single_instance:
                     self.config_name = self.name
                 else:
-                    self.config_name = input_definition['inputs'].keys()[0]
+                    self.config_name = list(input_definition['inputs'].keys())[0]
                 self.do_run(input_definition['inputs'])
                 logging.info('Modular input: %s exit normally.', self.name)
                 return 0
             except Exception as e:
                 logging.error('Modular input: %s exit with exception: %s.',
-                              self.name, traceback.format_exc(e))
+                              self.name, traceback.format_exc())
                 return 1
             finally:
                 # Stop orphan monitor if any
@@ -451,7 +456,7 @@ class ModularInput(object):
             except Exception as e:
                 logging.error(
                     'Modular input: %s validate arguments with exception: %s.',
-                    self.name, traceback.format_exc(e))
+                    self.name, traceback.format_exc())
                 root = ET.Element('error')
                 ET.SubElement(root, 'message').text = str(e)
                 sys.stderr.write(ET.tostring(root))
