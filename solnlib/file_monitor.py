@@ -61,7 +61,7 @@ class FileChangesChecker(object):
         logging.debug('Checking files=%s', self._files)
         file_mtimes = self.file_mtimes
         changed_files = []
-        for f, last_mtime in file_mtimes.iteritems():
+        for f, last_mtime in file_mtimes.items():
             try:
                 current_mtime = op.getmtime(f)
                 if current_mtime != last_mtime:
@@ -127,7 +127,7 @@ class FileMonitor(object):
         while self._started:
             self._checker.check_changes()
 
-            for _ in xrange(self._interval):
+            for _ in range(self._interval):
                 if not self._started:
                     break
                 time.sleep(1)
