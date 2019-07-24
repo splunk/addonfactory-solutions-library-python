@@ -22,7 +22,12 @@ import os
 import signal
 import time
 import traceback
-import urllib2
+
+try:
+    from urllib import parse as urlparse
+except ImportError:
+    from urllib2 import urlparse
+
 from functools import wraps
 
 __all__ = ['handle_teardown_signals',
@@ -185,7 +190,7 @@ def extract_http_scheme_host_port(http_url):
     '''
 
     try:
-        http_info = urllib2.urlparse.urlparse(http_url)
+        http_info = urlparse.urlparse(http_url)
     except Exception:
         raise ValueError(
             str(http_url) + " is not in http(s)://hostname:port format")

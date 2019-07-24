@@ -20,8 +20,13 @@ import os
 import os.path as op
 import subprocess
 import socket
-from ConfigParser import ConfigParser
-from cStringIO import StringIO
+
+try:
+    from ConfigParser import ConfigParser
+except ImportError:
+    from configparser import ConfigParser
+
+from io import StringIO
 
 from . import utils
 
@@ -45,6 +50,11 @@ on_shared_storage = [os.path.join(ETC_LEAF, 'apps'),
                      os.path.join('var', 'run', 'splunk', 'scheduler'),
                      os.path.join('var', 'run', 'splunk', 'lookup_tmp')]
 
+
+try:
+    unicode
+except NameError:
+    unicode = str
 
 def _splunk_home():
     return os.path.normpath(os.environ['SPLUNK_HOME'])
@@ -265,7 +275,7 @@ def get_conf_stanzas(conf_name):
                          stderr=subprocess.PIPE)
     out, _ = p.communicate()
 
-    out = StringIO(out)
+    out = StringIO(unicode(out))
     parser = ConfigParser()
     parser.optionxform = str
     parser.readfp(out)

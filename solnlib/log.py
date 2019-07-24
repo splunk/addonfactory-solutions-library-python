@@ -19,6 +19,7 @@ This module provides log functionalities.
 import logging
 import logging.handlers
 import os.path as op
+from six import with_metaclass
 from threading import Lock
 
 from .pattern import Singleton
@@ -60,7 +61,7 @@ class LogException(Exception):
     pass
 
 
-class Logs(object):
+class Logs(with_metaclass(Singleton)):
     '''A singleton class that manage all kinds of logger.
 
     Usage::
@@ -72,8 +73,6 @@ class Logs(object):
       >>> logger.set_level(logging.DEBUG)
       >>> logger.debug('a debug log')
     '''
-
-    __metaclass__ = Singleton
 
     # Normal logger settings
     _default_directory = None
@@ -222,6 +221,6 @@ class Logs(object):
                     logger.setLevel(level)
             else:
                 self._default_log_level = level
-                for logger in self._loggers.itervalues():
+                for logger in self._loggers.values():
                     logger.setLevel(level)
                 logging.getLogger().setLevel(level)
