@@ -18,6 +18,11 @@ This module provides IP manipulate/calculation functionalities.
 
 import re
 
+try:
+    long
+except NameError:
+    long = int
+
 
 __all__ = ['ip2long',
            'long2ip',
