@@ -36,7 +36,9 @@ def mock_splunkhome(monkeypatch):
             with open(file_path) as fp:
                 return fp.read(), None
 
-    monkeypatch.setenv('SPLUNK_HOME', op.join(cur_dir, 'data/mock_splunk/'))
+    splunk_home = op.join(cur_dir, 'data/mock_splunk/')
+    monkeypatch.setenv('SPLUNK_HOME', splunk_home)
+    monkeypatch.setenv('SPLUNK_ETC', op.join(splunk_home, 'etc'))
     monkeypatch.setattr(subprocess, 'Popen', MockPopen)
 
 
