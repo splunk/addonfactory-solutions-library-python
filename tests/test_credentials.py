@@ -28,7 +28,7 @@ def test_credential_manager(monkeypatch):
             'storage/passwords/{}'.format(title),
             state=record(
                 {'content': {'clear_password': password,
-                             'encr_password': hashlib.md5(password).digest(),
+                             'encr_password': hashlib.md5(password.encode('utf-8')).digest(),
                              'password': '********',
                              'realm': realm,
                              'username': username},
@@ -65,22 +65,22 @@ def test_credential_manager(monkeypatch):
     cm.set_password('testuser1', 'password1')
     assert cm.get_password('testuser1') == 'password1'
 
-    long_password = ''.join(['1111111111' for i in xrange(30)])
+    long_password = ''.join(['1111111111' for i in range(30)])
     cm.set_password('testuser2', long_password)
     assert cm.get_password('testuser2') == long_password
 
     # change short password to long password
-    long_password = ''.join(['1111111111' for i in xrange(30)])
+    long_password = ''.join(['1111111111' for i in range(30)])
     cm.set_password('testuser1', long_password)
     assert cm.get_password('testuser1') == long_password
 
     # change to longer password
-    longer_password = ''.join(['1111111111' for i in xrange(120)])
+    longer_password = ''.join(['1111111111' for i in range(120)])
     cm.set_password('testuser1', longer_password)
     assert cm.get_password('testuser1') == longer_password
 
     # change longer password to long password
-    long_password = ''.join(['1111111111' for i in xrange(30)])
+    long_password = ''.join(['1111111111' for i in range(30)])
     cm.set_password('testuser1', long_password)
     assert cm.get_password('testuser1') == long_password
 
@@ -93,17 +93,17 @@ def test_credential_manager(monkeypatch):
     assert cm.get_password('testuser1') == 'a'
 
     # password length = 255
-    pwd_255 = ''.join(['a' for i in xrange(255)])
+    pwd_255 = ''.join(['a' for i in range(255)])
     cm.set_password('testuser1', pwd_255)
     assert cm.get_password('testuser1') == pwd_255
 
     # password length = 256
-    pwd_256 = ''.join(['a' for i in xrange(256)])
+    pwd_256 = ''.join(['a' for i in range(256)])
     cm.set_password('testuser1', pwd_256)
     assert cm.get_password('testuser1') == pwd_256
 
     # password length = 255 * 2
-    pwd_510 = ''.join(['a' for i in xrange(510)])
+    pwd_510 = ''.join(['a' for i in range(510)])
     cm.set_password('testuser1', pwd_510)
     assert cm.get_password('testuser1') == pwd_510
 
