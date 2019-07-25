@@ -23,7 +23,7 @@ from .decorators import ConfigurationSetting, Option
 from .streaming_command import StreamingCommand
 from .search_command import SearchCommand
 from .validators import Set
-from splunklib import six
+from .. import six
 
 
 class ReportingCommand(SearchCommand):

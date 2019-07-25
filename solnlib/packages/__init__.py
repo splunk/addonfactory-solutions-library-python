@@ -38,10 +38,10 @@ except ImportError:
 
     sys.modules['%s.sortedcontainers' % __name__] = sortedcontainers
 
-# try:
-    # from . import schematics
-# except ImportError:
-    # import schematics
+try:
+    from . import schematics
+except ImportError:
+    import schematics
 
-    # sys.modules['%s.schematics' % __name__] = schematics
+    sys.modules['%s.schematics' % __name__] = schematics
 
