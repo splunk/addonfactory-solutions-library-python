@@ -146,7 +146,7 @@ def _request_handler(context):
         except Exception as e:
             logging.error(
                 'Failed to issue http request=%s to url=%s, error=%s',
-                method, url, traceback.format_exc(e))
+                method, url, traceback.format_exc())
             raise
 
         return {

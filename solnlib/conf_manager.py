@@ -311,7 +311,7 @@ class ConfFile(object):
             self._conf.delete(stanza_name)
         except KeyError as e:
             logging.error('Delete stanza: %s error: %s.',
-                          stanza_name, traceback.format_exc(e))
+                          stanza_name, traceback.format_exc())
             raise ConfStanzaNotExistException(
                 'Stanza: %s does not exist in %s.conf' %
                 (stanza_name, self._name))

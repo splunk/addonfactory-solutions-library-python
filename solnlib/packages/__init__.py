@@ -45,9 +45,3 @@ except ImportError:
 
     # sys.modules['%s.schematics' % __name__] = schematics
 
-# try:
-    # from . import simpleyaml
-# except ImportError:
-    # import simpleyaml
-
-    # sys.modules['%s.simpleyaml' % __name__] = simpleyaml
