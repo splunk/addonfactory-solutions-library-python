@@ -20,14 +20,9 @@ import os
 import re
 
 try:
-    from configparser import ConfigParser
+    from configparser import ConfigParser, NoSectionError, NoOptionError
 except ImportError:
-    from ConfigParser import SafeConfigParser as ConfigParser 
-
-try:
-    from configparser import NoSectionError, NoOptionError
-except ImportError:
-    from ConfigParser import NoSectionError, NoOptionError
+    from ConfigParser import SafeConfigParser as ConfigParser, NoSectionError, NoOptionError
 
 from .splunkenv import make_splunkhome_path
 
