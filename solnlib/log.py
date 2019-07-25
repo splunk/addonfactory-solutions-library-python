@@ -221,6 +221,6 @@ class Logs(with_metaclass(Singleton)):
                     logger.setLevel(level)
             else:
                 self._default_log_level = level
-                for logger in self._loggers.values():
+                for logger in list(self._loggers.values()):
                     logger.setLevel(level)
                 logging.getLogger().setLevel(level)

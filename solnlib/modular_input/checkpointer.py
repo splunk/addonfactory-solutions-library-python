@@ -25,6 +25,7 @@ import os.path as op
 import re
 import traceback
 from abc import ABCMeta, abstractmethod
+from six import with_metaclass
 
 from .. import splunk_rest_client as rest_client
 from ..packages.splunklib import binding
@@ -39,11 +40,9 @@ class CheckpointerException(Exception):
     pass
 
 
-class Checkpointer(object):
+class Checkpointer(with_metaclass(ABCMeta, object)):
     '''Base class of checkpointer.
     '''
-
-    __metaclass__ = ABCMeta
 
     @abstractmethod
     def update(self, key, state):

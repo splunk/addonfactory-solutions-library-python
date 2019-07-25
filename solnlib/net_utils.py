@@ -118,7 +118,7 @@ def check_css_params(**validators):
             dfs = arg_spec.defaults
             optional = dict(list(zip(arg_spec.args[-len(dfs):], dfs))) if dfs else {}
 
-            for arg, func in validators.items():
+            for arg, func in list(validators.items()):
                 if arg not in actual_args:
                     continue
                 value = actual_args[arg]

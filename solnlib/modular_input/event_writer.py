@@ -23,6 +23,7 @@ import threading
 import time
 import traceback
 from abc import ABCMeta, abstractmethod
+from six import with_metaclass
 
 from .event import XMLEvent, HECEvent
 from .. import splunk_rest_client as rest_client
@@ -36,11 +37,9 @@ __all__ = ['ClassicEventWriter',
            'HECEventWriter']
 
 
-class EventWriter(object):
+class EventWriter(with_metaclass(ABCMeta, object)):
     '''Base class of event writer.
     '''
-
-    __metaclass__ = ABCMeta
 
     description = 'EventWriter'
 

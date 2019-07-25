@@ -61,7 +61,7 @@ class FileChangesChecker(object):
         logging.debug('Checking files=%s', self._files)
         file_mtimes = self.file_mtimes
         changed_files = []
-        for f, last_mtime in file_mtimes.items():
+        for f, last_mtime in list(file_mtimes.items()):
             try:
                 current_mtime = op.getmtime(f)
                 if current_mtime != last_mtime:

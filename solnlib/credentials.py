@@ -263,7 +263,7 @@ class CredentialManager(object):
                     'clear_password': password.clear_password}
 
         # Merge password by index
-        for name, values in results.items():
+        for name, values in list(results.items()):
             field_clear = values.get('clears')
             if field_clear:
                 clear_password = ''
@@ -276,7 +276,7 @@ class CredentialManager(object):
 
                 del values['clears']
 
-        return results.values()
+        return list(results.values())
 
 
 @retry(exceptions=[binding.HTTPError])
