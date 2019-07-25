@@ -346,14 +346,14 @@ class HECEventWriter(EventWriter):
 
         last_ex = None
         for event in HECEvent.format_events(events):
-            for i in xrange(self.WRITE_EVENT_RETRIES):
+            for i in range(self.WRITE_EVENT_RETRIES):
                 try:
                     self._rest_client.post(
                         self.HTTP_EVENT_COLLECTOR_ENDPOINT, body=event,
                         headers=self.headers)
                 except binding.HTTPError as e:
                     logging.error('Write events through HEC failed: %s.',
-                                  traceback.format_exc(e))
+                                  traceback.format_exc())
                     last_ex = e
                     time.sleep(2 ** (i + 1))
                 else:
