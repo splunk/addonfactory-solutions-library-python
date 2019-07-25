@@ -48,6 +48,9 @@ __all__ = ['ModularInputException',
            'ModularInput']
 
 
+SCHEME_ENCODING = 'unicode' if sys.version_info[0] >= 3 else 'utf-8'
+
+
 class ModularInputException(Exception):
     pass
 
@@ -264,7 +267,7 @@ class ModularInput(with_metaclass(ABCMeta, object)):
                          required_on_edit=required_on_edit,
                          required_on_create=required_on_create))
 
-        return ET.tostring(scheme.to_xml())
+        return ET.tostring(scheme.to_xml(), encoding=SCHEME_ENCODING)
 
     def extra_arguments(self):
         '''Extra arguments for modular input.
