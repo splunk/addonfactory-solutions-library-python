@@ -1,11 +1,16 @@
+import pytest
+
+try:
+    from mock import Mock
+except:
+    pytest.skip('Skipping due to incompatibility with Python 3.x', allow_module_level=True)
+
 import sys
 import os.path as op
-from mock import Mock
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 sys.modules['splunk'] = Mock()
 sys.modules['splunk.rest'] = Mock()
 from solnlib.api_documenter import *
-import pytest
 
 
 class TestApiDocumenter(object):
