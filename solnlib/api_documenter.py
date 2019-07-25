@@ -100,7 +100,7 @@ import re
 import tempfile
 
 from . import splunk_rest_client as rest
-from .packages import simpleyaml as yaml
+from .packages import yaml
 
 __all__ = ['api',
            'api_model',

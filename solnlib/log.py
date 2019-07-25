@@ -61,7 +61,7 @@ class LogException(Exception):
     pass
 
 
-class Logs(with_metaclass(Singleton)):
+class Logs(with_metaclass(Singleton, object)):
     '''A singleton class that manage all kinds of logger.
 
     Usage::

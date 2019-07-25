@@ -1,9 +1,7 @@
-import pytest
-
 try:
     from mock import Mock
 except:
-    pytest.skip('Skipping due to incompatibility with Python 3.x', allow_module_level=True)
+    from unittest.mock import Mock
 
 import sys
 import os.path as op
