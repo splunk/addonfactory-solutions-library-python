@@ -16,7 +16,11 @@
 A simple thread safe timer queue implementation which has O(logn) time complexity.
 '''
 
-import Queue
+try:
+    import queue as Queue
+except ImportError:
+    import Queue
+
 import logging
 import threading
 import traceback
@@ -61,22 +65,23 @@ class Timer(object):
     def update_expiration(self):
         self.when += self.interval
 
-    def __cmp__(self, other):
-        if other is None:
-            return 1
-
-        self_k = (self.when, self.ident)
-        other_k = (other.when, other.ident)
-
-        if self_k == other_k:
-            return 0
-        elif self_k < other_k:
-            return -1
-        else:
-            return 1
+    def __hash__(self):
+        return hash(self.ident)
 
     def __eq__(self, other):
         return isinstance(other, Timer) and (self.ident == other.ident)
+
+    def __lt__(self, other):
+        return (self.when, self.ident) < (other.when, other.ident)
+
+    def __le__(self, other):
+        return (self.when, self.ident) <= (other.when, other.ident)
+
+    def __gt__(self, other):
+        return (self.when, self.ident) > (other.when, other.ident)
+
+    def __ge__(self, other):
+        return (self.when, self.ident) >= (other.when, other.ident)
 
     def __call__(self):
         self._callback()
