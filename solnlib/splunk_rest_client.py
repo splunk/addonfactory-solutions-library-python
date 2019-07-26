@@ -27,7 +27,7 @@ try:
 except ImportError:
     from urllib2 import quote
 
-from io import StringIO
+from io import BytesIO
 
 from .net_utils import check_css_params
 from .net_utils import is_valid_hostname
@@ -153,7 +153,7 @@ def _request_handler(context):
             'status': resp.status_code,
             'reason': resp.reason,
             'headers': dict(resp.headers),
-            'body': StringIO(resp.content),
+            'body': BytesIO(resp.content),
         }
 
     return request
