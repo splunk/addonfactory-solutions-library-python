@@ -53,11 +53,6 @@ on_shared_storage = [os.path.join(ETC_LEAF, 'apps'),
                      os.path.join('var', 'run', 'splunk', 'lookup_tmp')]
 
 
-try:
-    unicode
-except NameError:
-    unicode = str
-
 def _splunk_home():
     return os.path.normpath(os.environ['SPLUNK_HOME'])
 
@@ -277,10 +272,12 @@ def get_conf_stanzas(conf_name):
                          stderr=subprocess.PIPE)
     out, _ = p.communicate()
 
-    out = StringIO(unicode(out))
+    if isinstance(out, bytes):
+        out = out.decode()
+
     parser = ConfigParser(**CONF_PARSER_KWARGS)
     parser.optionxform = str
-    parser.readfp(out)
+    parser.readfp(StringIO(out))
 
     out = {}
     for section in parser.sections():
