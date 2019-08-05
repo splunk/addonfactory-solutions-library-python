@@ -51,6 +51,11 @@ withSplunkWrapNode("master") {
 
             splunkRunScript imageName: buildImage,
                             script: "sh tests/run_test.sh"
+
+            splunkJunitReport allowMissingFiles: false,
+                              testResultsDir: "/",
+                              testResultsFiles: "junit_report.xml",
+                              workspace: "/build/lib-solutions-python"
         }
 
         if (Boolean.valueOf(PUBLISH)) {
