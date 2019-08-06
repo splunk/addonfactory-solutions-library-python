@@ -18,7 +18,7 @@ def test_credential_manager(monkeypatch):
     credentials_store = {}
 
     def mock_storage_passwords_list(self, count=None, **kwargs):
-        return credentials_store.values()
+        return list(credentials_store.values())
 
     def mock_storage_passwords_create(self, password, username, realm=None):
         title = '{}:{}:'.format(realm, username) if \
