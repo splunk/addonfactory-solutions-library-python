@@ -45,18 +45,10 @@ except ImportError:
 
     sys.modules['%s.schematics' % __name__] = schematics
 
+try:
+    from . import yaml
+except ImportError:
+    import yaml
 
-if sys.version_info[0] >= 3:
-    try:
-        from . import yaml
-    except ImportError:
-        import yaml
+    sys.modules['%s.yaml' % __name__] = yaml
 
-        sys.modules['%s.yaml' % __name__] = yaml
-else:
-    try:
-        from . import simpleyaml as yaml
-    except ImportError:
-        import simpleyaml as yaml
-
-        sys.modules['%s.yaml' % __name__] = yaml
