@@ -1,5 +1,10 @@
 # Splunk Solution Library for Python Changelog
 
+## Version 1.0.20
+* Support Python 2 and Python 3.
+* Updated `requests` to 2.22 for security issue ITSI-3866.
+* Replaced `simpleyaml` with `yaml` for security issue ITSI-3867.
+
 ## Version 1.0.18
 * Requests vulnerability fix APPSC-2436
 * Moved build plan to Jenkins
