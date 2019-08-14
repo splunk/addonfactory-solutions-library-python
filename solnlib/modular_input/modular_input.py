@@ -48,7 +48,7 @@ __all__ = ['ModularInputException',
            'ModularInput']
 
 
-SCHEME_ENCODING = 'unicode' if sys.version_info[0] >= 3 else 'utf-8'
+SCHEME_ENCODING = 'unicode' if sys.version_info >= (3, 0) else 'utf-8'
 
 
 class ModularInputException(Exception):
