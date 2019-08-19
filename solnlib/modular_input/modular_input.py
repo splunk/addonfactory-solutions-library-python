@@ -26,7 +26,7 @@ except ImportError:
     from urllib2 import urlparse
 
 from abc import ABCMeta, abstractmethod
-from six import with_metaclass
+from ..packages.splunklib.six import with_metaclass
 
 try:
     import xml.etree.cElementTree as ET
