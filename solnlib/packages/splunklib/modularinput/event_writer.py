@@ -17,10 +17,6 @@ import sys
 
 from .event import ET
 
-try:
-    from ..six.moves import cStringIO as StringIO
-except ImportError:
-    from ..six import StringIO
 
 class EventWriter(object):
     """``EventWriter`` writes events and error messages to Splunk from a modular input.
