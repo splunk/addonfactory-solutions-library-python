@@ -19,9 +19,9 @@ This module provides log functionalities.
 import logging
 import logging.handlers
 import os.path as op
-from six import with_metaclass
 from threading import Lock
 
+from .packages.splunklib.six import with_metaclass
 from .pattern import Singleton
 from .splunkenv import make_splunkhome_path
 

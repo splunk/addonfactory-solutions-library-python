@@ -25,10 +25,10 @@ import os.path as op
 import re
 import traceback
 from abc import ABCMeta, abstractmethod
-from six import with_metaclass
 
 from .. import splunk_rest_client as rest_client
 from ..packages.splunklib import binding
+from ..packages.splunklib.six import with_metaclass
 from ..utils import retry
 
 __all__ = ['CheckpointerException',

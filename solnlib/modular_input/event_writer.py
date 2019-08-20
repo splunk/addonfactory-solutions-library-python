@@ -23,13 +23,13 @@ import threading
 import time
 import traceback
 from abc import ABCMeta, abstractmethod
-from six import with_metaclass
 
 from .event import XMLEvent, HECEvent
 from .. import splunk_rest_client as rest_client
 from .. import utils
 from ..hec_config import HECConfig
 from ..packages.splunklib import binding
+from ..packages.splunklib.six import with_metaclass
 from ..splunkenv import get_splunkd_access_info
 from ..utils import retry
 
