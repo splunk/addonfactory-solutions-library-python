@@ -3,6 +3,7 @@ import os.path as op
 import time
 import random
 import math
+import numbers
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 from solnlib import timer_queue
@@ -41,5 +42,8 @@ def test_timer_queue():
     tq.stop()
 
     for start, end, interval, c in count:
-        diff = int(math.fabs(c - (end - start) / interval - 1))
+        if isinstance((end - start), numbers.Integral) and isinstance(interval, numbers.Integral):
+            diff = int(math.fabs(c - (end - start) // interval - 1))
+        else:
+            diff = int(math.fabs(c - (end - start) / interval - 1))
         assert 0 <= diff <= 1
