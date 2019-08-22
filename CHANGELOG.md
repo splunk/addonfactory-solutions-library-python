@@ -6,6 +6,7 @@
 * Replaced `simpleyaml` with `yaml` for security issue ITSI-3867.
 * Updated `schematics` to 2.1.0.
 * Updated `sortedcontainers` to 2.1.0.
+* Updated `splunklib` to 1.6.6.
 
 ## Version 1.0.18
 * Requests vulnerability fix APPSC-2436
