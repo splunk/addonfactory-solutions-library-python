@@ -1,6 +1,6 @@
 # Splunk Solution Library for Python Changelog
 
-## Version 1.1.0
+## Version 2.0.0
 * Support Python 2 and Python 3.
 * Updated `requests` to 2.22 for security issue ITSI-3866.
 * Replaced `simpleyaml` with `yaml` for security issue ITSI-3867.
