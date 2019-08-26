@@ -17,8 +17,10 @@ This module contains simple interfaces for File compression and decompression.
 '''
 
 import gzip
-import cStringIO as StringIO
 import zipfile
+
+from io import BytesIO
+
 
 __all__ = ['GzipHandler',
            'ZipHandler']
@@ -42,7 +44,7 @@ class GzipHandler(object):
         :rtype: ``bool``
         '''
 
-        return data[0:2] == '\x1f\x8b'
+        return data[0:2] == b'\x1f\x8b'
 
     @classmethod
     def decompress(cls, data):
@@ -62,7 +64,7 @@ class GzipHandler(object):
         if not cls.check_format(data):
             raise ValueError('File is not gzip format.')
 
-        return gzip.GzipFile(fileobj=StringIO.StringIO(data),
+        return gzip.GzipFile(fileobj=BytesIO(data),
                              mode='rb').read()
 
 
@@ -81,7 +83,7 @@ class ZipHandler(object):
         :rtype: ``bool``
         '''
 
-        return zipfile.is_zipfile(StringIO.StringIO(data))
+        return zipfile.is_zipfile(BytesIO(data))
 
     @classmethod
     def decompress(cls, data):
@@ -101,7 +103,7 @@ class ZipHandler(object):
         if not cls.check_format(data):
             raise ValueError('File is not zip format.')
 
-        fh = StringIO.StringIO(data)
+        fh = BytesIO(data)
         decompressor = zipfile.ZipFile(fh)
 
         files = decompressor.infolist()

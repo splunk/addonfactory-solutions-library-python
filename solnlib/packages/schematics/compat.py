@@ -7,7 +7,7 @@ import operator
 import sys
 
 
-__all__ = ['PY2', 'PY3', 'string_type', 'iteritems', 'metaclass', 'py_native_string', 'str_compat']
+__all__ = ['PY2', 'PY3', 'string_type', 'iteritems', 'metaclass', 'py_native_string', 'reraise', 'str_compat']
 
 
 PY2 = sys.version_info[0] == 2
@@ -23,16 +23,28 @@ if PY2:
     from itertools import imap as map
     from itertools import izip as zip
     iteritems = operator.methodcaller('iteritems')
+    itervalues = operator.methodcaller('itervalues')
+
+    # reraise code taken from werzeug BSD license at https://github.com/pallets/werkzeug/blob/master/LICENSE
+    exec('def reraise(tp, value, tb=None):\n raise tp, value, tb')
 else:
     string_type = str
     iteritems = operator.methodcaller('items')
+    itervalues = operator.methodcaller('values')
+
+    # reraise code taken from werzeug BSD license at https://github.com/pallets/werkzeug/blob/master/LICENSE
+    def reraise(tp, value, tb=None):
+        if value.__traceback__ is not tb:
+            raise value.with_traceback(tb)
+        raise value
 
 
 def metaclass(metaclass):
     def make_class(cls):
         attrs = cls.__dict__.copy()
-        del attrs['__dict__']
-        del attrs['__weakref__']
+        if attrs.get('__dict__'):
+            del attrs['__dict__']
+            del attrs['__weakref__']
         return metaclass(cls.__name__, cls.__bases__, attrs)
     return make_class
 
@@ -65,7 +77,15 @@ def str_compat(class_):
         if '__str__' in class_.__dict__ and '__unicode__' not in class_.__dict__:
             class_.__unicode__ = class_.__str__
             class_.__str__ = py_native_string(class_.__unicode__)
+    return class_
+
+
+def repr_compat(class_):
+    if PY2:
         if '__repr__' in class_.__dict__:
             class_.__repr__ = py_native_string(class_.__repr__)
     return class_
 
+
+def _dict(mapping):
+    return dict((key, mapping[key]) for key in mapping)

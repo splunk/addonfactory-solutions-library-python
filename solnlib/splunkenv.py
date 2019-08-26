@@ -20,8 +20,15 @@ import os
 import os.path as op
 import subprocess
 import socket
-from ConfigParser import ConfigParser
-from cStringIO import StringIO
+
+try:
+    from ConfigParser import ConfigParser
+    CONF_PARSER_KWARGS = {}
+except ImportError:
+    from configparser import ConfigParser
+    CONF_PARSER_KWARGS = { 'strict': False }
+
+from io import StringIO
 
 from . import utils
 
@@ -265,10 +272,12 @@ def get_conf_stanzas(conf_name):
                          stderr=subprocess.PIPE)
     out, _ = p.communicate()
 
-    out = StringIO(out)
-    parser = ConfigParser()
+    if isinstance(out, bytes):
+        out = out.decode()
+
+    parser = ConfigParser(**CONF_PARSER_KWARGS)
     parser.optionxform = str
-    parser.readfp(out)
+    parser.readfp(StringIO(out))
 
     out = {}
     for section in parser.sections():

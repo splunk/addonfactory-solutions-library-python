@@ -6,9 +6,12 @@ from __future__ import unicode_literals, absolute_import
 
 import bson
 
-from ..common import * # pylint: disable=redefined-builtin
+from ..common import *
+from ..translator import _
 from ..types import BaseType
 from ..exceptions import ConversionError
+
+__all__ = ['ObjectIdType']
 
 
 class ObjectIdType(BaseType):
@@ -21,7 +24,7 @@ class ObjectIdType(BaseType):
     """
 
     MESSAGES = {
-        'convert': "Couldn't interpret value as an ObjectId.",
+        'convert': _("Couldn't interpret value as an ObjectId."),
     }
 
     def __init__(self, auto_fill=False, **kwargs):
@@ -39,3 +42,6 @@ class ObjectIdType(BaseType):
     def to_primitive(self, value, context=None):
         return str(value)
 
+if PY2:
+    # Python 2 names cannot be unicode
+    __all__ = [n.encode('ascii') for n in __all__]

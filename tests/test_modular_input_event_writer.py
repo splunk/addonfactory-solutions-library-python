@@ -1,5 +1,6 @@
 import os.path as op
 import sys
+import json
 
 import common
 
@@ -64,7 +65,10 @@ def test_hec_event_writer(monkeypatch):
             return common.make_response_record('{"entry": [{"content": {"token": "87de04d1-0823-11e6-9c94-a45e60e34295"}}]}')
 
     def mock_post(self, path_segment, owner=None, app=None, sharing=None, headers=None, **query):
-        assert query['body'] == '{"index": "main", "sourcetype": "misc", "source": "Splunk", "host": "localhost", "time": 1372274622.493, "event": "This is a test data1."}\n{"index": "main", "sourcetype": "misc", "source": "Splunk", "host": "localhost", "time": 1372274622.493, "event": "This is a test data2."}'
+        event_strings = [json.dumps(json.loads(e), sort_keys=True) for e in query['body'].split('\n')]
+
+        assert event_strings[0] == '{"event": "This is a test data1.", "host": "localhost", "index": "main", "source": "Splunk", "sourcetype": "misc", "time": 1372274622.493}'
+        assert event_strings[1] == '{"event": "This is a test data2.", "host": "localhost", "index": "main", "source": "Splunk", "sourcetype": "misc", "time": 1372274622.493}'
 
     def mock_get_hec_config(self, hec_input_name, session_key, scheme, host, port, **context):
         return "8088", "87de04d1-0823-11e6-9c94-a45e60e"

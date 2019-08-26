@@ -1,11 +1,14 @@
+try:
+    from mock import Mock
+except:
+    from unittest.mock import Mock
+
 import sys
 import os.path as op
-from mock import Mock
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 sys.modules['splunk'] = Mock()
 sys.modules['splunk.rest'] = Mock()
 from solnlib.api_documenter import *
-import pytest
 
 
 class TestApiDocumenter(object):

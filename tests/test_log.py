@@ -48,7 +48,7 @@ class TestLogs(object):
         logger = log.Logs().get_logger('logging')
 
         logger.debug('this is a test log')
-        logger.warn('this is a test log that can show')
+        logger.warning('this is a test log that can show')
 
     def test_set_level(self, monkeypatch):
         logger = log.Logs().get_logger('set_level')
@@ -56,10 +56,10 @@ class TestLogs(object):
         logger.debug('this is a test log')
 
         log.Logs().set_level(log.logging.DEBUG)
-        logger.warn('this is a test log that can show')
+        logger.warning('this is a test log that can show')
 
         log.Logs().set_level(log.logging.ERROR, name='set_level')
-        logger.warn('this is a test log that can not show')
+        logger.warning('this is a test log that can not show')
 
     def test_multi_thread(self, monkeypatch):
         log.Logs.set_context(directory='/tmp/', namespace='unittest')

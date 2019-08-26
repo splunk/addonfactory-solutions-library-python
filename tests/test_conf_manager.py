@@ -28,7 +28,7 @@ def test_conf_manager(monkeypatch):
             'storage/passwords/{}'.format(title),
             state=record({'content': {'clear_password': password,
                                       'encr_password': hashlib.md5(
-                                          password).digest(),
+                                          password.encode()).digest(),
                                       'password': '********',
                                       'realm': realm,
                                       'username': username},
@@ -75,7 +75,7 @@ def test_conf_manager(monkeypatch):
                         common.make_response_record('', status=404))
             else:
                 stanza_mgrs = []
-                for stanza_name, stanza in all_stanzas.iteritems():
+                for stanza_name, stanza in list(all_stanzas.items()):
                     stanza_mgr = client.Stanza(
                         self.service,
                         'configs/conf-test/{0}/'.format(stanza_name),

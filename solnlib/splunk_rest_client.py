@@ -21,8 +21,13 @@ call instead of calling splunklib SDK directly in business logic code.
 import logging
 import os
 import traceback
-import urllib2
-from cStringIO import StringIO
+
+try:
+    from urllib.parse import quote
+except ImportError:
+    from urllib2 import quote
+
+from io import BytesIO
 
 from .net_utils import check_css_params
 from .net_utils import is_valid_hostname
@@ -41,8 +46,8 @@ def _get_proxy_info(context):
 
     user_pass = ''
     if context.get('proxy_username') and context.get('proxy_password'):
-        username = urllib2.quote(context['proxy_username'], safe='')
-        password = urllib2.quote(context['proxy_password'], safe='')
+        username = quote(context['proxy_username'], safe='')
+        password = quote(context['proxy_password'], safe='')
         user_pass = '{user}:{password}@'.format(
             user=username, password=password)
 
@@ -141,14 +146,14 @@ def _request_handler(context):
         except Exception as e:
             logging.error(
                 'Failed to issue http request=%s to url=%s, error=%s',
-                method, url, traceback.format_exc(e))
+                method, url, traceback.format_exc())
             raise
 
         return {
             'status': resp.status_code,
             'reason': resp.reason,
             'headers': dict(resp.headers),
-            'body': StringIO(resp.content),
+            'body': BytesIO(resp.content),
         }
 
     return request

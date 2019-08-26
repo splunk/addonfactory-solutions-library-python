@@ -18,7 +18,11 @@ This module contains configuration parser for Splunk local.metadata.
 
 import os
 import re
-import ConfigParser
+
+try:
+    from configparser import ConfigParser, NoSectionError, NoOptionError
+except ImportError:
+    from ConfigParser import SafeConfigParser as ConfigParser, NoSectionError, NoOptionError
 
 from .splunkenv import make_splunkhome_path
 
@@ -38,7 +42,7 @@ class MetadataReader(object):
         local_meta = make_splunkhome_path(
             ['etc', 'apps', app, 'metadata', 'local.meta'])
 
-        self._cfg = ConfigParser.SafeConfigParser()
+        self._cfg = ConfigParser()
         # Loosen restriction on stanzas without header names.
         self._cfg.SECTCRE = re.compile(r'\[(?P<header>[^]]*)\]')
 
@@ -69,7 +73,7 @@ class MetadataReader(object):
 
         try:
             return self._cfg.get('/'.join([conf, stanza]), option)
-        except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
+        except (NoSectionError, NoOptionError):
             raise ValueError('The metadata value could not be determined.')
 
     def get_float(self, conf, stanza, option):
@@ -95,5 +99,5 @@ class MetadataReader(object):
 
         try:
             return self._cfg.getfloat('/'.join([conf, stanza]), option)
-        except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
+        except (NoSectionError, NoOptionError):
             raise ValueError('The metadata value could not be determined.')
