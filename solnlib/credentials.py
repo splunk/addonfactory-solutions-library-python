@@ -207,7 +207,7 @@ class CredentialManager(object):
         all_passwords = self._get_all_passwords_in_realm()
         deleted = False
         ent_pattern = re.compile('(%s%s\d+)' % (user.replace('\\','\\\\'), self.SEP))
-        for password in all_passwords:
+        for password in list(all_passwords):
             match = (user == password.username) \
                     or ent_pattern.match(password.username)
             if match and password.realm == self._realm:
@@ -263,7 +263,7 @@ class CredentialManager(object):
                     'clear_password': password.clear_password}
 
         # Merge password by index
-        for name, values in results.items():
+        for name, values in list(results.items()):
             field_clear = values.get('clears')
             if field_clear:
                 clear_password = ''
@@ -276,7 +276,7 @@ class CredentialManager(object):
 
                 del values['clears']
 
-        return results.values()
+        return list(results.values())
 
 
 @retry(exceptions=[binding.HTTPError])

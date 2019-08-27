@@ -36,7 +36,9 @@ def mock_splunkhome(monkeypatch):
             with open(file_path) as fp:
                 return fp.read(), None
 
-    monkeypatch.setenv('SPLUNK_HOME', op.join(cur_dir, 'data/mock_splunk/'))
+    splunk_home = op.join(cur_dir, 'data/mock_splunk/')
+    monkeypatch.setenv('SPLUNK_HOME', splunk_home)
+    monkeypatch.setenv('SPLUNK_ETC', op.join(splunk_home, 'etc'))
     monkeypatch.setattr(subprocess, 'Popen', MockPopen)
 
 
@@ -59,7 +61,10 @@ def mock_gethostname(monkeypatch):
 def make_response_record(body, status=200):
     class _MocBufReader(object):
         def __init__(self, buf):
-            self._buf = buf
+            if isinstance(buf, str):
+                self._buf = buf.encode('utf-8')
+            else:
+                self._buf = buf
 
         def read(self, size=None):
             return self._buf

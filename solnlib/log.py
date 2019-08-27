@@ -21,6 +21,7 @@ import logging.handlers
 import os.path as op
 from threading import Lock
 
+from .packages.splunklib.six import with_metaclass
 from .pattern import Singleton
 from .splunkenv import make_splunkhome_path
 
@@ -60,7 +61,7 @@ class LogException(Exception):
     pass
 
 
-class Logs(object):
+class Logs(with_metaclass(Singleton, object)):
     '''A singleton class that manage all kinds of logger.
 
     Usage::
@@ -72,8 +73,6 @@ class Logs(object):
       >>> logger.set_level(logging.DEBUG)
       >>> logger.debug('a debug log')
     '''
-
-    __metaclass__ = Singleton
 
     # Normal logger settings
     _default_directory = None
@@ -222,6 +221,6 @@ class Logs(object):
                     logger.setLevel(level)
             else:
                 self._default_log_level = level
-                for logger in self._loggers.itervalues():
+                for logger in list(self._loggers.values()):
                     logger.setLevel(level)
                 logging.getLogger().setLevel(level)

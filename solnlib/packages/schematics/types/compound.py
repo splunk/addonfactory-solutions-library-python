@@ -2,19 +2,29 @@
 
 from __future__ import unicode_literals, absolute_import
 
-import collections
+try:
+    import typing
+except ImportError:
+    pass
+else:
+    T = typing.TypeVar("T")
+
 from collections import Iterable, Sequence, Mapping
 import itertools
 
-from ..common import * # pylint: disable=redefined-builtin
-from ..datastructures import OrderedDict
+from ..common import *
 from ..exceptions import *
 from ..transforms import (
     export_loop,
     get_import_context, get_export_context,
     to_native_converter, to_primitive_converter)
+from ..translator import _
+from ..util import get_all_subclasses, import_string
 
 from .base import BaseType, get_value_in
+
+__all__ = ['CompoundType', 'MultiType', 'ModelType', 'ListType', 'DictType',
+    'PolyModelType']
 
 
 class CompoundType(BaseType):
@@ -75,17 +85,35 @@ MultiType = CompoundType
 class ModelType(CompoundType):
     """A field that can hold an instance of the specified model."""
 
+    primitive_type = dict
+
+    @property
+    def native_type(self):
+        return self.model_class
+
     @property
     def fields(self):
         return self.model_class.fields
 
-    def __init__(self, model_spec, **kwargs):
+    @property
+    def model_class(self):
+        if self._model_class:
+            return self._model_class
+
+        model_class = import_string(self.model_name)
+        self._model_class = model_class
+        return model_class
+
+    def __init__(self,
+                 model_spec,  # type: typing.Type[T]
+                 **kwargs):
+        # type: (...) -> T
 
         if isinstance(model_spec, ModelMeta):
-            self.model_class = model_spec
+            self._model_class = model_spec
             self.model_name = self.model_class.__name__
         elif isinstance(model_spec, string_type):
-            self.model_class = None
+            self._model_class = None
             self.model_name = model_spec
         else:
             raise TypeError("ModelType: Expected a model, got an argument "
@@ -101,28 +129,30 @@ class ModelType(CompoundType):
 
     def _setup(self, field_name, owner_model):
         # Resolve possible name-based model reference.
-        if not self.model_class:
+        if not self._model_class:
             if self.model_name == owner_model.__name__:
-                self.model_class = owner_model
+                self._model_class = owner_model
             else:
-                raise Exception("ModelType: Unable to resolve model '{}'.".format(self.model_name))
+                pass  # Intentionally left blank, it will be setup later.
         super(ModelType, self)._setup(field_name, owner_model)
 
     def pre_setattr(self, value):
         if value is not None \
           and not isinstance(value, Model):
+            if not isinstance(value, dict):
+                raise ConversionError(_('Model conversion requires a model or dict'))
             value = self.model_class(value)
         return value
 
     def _convert(self, value, context):
-
-        if isinstance(value, self.model_class):
+        field_model_class = self.model_class
+        if isinstance(value, field_model_class):
             model_class = type(value)
         elif isinstance(value, dict):
-            model_class = self.model_class
+            model_class = field_model_class
         else:
             raise ConversionError(
-                "Input must be a mapping or '%s' instance" % self.model_class.__name__)
+                _("Input must be a mapping or '%s' instance") % field_model_class.__name__)
         if context.convert and context.oo:
             return model_class(value, context=context)
         else:
@@ -146,7 +176,14 @@ class ListType(CompoundType):
         categories = ListType(StringType)
     """
 
-    def __init__(self, field, min_size=None, max_size=None, **kwargs):
+    primitive_type = list
+    native_type = list
+
+    def __init__(self,
+                 field,  # type: T
+                 min_size=None, max_size=None, **kwargs):
+        # type: (...) -> typing.List[T]
+
         self.field = self._init_field(field, kwargs)
         self.min_size = min_size
         self.max_size = max_size
@@ -163,14 +200,9 @@ class ListType(CompoundType):
         return self.field.__class__.__name__
 
     def _mock(self, context=None):
-        min_size = self.min_size or 1
-        max_size = self.max_size or 1
-        if min_size > max_size:
-            message = 'Minimum list size is greater than maximum list size.'
-            raise MockCreationError(message)
-        random_length = get_value_in(min_size, max_size)
+        random_length = get_value_in(self.min_size, self.max_size)
 
-        return [self.field._mock(context) for _ in range(random_length)]
+        return [self.field._mock(context) for dummy in range(random_length)]
 
     def _coerce(self, value):
         if isinstance(value, list):
@@ -181,7 +213,7 @@ class ListType(CompoundType):
             return value
         elif isinstance(value, Iterable):
             return value
-        raise ConversionError('Could not interpret the value as a list')
+        raise ConversionError(_('Could not interpret the value as a list'))
 
     def _convert(self, value, context):
         value = self._coerce(value)
@@ -201,15 +233,15 @@ class ListType(CompoundType):
 
         if self.min_size is not None and list_length < self.min_size:
             message = ({
-                True: 'Please provide at least %d item.',
-                False: 'Please provide at least %d items.',
+                True: _('Please provide at least %d item.'),
+                False: _('Please provide at least %d items.'),
             }[self.min_size == 1]) % self.min_size
             raise ValidationError(message)
 
         if self.max_size is not None and list_length > self.max_size:
             message = ({
-                True: 'Please provide no more than %d item.',
-                False: 'Please provide no more than %d items.',
+                True: _('Please provide no more than %d item.'),
+                False: _('Please provide no more than %d items.'),
             }[self.max_size == 1]) % self.max_size
             raise ValidationError(message)
 
@@ -245,7 +277,12 @@ class DictType(CompoundType):
 
     """
 
+    primitive_type = dict
+    native_type = dict
+
     def __init__(self, field, coerce_key=None, **kwargs):
+        # type: (...) -> typing.Dict[str, T]
+
         self.field = self._init_field(field, kwargs)
         self.coerce_key = coerce_key or str
         super(DictType, self).__init__(**kwargs)
@@ -259,7 +296,7 @@ class DictType(CompoundType):
 
     def _convert(self, value, context, safe=False):
         if not isinstance(value, Mapping):
-            raise ConversionError('Only mappings may be used in a DictType')
+            raise ConversionError(_('Only mappings may be used in a DictType'))
 
         data = {}
         errors = {}
@@ -295,6 +332,9 @@ class DictType(CompoundType):
 
 class PolyModelType(CompoundType):
     """A field that accepts an instance of any of the specified models."""
+
+    primitive_type = dict
+    native_type = None  # cannot be determined from a PolyModelType instance
 
     def __init__(self, model_spec, **kwargs):
 
@@ -340,16 +380,18 @@ class PolyModelType(CompoundType):
 
         if value is None:
             return None
-        if self.is_allowed_model(value):
-            return value
-        if not isinstance(value, dict):
-            if len(self.model_classes) > 1:
-                instanceof_msg = 'one of: {}'.format(', '.join(
-                    cls.__name__ for cls in self.model_classes))
-            else:
-                instanceof_msg = self.model_classes[0].__name__
-            raise ConversionError('Please use a mapping for this field or '
-                                    'an instance of {}'.format(instanceof_msg))
+
+        if not context.validate:
+            if self.is_allowed_model(value):
+                return value
+            if not isinstance(value, dict):
+                if len(self.model_classes) > 1:
+                    instanceof_msg = 'one of: {}'.format(', '.join(
+                        cls.__name__ for cls in self.model_classes))
+                else:
+                    instanceof_msg = self.model_classes[0].__name__
+                raise ConversionError(_('Please use a mapping for this field or '
+                                        'an instance of {}').format(instanceof_msg))
 
         model_class = self.find_model(value)
         return model_class(value, context=context)
@@ -357,34 +399,35 @@ class PolyModelType(CompoundType):
     def find_model(self, data):
         """Finds the intended type by consulting potential classes or `claim_function`."""
 
-        chosen_class = None
         if self.claim_function:
-            chosen_class = self.claim_function(self, data)
-        else:
-            candidates = self.model_classes
-            if self.allow_subclasses:
-                candidates = itertools.chain.from_iterable(
-                                 ([m] + m._subclasses for m in candidates))
-            fallback = None
-            matching_classes = []
-            for cls in candidates:
-                match = None
-                if '_claim_polymorphic' in cls.__dict__:
-                    match = cls._claim_polymorphic(data)
-                elif not fallback: # The first model that doesn't define the hook
-                    fallback = cls # can be used as a default if there's no match.
-                if match:
-                    matching_classes.append(cls)
-            if not matching_classes and fallback:
-                chosen_class = fallback
-            elif len(matching_classes) == 1:
-                chosen_class = matching_classes[0]
+            kls = self.claim_function(self, data)
+            if not kls:
+                raise Exception("Input for polymorphic field did not match any model")
+            return kls
+
+        fallback = None
+        matching_classes = []
+        for kls in self._get_candidates():
+            try:
+                # If a model defines a _claim_polymorphic method, use
+                # it to see if the model matches the data.
+                kls_claim = kls._claim_polymorphic
+            except AttributeError:
+                # The first model that doesn't define the hook can be
+                # used as a default if there's no match.
+                if not fallback:
+                    fallback = kls
             else:
-                raise Exception("Got ambiguous input for polymorphic field")
-        if chosen_class:
-            return chosen_class
-        else:
-            raise Exception("Input for polymorphic field did not match any model")
+                if kls_claim(data):
+                    matching_classes.append(kls)
+
+        if not matching_classes and fallback:
+            return fallback
+
+        elif len(matching_classes) != 1:
+            raise Exception("Got ambiguous input for polymorphic field")
+
+        return matching_classes[0]
 
     def _export(self, model_instance, format, context):
 
@@ -394,6 +437,17 @@ class PolyModelType(CompoundType):
 
         return model_instance.export(context=context)
 
+    def _get_candidates(self):
+        candidates = self.model_classes
 
-__all__ = module_exports(__name__)
+        if self.allow_subclasses:
+            candidates = itertools.chain.from_iterable(
+                ([m] + get_all_subclasses(m) for m in candidates)
+            )
 
+        return candidates
+
+
+if PY2:
+    # Python 2 names cannot be unicode
+    __all__ = [n.encode('ascii') for n in __all__]

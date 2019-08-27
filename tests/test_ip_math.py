@@ -11,7 +11,7 @@ def test_ip2long(monkeypatch):
     invalid_ip1 = '192.168.1'
     invalid_ip2 = 192
 
-    assert ip_math.ip2long(valid_ip) == 3232235777L
+    assert ip_math.ip2long(valid_ip) == 3232235777
     with pytest.raises(ValueError):
         ip_math.ip2long(invalid_ip1)
     with pytest.raises(ValueError):
@@ -19,7 +19,7 @@ def test_ip2long(monkeypatch):
 
 
 def test_long2ip(monkeypatch):
-    valid_ip = 3232235777L
+    valid_ip = 3232235777
     invalid_ip1 = -1
     invalid_ip2 = pow(2, 32)
     invalid_ip3 = '192.168.1.1'
@@ -39,7 +39,7 @@ def test_cidr2long(monkeypatch):
     invalid_cidr2 = '192.168.1.0'
     invalid_cidr3 = 123
 
-    assert ip_math.cidr2long(valid_cidr) == (3232235776L, 3232236031L)
+    assert ip_math.cidr2long(valid_cidr) == (3232235776, 3232236031)
     with pytest.raises(ValueError):
         ip_math.cidr2long(invalid_cidr1)
     with pytest.raises(ValueError):
@@ -92,10 +92,10 @@ def test_is_valid_ip(monkeypatch):
 
 def test_expand_ip_range_to_cidr(monkeypatch):
     # ('192.168.0.1', '192.168.44.128')
-    valid_ip_range = (3232235521L, 3232246912L)
-    invalid_ip_range1 = (3232246912L, 3232235521L)
-    invalid_ip_range2 = (-1, 3232235521L)
-    invalid_ip_range3 = ('192.168.1.1', 3232235521L)
+    valid_ip_range = (3232235521, 3232246912)
+    invalid_ip_range1 = (3232246912, 3232235521)
+    invalid_ip_range2 = (-1, 3232235521)
+    invalid_ip_range3 = ('192.168.1.1', 3232235521)
     invalid_ip_range4 = ('192.168.1.1', '192.168.1.100')
 
     cidr = ['192.168.16.0/20', '192.168.8.0/21', '192.168.32.0/21',
@@ -106,11 +106,11 @@ def test_expand_ip_range_to_cidr(monkeypatch):
             '192.168.0.1/32', '192.168.44.128/32']
     assert ip_math.expand_ip_range_to_cidr(valid_ip_range) == cidr
 
-    with pytest.raises(ValueError):
+    with pytest.raises((ValueError, TypeError)):
         ip_math.expand_ip_range_to_cidr(invalid_ip_range1)
-    with pytest.raises(ValueError):
+    with pytest.raises((ValueError, TypeError)):
         ip_math.expand_ip_range_to_cidr(invalid_ip_range2)
-    with pytest.raises(ValueError):
+    with pytest.raises((ValueError, TypeError)):
         ip_math.expand_ip_range_to_cidr(invalid_ip_range3)
-    with pytest.raises(ValueError):
+    with pytest.raises((ValueError, TypeError)):
         ip_math.expand_ip_range_to_cidr(invalid_ip_range4)
