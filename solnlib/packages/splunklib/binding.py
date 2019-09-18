@@ -1004,7 +1004,7 @@ class HTTPError(Exception):
     def __init__(self, response, _message=None):
         status = response.status
         reason = response.reason
-        body = response.body.read()
+        body = (response.body.read()).decode()
         try:
             detail = XML(body).findtext("./messages/msg")
         except ParseError as err:
