@@ -51,7 +51,7 @@ class EventWriter(object):
         """
 
         if not self.header_written:
-            self._out.write(b"<stream>")
+            self._out.write("<stream>")
             self.header_written = True
 
         event.write_to(self._out)
@@ -64,7 +64,7 @@ class EventWriter(object):
         :param message: ``string``, message to log.
         """
 
-        self._err.write(("%s %s\n" % (severity, message)).encode('utf-8'))
+        self._err.write(("%s %s\n" % (severity, message)))
         self._err.flush()
 
     def write_xml_document(self, document):
@@ -73,9 +73,12 @@ class EventWriter(object):
 
         :param document: An ``ElementTree`` object.
         """
-        self._out.write(ET.tostring(document))
+        try:
+            self._out.write(ET.tostring(document))
+        except:
+            self._out.write(ET.tostring(document, encoding="unicode"))
         self._out.flush()
 
     def close(self):
         """Write the closing </stream> tag to make this XML well formed."""
-        self._out.write(b"</stream>")
+        self._out.write("</stream>")

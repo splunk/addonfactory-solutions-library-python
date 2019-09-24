@@ -1,5 +1,8 @@
 # Splunk Solution Library for Python Changelog
 
+## Version 2.0.1
+* Fixed byte-string issues in event_writer of splunklib for ADDON-23151.
+
 ## Version 2.0.0
 * Support Python 2 and Python 3.
 * Updated `requests` to 2.22 for security issue ITSI-3866.
