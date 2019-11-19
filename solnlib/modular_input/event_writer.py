@@ -180,7 +180,7 @@ class HECEventWriter(EventWriter):
         >>> ew.write_events([event1, event2])
     '''
 
-    WRITE_EVENT_RETRIES = 3
+    WRITE_EVENT_RETRIES = 5
     HTTP_INPUT_CONFIG_ENDPOINT = \
         '/servicesNS/nobody/splunk_httpinput/data/inputs/http'
     HTTP_EVENT_COLLECTOR_ENDPOINT = '/services/collector'
@@ -335,28 +335,36 @@ class HECEventWriter(EventWriter):
             data, time=time,
             index=index, host=host, source=source, sourcetype=sourcetype)
 
-    def write_events(self, events):
+    def write_events(self, events, num_of_write_event_retries=WRITE_EVENT_RETRIES):
         '''Write events to index in bulk.
         :type events: list of Events
         :param events: Event type objects to write.
+        :type num_of_write_event_retries: int
+        :param num_of_write_event_retries: number of retries for writing events to index
         '''
         if not events:
             return
 
         last_ex = None
+        response = {}
         for event in HECEvent.format_events(events):
-            for i in range(self.WRITE_EVENT_RETRIES):
+            for i in range(num_of_write_event_retries):
                 try:
-                    self._rest_client.post(
+                    response = self._rest_client.post(
                         self.HTTP_EVENT_COLLECTOR_ENDPOINT, body=event,
                         headers=self.headers)
                 except binding.HTTPError as e:
-                    logging.error('Write events through HEC failed: %s.',
-                                  traceback.format_exc())
+                    logging.error('Write events through HEC failed: %s. status=%s',
+                                  traceback.format_exc(), e.status)
                     last_ex = e
-                    time.sleep(2 ** (i + 1))
+                    if e.status == 429 or e.status == 504:
+                        # wait time for 5 retries: 20, 40, 80, 160
+                        if i < num_of_write_event_retries-1:
+                            time.sleep((2 ** (i + 2)) * 5)
+                    else:
+                        raise last_ex
                 else:
-                    break
+                    return response
             else:
                 # When failed after retry, we reraise the exception
                 # to exit the function to let client handle this situation
