@@ -1,5 +1,8 @@
 # Splunk Solution Library for Python Changelog
 
+## Version 2.0.2
+* Increase event write retries and wait times in event_writer (APPSC-2443)
+
 ## Version 2.0.1
 * Fixed byte-string issues in event_writer of splunklib for ADDON-23151.
 
