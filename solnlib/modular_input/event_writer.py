@@ -357,7 +357,7 @@ class HECEventWriter(EventWriter):
                     logging.error('Write events through HEC failed: %s. status=%s',
                                   traceback.format_exc(), e.status)
                     last_ex = e
-                    if e.status == 429 or e.status == 504:
+                    if e.status == 429 or e.status == 503:
                         # wait time for 5 retries: 20, 40, 80, 160
                         if i < num_of_write_event_retries-1:
                             time.sleep((2 ** (i + 2)) * 5)
