@@ -32,6 +32,7 @@ from ..packages.splunklib import binding
 from ..packages.splunklib.six import with_metaclass
 from ..splunkenv import get_splunkd_access_info
 from ..utils import retry
+from random import randint
 
 __all__ = ['ClassicEventWriter',
            'HECEventWriter']
@@ -359,9 +360,11 @@ class HECEventWriter(EventWriter):
                                  e.status)
                     last_ex = e
                     if e.status in [self.TOO_MANY_REQUESTS, self.SERVICE_UNAVAILABLE]:
-                        # wait time for 5 retries: 10, 20, 40, 80
+                        # wait time for n retries: 10, 20, 40, 80, 80, 80, 80, ....
+                        sleep_time = min(((2 ** (i + 1)) * 5), 80)
                         if i < retries-1:
-                            time.sleep((2 ** (i + 1)) * 5)
+                            random_millisecond = randint(0, 1000)/1000.0
+                            time.sleep(sleep_time + random_millisecond)
                     else:
                         raise last_ex
                 else:
