@@ -102,6 +102,48 @@ def test_hec_event_writer(monkeypatch):
                                       done=True))
         ew.write_events(events)
 
+    # length of this list will indicate how many times post was called
+    times_post_called = []
+
+    def mock_post_2(self, path_segment, owner=None, app=None, sharing=None, headers=None, **query):
+        times_post_called.append(1)
+
+    monkeypatch.setattr(binding.Context, 'post', mock_post_2)
+
+    # test that there are 2 event batches created for write_event and post is called 2 times
+    # max batch size is 1,000,000. If the max size is exceeded then a new batch is created.
+    assert len(times_post_called) == 0
+    ew = create_hec_event_writer(1)
+    events = []
+
+    # each event length will be ~500 characters, 3000 events length will equal ~1,500,000 characters
+    # which means there will be 2 event batches required when writing events via post
+
+    events = []
+    for i in range(3000):
+        # length of this data_str is approximately 400 characters
+        data_str = "DATA" + str(i) + ": This is test data. This is test data. This is test data. This is test data. " \
+                              "This is test data. This is test data. This is test data. This is test data. " \
+                              "This is test data. This is test data. This is test data. This is test data. " \
+                              "This is test data. This is test data. This is test data. This is test data. " \
+                              "This is test data. This is test data. This is test data. " \
+                              "This is test data. This is test data."
+        # total length of the events will be ~500 characters
+        event = ew.create_event(data=data_str,
+                                time=1372274622.493,
+                                index='main',
+                                host='localhost',
+                                source='Splunk',
+                                sourcetype='misc',
+                                stanza='test_scheme://test',
+                                unbroken=True,
+                                done=True)
+        events.append(event)
+    ew.write_events(events)
+
+    # test that post is called 2 times
+    assert len(times_post_called) == 2
+
 
 def create_hec_event_writer(i):
     if i == 1:
