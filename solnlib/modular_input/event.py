@@ -213,7 +213,7 @@ class HECEvent(Event):
         return json.dumps(event)
 
     @classmethod
-    def format_events(cls, events, write_to_fields):
+    def format_events(cls, events, write_to_fields=False):
         '''Output: [
         '{"index": "main", ... "event": {"kk": [1, 2, 3]}}\\n
         {"index": "main", ... "event": {"kk": [3, 2, 3]}}',
