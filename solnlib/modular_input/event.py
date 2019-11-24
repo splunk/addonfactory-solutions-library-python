@@ -193,12 +193,9 @@ class HECEvent(Event):
 
     max_hec_event_length = 1000000
 
-    def _to_hec(self, write_to_fields):
+    def _to_hec(self, event_field):
         event = {}
-        if write_to_fields:
-            event['fields'] = self._data
-        else:
-            event['event'] = self._data
+        event[event_field] = self._data
         if self._time:
             event['time'] = float(self._time)
         if self._index:
@@ -213,7 +210,7 @@ class HECEvent(Event):
         return json.dumps(event)
 
     @classmethod
-    def format_events(cls, events, write_to_fields=False):
+    def format_events(cls, events, event_field='event'):
         '''Output: [
         '{"index": "main", ... "event": {"kk": [1, 2, 3]}}\\n
         {"index": "main", ... "event": {"kk": [3, 2, 3]}}',
@@ -222,7 +219,7 @@ class HECEvent(Event):
 
         size = 0
         new_events, batched_events = [], []
-        events = [event._to_hec(write_to_fields) for event in events]
+        events = [event._to_hec(event_field) for event in events]
         for event in events:
             new_length = size + len(event) + len(batched_events) - 1
             if new_length >= cls.max_hec_event_length:
