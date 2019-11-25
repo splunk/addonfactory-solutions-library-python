@@ -338,7 +338,7 @@ class HECEventWriter(EventWriter):
             data, time=time,
             index=index, host=host, source=source, sourcetype=sourcetype)
 
-    def write_events(self, events, retries=WRITE_EVENT_RETRIES):
+    def write_events(self, events, retries=WRITE_EVENT_RETRIES, event_field='event'):
         '''Write events to index in bulk.
         :type events: list of Events
         :param events: Event type objects to write.
@@ -349,7 +349,7 @@ class HECEventWriter(EventWriter):
             return
 
         last_ex = None
-        for event in HECEvent.format_events(events):
+        for event in HECEvent.format_events(events, event_field):
             for i in range(retries):
                 try:
                     self._rest_client.post(
