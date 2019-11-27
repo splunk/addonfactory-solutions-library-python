@@ -32,6 +32,7 @@ from ..packages.splunklib import binding
 from ..packages.splunklib.six import with_metaclass
 from ..splunkenv import get_splunkd_access_info
 from ..utils import retry
+from random import randint
 
 __all__ = ['ClassicEventWriter',
            'HECEventWriter']
@@ -180,10 +181,12 @@ class HECEventWriter(EventWriter):
         >>> ew.write_events([event1, event2])
     '''
 
-    WRITE_EVENT_RETRIES = 3
+    WRITE_EVENT_RETRIES = 5
     HTTP_INPUT_CONFIG_ENDPOINT = \
         '/servicesNS/nobody/splunk_httpinput/data/inputs/http'
     HTTP_EVENT_COLLECTOR_ENDPOINT = '/services/collector'
+    TOO_MANY_REQUESTS = 429  # we exceeded rate limit
+    SERVICE_UNAVAILABLE = 503  # remote service is temporary unavailable
 
     description = 'HECEventWriter'
 
@@ -335,29 +338,40 @@ class HECEventWriter(EventWriter):
             data, time=time,
             index=index, host=host, source=source, sourcetype=sourcetype)
 
-    def write_events(self, events):
+    def write_events(self, events, retries=WRITE_EVENT_RETRIES, event_field='event'):
         '''Write events to index in bulk.
         :type events: list of Events
         :param events: Event type objects to write.
+        :type retries: int
+        :param retries: number of retries for writing events to index
         '''
         if not events:
             return
 
         last_ex = None
-        for event in HECEvent.format_events(events):
-            for i in range(self.WRITE_EVENT_RETRIES):
+        for event in HECEvent.format_events(events, event_field):
+            for i in range(retries):
                 try:
                     self._rest_client.post(
                         self.HTTP_EVENT_COLLECTOR_ENDPOINT, body=event,
                         headers=self.headers)
                 except binding.HTTPError as e:
-                    logging.error('Write events through HEC failed: %s.',
-                                  traceback.format_exc())
+                    logging.warn('Write events through HEC failed. Status=%s',
+                                 e.status)
                     last_ex = e
-                    time.sleep(2 ** (i + 1))
+                    if e.status in [self.TOO_MANY_REQUESTS, self.SERVICE_UNAVAILABLE]:
+                        # wait time for n retries: 10, 20, 40, 80, 80, 80, 80, ....
+                        sleep_time = min(((2 ** (i + 1)) * 5), 80)
+                        if i < retries-1:
+                            random_millisecond = randint(0, 1000)/1000.0
+                            time.sleep(sleep_time + random_millisecond)
+                    else:
+                        raise last_ex
                 else:
                     break
             else:
                 # When failed after retry, we reraise the exception
                 # to exit the function to let client handle this situation
+                logging.error('Write events through HEC failed: %s. status=%s',
+                             traceback.format_exc(), last_ex.status)
                 raise last_ex
