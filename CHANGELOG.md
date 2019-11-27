@@ -3,6 +3,7 @@
 ## Version 2.0.2
 * Increase event write retries and wait times in HEC event_writer (APPSC-2443)
 * Support specifying event field in HEC event_writer & event to allow writing onto metrics index (MC-6590)
+* Fixed the issue to support IPV6 host in proxy configuration for APPSC-2442
 
 ## Version 2.0.1
 * Fixed byte-string issues in event_writer of splunklib for ADDON-23151.
