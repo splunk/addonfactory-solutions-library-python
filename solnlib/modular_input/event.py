@@ -93,7 +93,8 @@ class Event(object):
         self._host = host
         self._source = source
         self._sourcetype = sourcetype
-        self._fields = fields
+        if fields is not None:
+            self._fields = fields
         self._stanza = stanza
         if not unbroken and done:
             raise EventException(
@@ -102,18 +103,22 @@ class Event(object):
         self._done = done
 
     def __str__(self):
-        return json.dumps({
+        event = {
             'data': self._data,
             'time': float(self._time) if self._time else self._time,
             'index': self._index,
             'host': self._host,
             'source': self._source,
             'sourcetype': self._sourcetype,
-            'fields': self._fields,
             'stanza': self._stanza,
             'unbroken': self._unbroken,
             'done': self._done
-        })
+        }
+
+        if self._fields is not None:
+            event['fields'] = self._fields
+        
+        return json.dumps(event)
 
     @classmethod
     def format_events(cls, events):
