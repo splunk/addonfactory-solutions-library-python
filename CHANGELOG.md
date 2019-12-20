@@ -1,5 +1,8 @@
 # Splunk Solution Library for Python Changelog
 
+## Version 2.0.3
+* Add support to pass indexed fields in the event to HEC (SII-6288)
+
 ## Version 2.0.2
 * Increase event write retries and wait times in HEC event_writer (APPSC-2443)
 * Support specifying event field in HEC event_writer & event to allow writing onto metrics index (MC-6590)
