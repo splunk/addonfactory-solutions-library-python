@@ -93,7 +93,7 @@ class Event(object):
         self._host = host
         self._source = source
         self._sourcetype = sourcetype
-        if fields is not None:
+        if fields:
             self._fields = fields
         self._stanza = stanza
         if not unbroken and done:
@@ -115,7 +115,7 @@ class Event(object):
             'done': self._done
         }
 
-        if self._fields is not None:
+        if hasattr(self, '_fields'):
             event['fields'] = self._fields
         
         return json.dumps(event)
@@ -216,7 +216,7 @@ class HECEvent(Event):
             event['source'] = self._source
         if self._sourcetype:
             event['sourcetype'] = self._sourcetype
-        if self._fields is not None:
+        if hasattr(self, '_fields'):
             event['fields'] = self._fields
 
         return json.dumps(event)
