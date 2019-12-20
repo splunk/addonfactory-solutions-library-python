@@ -46,7 +46,7 @@ class EventWriter(with_metaclass(ABCMeta, object)):
 
     @abstractmethod
     def create_event(self, data, time=None,
-                     index=None, host=None, source=None, sourcetype=None,
+                     index=None, host=None, source=None, sourcetype=None, fields=None,
                      stanza=None, unbroken=False, done=False):
         '''Create a new event.
 
@@ -63,6 +63,8 @@ class EventWriter(with_metaclass(ABCMeta, object)):
         :type source: ``string``
         :param sourcetype: (optional) Event sourcetype, default is None.
         :type sourcetype: ``string``
+        :param fields: (optional) Event fields, default is None.
+        :type fields: ``json object``
         :param stanza: (optional) Event stanza name, default is None.
         :type stanza: ``string``
         :param unbroken: (optional) Event unbroken flag, default is False.
@@ -83,6 +85,7 @@ class EventWriter(with_metaclass(ABCMeta, object)):
            >>>     host='localhost',
            >>>     source='Splunk',
            >>>     sourcetype='misc',
+           >>>     fields='{'accountid': '603514901691', 'Cloud': u'AWS'}'
            >>>     stanza='test_scheme://test',
            >>>     unbroken=True,
            >>>     done=True)
@@ -329,14 +332,14 @@ class HECEventWriter(EventWriter):
         return settings['port'], hec_input['token']
 
     def create_event(self, data, time=None,
-                     index=None, host=None, source=None, sourcetype=None,
+                     index=None, host=None, source=None, sourcetype=None, fields=None,
                      stanza=None, unbroken=False, done=False):
         '''Create a new HECEvent object.
         '''
 
         return HECEvent(
             data, time=time,
-            index=index, host=host, source=source, sourcetype=sourcetype)
+            index=index, host=host, source=source, sourcetype=sourcetype, fields=fields)
 
     def write_events(self, events, retries=WRITE_EVENT_RETRIES, event_field='event'):
         '''Write events to index in bulk.
