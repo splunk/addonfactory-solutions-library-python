@@ -21,9 +21,14 @@ import sys
 import traceback
 
 try:
-    from urllib import parse as urlparse
+    from urllib3 import parse_url as urlparse
+    from urllib3.exceptions import InsecureRequestWarning
+    urllib3.disable_warnings(InsecureRequestWarning)
 except ImportError:
-    from urllib2 import urlparse
+    try:
+        from urllib2 import urlparse
+    except ImportError:
+        from urllib import parse as urlparse
 
 from abc import ABCMeta, abstractmethod
 from ..packages.splunklib.six import with_metaclass
