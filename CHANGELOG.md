@@ -1,5 +1,8 @@
 # Splunk Solution Library for Python Changelog
 
+## Version 2.0.4
+* Updated `yaml` from 5.1.1 to 5.2 for security issue ADDON-25456
+
 ## Version 2.0.3
 * Add support to pass indexed fields in the event to HEC (SII-6288)
 
