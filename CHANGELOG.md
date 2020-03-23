@@ -1,5 +1,8 @@
 # Splunk Solution Library for Python Changelog
 
+## Version 2.0.5
+* Fixed conf stanzas reading issue with configparser when stanza values contain unescaped % character (SII-6865)
+
 ## Version 2.0.4
 * Updated `yaml` from 5.1.1 to 5.2 for security issue (ID: CVE-2019-20477) and fixed as part of ADDON-25456
 

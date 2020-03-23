@@ -281,5 +281,5 @@ def get_conf_stanzas(conf_name):
 
     out = {}
     for section in parser.sections():
-        out[section] = {item[0]: item[1] for item in parser.items(section)}
+        out[section] = {item[0]: item[1] for item in parser.items(section, raw=True)}
     return out
