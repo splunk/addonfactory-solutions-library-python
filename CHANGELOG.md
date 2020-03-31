@@ -1,5 +1,8 @@
 # Splunk Solution Library for Python Changelog
 
+## Version 2.0.6
+* Fixed server info `captain_info` method exception handling python2/3 compatibility issue
+
 ## Version 2.0.5
 * Fixed conf stanzas reading issue with configparser when stanza values contain unescaped % character (SII-6865)
 
