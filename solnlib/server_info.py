@@ -223,8 +223,8 @@ class ServerInfo(object):
             content = self._rest_client.get(self.SHC_CAPTAIN_INFO_ENDPOINT,
                                             output_mode='json').body.read()
         except binding.HTTPError as e:
-            if e.status == 503 and "not available" in e.message:
-                raise ServerInfoException(e.message)
+            if e.status == 503 and "not available" in str(e):
+                raise ServerInfoException(str(e))
             raise
 
         return json.loads(content)["entry"][0]["content"]
