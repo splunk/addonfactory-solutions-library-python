@@ -1,5 +1,8 @@
 # Splunk Solution Library for Python Changelog
 
+## Version 2.0.7
+* Updated `yaml` from 5.2 to 5.3.1 for security issue (ID: CVE-2020-1747) and fixed as part of ADDON-26054
+
 ## Version 2.0.6
 * Fixed server info `captain_info` method exception handling python2/3 compatibility issue
 
