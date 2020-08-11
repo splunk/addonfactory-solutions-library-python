@@ -1,0 +1,16 @@
+##
+## SPDX-FileCopyrightText: 2020 Splunk, Inc. <sales@splunk.com>
+## SPDX-License-Identifier: LicenseRef-Splunk-1-2020
+##
+##
+version: 1
+update_configs:
+  # Keep package.json (& lockfiles) up to date as soon as
+  # new versions are published to the npm registry
+  - package_manager: "submodules"
+    directory: "/"
+    update_schedule: "daily"
+  # Keep Dockerfile up to date, batching pull requests weekly
+  - package_manager: "python"
+    directory: "/"
+    update_schedule: "live"
