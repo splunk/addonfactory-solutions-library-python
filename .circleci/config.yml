@@ -84,13 +84,13 @@ jobs:
       - run:
           name: setup Splunk
           command: |
-            SPLUNK_VERSION = 8.0.5
-            SPLUNK_BUILD = a1a6394cc5ae
-            SPLUNK_SLUG = $SPLUNK_VERSION-SPLUNK_BUILD
-            SPLUNK_ARCH = x86_64
-            SPLUNK_LINUX_FILENAME = splunk-${SPLUNK_VERSION}-${SPLUNK_BUILD}-Linux-${SPLUNK_ARCH}.tgz
-            SPLUNK_LINUX_BUILD_URL = https://download.splunk.com/products/${SPLUNK_PRODUCT}/releases/${SPLUNK_VERSION}/linux/${SPLUNK_LINUX_FILENAME}
-            SPLUNK_HOME=/opt/splunk
+            export SPLUNK_VERSION=8.0.5
+            export SPLUNK_BUILD=a1a6394cc5ae
+            export SPLUNK_SLUG=$SPLUNK_VERSION-SPLUNK_BUILD
+            export SPLUNK_ARCH=x86_64
+            export SPLUNK_LINUX_FILENAME=splunk-${SPLUNK_VERSION}-${SPLUNK_BUILD}-Linux-${SPLUNK_ARCH}.tgz
+            export SPLUNK_LINUX_BUILD_URL=https://download.splunk.com/products/${SPLUNK_PRODUCT}/releases/${SPLUNK_VERSION}/linux/${SPLUNK_LINUX_FILENAME}
+            export SPLUNK_HOME=/opt/splunk
             wget -qO /tmp/splunk.tgz ${SPLUNK_BUILD_URL}
             tar -C /opt/splunk --strip 1 -zxf /tmp/splunk.tgz
             ls /opt/splunk/bin
