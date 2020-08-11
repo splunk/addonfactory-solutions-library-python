@@ -20,7 +20,7 @@ jobs:
     executor: << parameters.os >>
     steps:
       - checkout
-      #- python/load-cache
+      - python/load-cache
       - run:
           name: install deps
           command: |
@@ -32,7 +32,7 @@ jobs:
             eval "$(pyenv init -)"
             pyenv install << parameters.python-version >>
             pyenv global << parameters.python-version >>
-      #- python/save-cache
+      - python/save-cache
       - run:
           command: |
             virtualenv .venv
