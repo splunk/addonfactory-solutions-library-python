@@ -14,8 +14,12 @@ jobs:
           name: install deps
           command: |
             pip install --upgrade pip
+            pip install pyenv
+            pip install virtualenv
+            virtualenv .venv2
+            source .venv2/bin/activate
             pip install -r requirements.txt
-            python setup.py
+            pip install -e .
       - python/save-cache
       - run:
           command: |
