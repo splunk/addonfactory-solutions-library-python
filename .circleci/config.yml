@@ -103,8 +103,8 @@ jobs:
       - python/save-cache
       - run:
           command: |
-            export SPLUNK_HOME=/opt/splunk            
             source .venv/bin/activate
+            export SPLUNK_HOME=/opt/splunk            
             python -m pytest --junitxml=test-results/results.xml -v examples
           name: Test
       - store_test_results:
