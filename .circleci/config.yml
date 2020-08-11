@@ -46,9 +46,9 @@ jobs:
       - store_test_results:
           path: test-results
       - store_artifacts:
-          path: /work/test-results
+          path: test-results
       - store_artifacts:
-          path: /work/htmlcov
+          path: htmlcov
 workflows:
   main:
     jobs:
