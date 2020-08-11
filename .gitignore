@@ -22,3 +22,4 @@ solnlib.egg-info/
 venv/*
 *.log
 tools/solution_lib_release_env/*
+.python-version
