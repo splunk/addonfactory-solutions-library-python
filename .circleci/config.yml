@@ -22,7 +22,7 @@ jobs:
       #- python/save-cache
       - run:
           command: |
-            pip install vitualenv
+            pip install virtualenv
             virtualenv .venv2
             source .venv2/bin/activate
             pip install requirements.txt
