@@ -41,7 +41,7 @@ jobs:
             pip install -r requirements.txt
             pip install -e .
             mkdir test-results || true
-            python -m pytest --junitxml=test-results/results.xml tests
+            python -m pytest --junitxml=test-results/results.xml --cov=solnlib --cov-report=html tests
           name: Test
 
 workflows:
