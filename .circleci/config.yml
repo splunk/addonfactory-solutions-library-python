@@ -18,7 +18,7 @@ jobs:
             export PATH="$HOME/.pyenv/bin:$PATH"
             eval "$(pyenv init -)"
             pyenv install 2.7.17
-            pyenv local 2.7.17
+            pyenv global 2.7.17
       #- python/save-cache
       - run:
           command: |
