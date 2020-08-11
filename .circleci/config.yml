@@ -20,7 +20,7 @@ jobs:
     executor: << parameters.os >>
     steps:
       - checkout
-      - python/load-cache
+      #- python/load-cache
       - run:
           name: install deps
           command: |
@@ -62,7 +62,7 @@ jobs:
     executor: << parameters.os >>
     steps:
       - checkout
-      - python/load-cache
+      #- python/load-cache
       - run:
           name: install deps
           command: |
