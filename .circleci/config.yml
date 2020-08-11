@@ -16,8 +16,6 @@ jobs:
             virtualenv .venv2
             source .venv2/bin/activate
             pip install --upgrade pip
-            pip install pyenv
-            pip install virtualenv
             pip install -r requirements.txt
             pip install -e .
       #- python/save-cache
