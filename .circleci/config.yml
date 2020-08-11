@@ -62,6 +62,8 @@ jobs:
     executor: << parameters.os >>
     steps:
       - checkout
+      - run: git submodule sync
+      - run: git submodule update --init
       - run:
           name: Install Splunk
           command: |
