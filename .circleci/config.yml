@@ -22,8 +22,12 @@ jobs:
       #- python/save-cache
       - run:
           command: |
-            pyenv versions
-            python --version
+            pip install vitualenv
+            virtualenv .venv2
+            source .venv2/bin/activate
+            pip install requirements.txt
+            pip install -e .
+            pytest
           name: Test
 
 workflows:
