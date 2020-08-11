@@ -1,0 +1,60 @@
+version: 2.1
+
+orbs:
+  python: circleci/python@0.2.1
+
+executors:
+  linux:
+    machine:
+      image: ubuntu-1604:201903-01
+  macos:
+    macos:
+      xcode: 11.4
+jobs:
+  test-unit:
+    parameters:
+      os:
+        type: executor
+      python-version:
+        type: string
+    executor: << parameters.os >>
+    steps:
+      - checkout
+      - python/load-cache
+      - run:
+          name: install deps
+          command: |
+            pip install --upgrade pip
+            pip install --upgrade virtualenv
+            unset PYENV_ROOT
+            curl -L https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer | bash
+            export PATH="$HOME/.pyenv/bin:$PATH"
+            eval "$(pyenv init -)"
+            pyenv install << parameters.python-version >>
+            pyenv global << parameters.python-version >>
+            virtualenv .venv
+            pip install --upgrade virtualenv
+            source .venv/bin/activate
+            pip install -r requirements.txt
+            pip install -e .
+            mkdir test-results || true
+      - python/save-cache
+      - run:
+          command: |
+            source .venv/bin/activate
+            python -m pytest --junitxml=test-results/results.xml --cov=solnlib --cov-report=html tests
+          name: Test
+      - store_test_results:
+          path: test-results
+      - store_artifacts:
+          path: test-results
+      - store_artifacts:
+          path: htmlcov
+workflows:
+  main:
+    jobs:
+      - test-unit:
+          matrix:
+            parameters:
+              os: [linux]
+              python-version: ["2.7.17", "3.7.4"]
