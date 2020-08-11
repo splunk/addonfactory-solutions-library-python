@@ -94,7 +94,7 @@ jobs:
             echo $SPLUNK_BUILD_URL
             export SPLUNK_HOME=/opt/splunk
             wget -qO /tmp/splunk.tgz ${SPLUNK_BUILD_URL}
-            tar -C /opt/splunk --strip 1 -zxf /tmp/splunk.tgz
+            tar -C /opt -zxf /tmp/splunk.tgz
             ls /opt/splunk/bin
       - run:
           command: |
