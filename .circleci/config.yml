@@ -57,6 +57,8 @@ jobs:
         type: executor
       splunk-version:
         type: string
+      python-version:
+        type: string
     executor: << parameters.os >>
     steps:
       - checkout
@@ -116,3 +118,4 @@ workflows:
             parameters:
               os: [linux]
               splunk-version: ["8.0.5"]
+              python-version: ["2.7.17", "3.7.4"]
