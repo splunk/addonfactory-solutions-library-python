@@ -64,7 +64,7 @@ jobs:
       - checkout
       #- python/load-cache
       - run:
-          name: install deps
+          name: Install deps
           command: |
             pip install --upgrade pip
             pip install --upgrade virtualenv
@@ -82,14 +82,16 @@ jobs:
             mkdir test-results || true
       - python/save-cache
       - run:
-          name: setup Splunk
+          name: Install Splunk
           command: |
+            export SPLUNK_PRODUCT=splunk
             export SPLUNK_VERSION=8.0.5
             export SPLUNK_BUILD=a1a6394cc5ae
             export SPLUNK_SLUG=$SPLUNK_VERSION-SPLUNK_BUILD
             export SPLUNK_ARCH=x86_64
             export SPLUNK_LINUX_FILENAME=splunk-${SPLUNK_VERSION}-${SPLUNK_BUILD}-Linux-${SPLUNK_ARCH}.tgz
-            export SPLUNK_LINUX_BUILD_URL=https://download.splunk.com/products/${SPLUNK_PRODUCT}/releases/${SPLUNK_VERSION}/linux/${SPLUNK_LINUX_FILENAME}
+            export SPLUNK_BUILD_URL=https://download.splunk.com/products/${SPLUNK_PRODUCT}/releases/${SPLUNK_VERSION}/linux/${SPLUNK_LINUX_FILENAME}
+            echo $SPLUNK_BUILD_URL
             export SPLUNK_HOME=/opt/splunk
             wget -qO /tmp/splunk.tgz ${SPLUNK_BUILD_URL}
             tar -C /opt/splunk --strip 1 -zxf /tmp/splunk.tgz
