@@ -105,7 +105,7 @@ jobs:
           command: |
             export SPLUNK_HOME=/opt/splunk            
             source .venv/bin/activate
-            python -m pytest --junitxml=test-results/results.xml --cov=solnlib --cov-report=html examples
+            python -m pytest --junitxml=test-results/results.xml -v examples
           name: Test
       - store_test_results:
           path: test-results
