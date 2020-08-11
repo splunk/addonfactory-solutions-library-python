@@ -55,5 +55,5 @@ workflows:
       - test-unit:
           matrix:
             parameters:
-              os: [linux, macos]
+              os: [linux]
               python-version: ["2.7.17", "3.7.4"]
