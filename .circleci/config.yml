@@ -17,6 +17,7 @@ jobs:
             curl -L https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer | bash
             export PATH="$HOME/.pyenv/bin:$PATH"
             pyenv install 2.7.17
+            eval "$(pyenv init -)"
             pyenv local 2.7.17
             virtualenv .venv2
             source .venv2/bin/activate
