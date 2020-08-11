@@ -32,15 +32,16 @@ jobs:
             eval "$(pyenv init -)"
             pyenv install << parameters.python-version >>
             pyenv global << parameters.python-version >>
-      - python/save-cache
-      - run:
-          command: |
             virtualenv .venv
             pip install --upgrade virtualenv
             source .venv/bin/activate
             pip install -r requirements.txt
             pip install -e .
             mkdir test-results || true
+      - python/save-cache
+      - run:
+          command: |
+            source .venv/bin/activate
             python -m pytest --junitxml=test-results/results.xml --cov=solnlib --cov-report=html tests
           name: Test
       - store_test_results:
