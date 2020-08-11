@@ -5,14 +5,17 @@ orbs:
 
 jobs:
   build-and-test:
-    executor: python/default
+    machine:
+      image: ubuntu-1604:201903-01
     steps:
       - checkout
       - python/load-cache
       - python/install-deps
       - python/save-cache
       - run:
-          command: ./manage.py test
+          command: |
+            python --version
+            python -m pytest tests
           name: Test
 
 workflows:
