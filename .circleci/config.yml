@@ -3,10 +3,21 @@ version: 2.1
 orbs:
   python: circleci/python@0.2.1
 
-jobs:
-  build-and-test:
+  executors:
+  linux:
     machine:
       image: ubuntu-1604:201903-01
+  macos:
+    macos:
+      xcode: 11.4
+jobs:
+  build-and-test:
+    parameters:
+      os:
+        type: executor
+      python-version:
+        type: string
+    executor: << parameters.os >>
     steps:
       - checkout
       #- python/load-cache
