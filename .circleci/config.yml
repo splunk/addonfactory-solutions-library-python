@@ -13,6 +13,8 @@ jobs:
       - run:
           name: install deps
           command: |
+            pip install --upgrade pip
+            pip install --upgrade virtualenv
             unset PYENV_ROOT
             curl -L https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer | bash
             export PATH="$HOME/.pyenv/bin:$PATH"
@@ -22,7 +24,6 @@ jobs:
       #- python/save-cache
       - run:
           command: |
-            pip install virtualenv
             virtualenv .venv2
             source .venv2/bin/activate
             pip install requirements.txt
