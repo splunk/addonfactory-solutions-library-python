@@ -265,7 +265,7 @@ def get_conf_stanzas(conf_name):
         conf_name = conf_name[:-5]
 
     # TODO: dynamically caculate SPLUNK_HOME
-    btool_cli = [op.join(os.environ['SPLUNK_HOME'], 'bin', 'btool'),
+    btool_cli = [op.join(os.environ['SPLUNK_HOME'], 'bin', 'splunk', 'cmd', 'btool'),
                  conf_name, 'list']
     p = subprocess.Popen(btool_cli,
                          stdout=subprocess.PIPE,
