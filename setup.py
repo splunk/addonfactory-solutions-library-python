@@ -123,7 +123,7 @@ setup(
 
     package_data={'': ['LICENSE']},
 
-    install_requires=[],
+    install_requires=['requests'],
 
     cmdclass={'test': TestCommand,
               'jtest': JTestCommand,
