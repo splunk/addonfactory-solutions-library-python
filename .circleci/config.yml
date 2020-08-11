@@ -115,4 +115,4 @@ workflows:
           matrix:
             parameters:
               os: [linux]
-              python-version: ["8.0.5"]
+              splunk-version: ["8.0.5"]
