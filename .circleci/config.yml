@@ -19,16 +19,11 @@ jobs:
             eval "$(pyenv init -)"
             pyenv install 2.7.17
             pyenv local 2.7.17
-            virtualenv .venv2
-            source .venv2/bin/activate
-            pip install --upgrade pip
-            pip install -r requirements.txt
-            pip install -e .
       #- python/save-cache
       - run:
           command: |
+            pyenv local 2.7.17
             python --version
-            python -m pytest tests
           name: Test
 
 workflows:
