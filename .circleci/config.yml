@@ -9,18 +9,18 @@ jobs:
       image: ubuntu-1604:201903-01
     steps:
       - checkout
-      - python/load-cache
+      #- python/load-cache
       - run:
           name: install deps
           command: |
+            virtualenv .venv2
+            source .venv2/bin/activate
             pip install --upgrade pip
             pip install pyenv
             pip install virtualenv
-            virtualenv .venv2
-            source .venv2/bin/activate
             pip install -r requirements.txt
             pip install -e .
-      - python/save-cache
+      #- python/save-cache
       - run:
           command: |
             python --version
