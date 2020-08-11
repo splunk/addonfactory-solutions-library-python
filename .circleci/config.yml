@@ -10,7 +10,12 @@ jobs:
     steps:
       - checkout
       - python/load-cache
-      - python/install-deps
+      - run:
+          name: install deps
+          command: |
+            pip install --upgrade pip
+            pip install -r requirements.txt
+            pip install -e .
       - python/save-cache
       - run:
           command: |
