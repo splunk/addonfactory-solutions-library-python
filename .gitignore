@@ -3,7 +3,7 @@
 .coverage*
 *.idea
 *.DS_Store*
-build
+/build
 dist
 docs/_build
 docs/solnlib

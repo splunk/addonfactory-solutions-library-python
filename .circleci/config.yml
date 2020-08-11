@@ -65,9 +65,10 @@ jobs:
       - run:
           name: Install Splunk
           command: |
+            pip install git+https://github.com/pixelb/crudini
             export SPLUNK_PRODUCT=splunk
-            export SPLUNK_VERSION=8.0.5
-            export SPLUNK_BUILD=a1a6394cc5ae
+            export SPLUNK_VERSION=$(crudini --get deps/build/addonfactory_test_matrix_splunk/splunk_matrix.conf "<<parameters.splunk-version>>" VERSION)
+            export SPLUNK_BUILD=$(crudini --get deps/build/addonfactory_test_matrix_splunk/splunk_matrix.conf "<<parameters.splunk-version>>" BUILD)
             export SPLUNK_SLUG=$SPLUNK_VERSION-SPLUNK_BUILD
             export SPLUNK_ARCH=x86_64
             export SPLUNK_LINUX_FILENAME=splunk-${SPLUNK_VERSION}-${SPLUNK_BUILD}-Linux-${SPLUNK_ARCH}.tgz
@@ -125,5 +126,5 @@ workflows:
           matrix:
             parameters:
               os: [linux]
-              splunk-version: ["8.0.5"]
+              splunk-version: ["7.2", "7.3", "8.0"]
               python-version: ["2.7.17", "3.7.4"]
