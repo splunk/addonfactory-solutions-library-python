@@ -78,9 +78,9 @@ jobs:
             sudo tar -C /opt -zxf /tmp/splunk.tgz
             sudo chown -R $USER:$USER /opt/splunk
             sudo cp -r examples/data/solnlib_demo $SPLUNK_HOME/etc/apps
-            echo [user_info] >$SPLUNK_HOME/etc/system/local
-            echo USERNAME=Admin >$SPLUNK_HOME/etc/system/local
-            echo PASSWORD=Chang3d! >$SPLUNK_HOME/etc/system/local
+            echo [user_info] >$SPLUNK_HOME/etc/system/local/user-seed.conf
+            echo USERNAME=Admin >>$SPLUNK_HOME/etc/system/local/user-seed.conf
+            echo PASSWORD=Chang3d! >>$SPLUNK_HOME/etc/system/local/user-seed.conf
             /opt/splunk/bin/splunk start --accept-license
       #- python/load-cache
       - run:
