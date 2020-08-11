@@ -22,7 +22,7 @@ jobs:
       #- python/save-cache
       - run:
           command: |
-            pyenv local 2.7.17
+            pyenv versions
             python --version
           name: Test
 
