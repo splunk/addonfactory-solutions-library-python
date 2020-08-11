@@ -19,14 +19,14 @@ jobs:
             curl -L https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer | bash
             export PATH="$HOME/.pyenv/bin:$PATH"
             eval "$(pyenv init -)"
-            pyenv install 2.7.17
-            pyenv global 2.7.17
+            pyenv install << parameters.python-version >>
+            pyenv global << parameters.python-version >>
       #- python/save-cache
       - run:
           command: |
-            virtualenv .venv2
+            virtualenv .venv
             pip install --upgrade virtualenv
-            source .venv2/bin/activate
+            source .venv/bin/activate
             pip install -r requirements.txt
             pip install -e .
             python -m pytest tests
@@ -35,4 +35,8 @@ jobs:
 workflows:
   main:
     jobs:
-      - build-and-test
+      - build-and-test:
+          matrix:
+            parameters:
+              os: [linux]
+              python-version: ["2.7.17"]
