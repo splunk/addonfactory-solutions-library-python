@@ -43,7 +43,12 @@ jobs:
             mkdir test-results || true
             python -m pytest --junitxml=test-results/results.xml --cov=solnlib --cov-report=html tests
           name: Test
-
+      - store_test_results:
+          path: test-results
+      - store_artifacts:
+          path: /work/test-results
+      - store_artifacts:
+          path: /work/htmlcov
 workflows:
   main:
     jobs:
