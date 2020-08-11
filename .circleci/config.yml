@@ -11,7 +11,7 @@ executors:
     macos:
       xcode: 11.4
 jobs:
-  build-and-test:
+  test-unit:
     parameters:
       os:
         type: executor
@@ -47,7 +47,7 @@ jobs:
 workflows:
   main:
     jobs:
-      - build-and-test:
+      - test-unit:
           matrix:
             parameters:
               os: [linux]
