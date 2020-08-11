@@ -40,7 +40,8 @@ jobs:
             source .venv/bin/activate
             pip install -r requirements.txt
             pip install -e .
-            python -m pytest tests
+            mkdir test-results || true
+            python -m pytest --junitxml=test-results/results.xml tests
           name: Test
 
 workflows:
