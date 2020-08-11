@@ -104,9 +104,8 @@ jobs:
       - run:
           command: |
             source .venv/bin/activate
-            export SPLUNK_HOME=/opt/splunk
-            ls /opt/splunk/bin
-            SPLUNK_HOME=/opt/splunk python -m pytest --junitxml=test-results/results.xml -v examples
+            source /opt/splunk/bin/setSplunkEnv
+            python -m pytest --junitxml=test-results/results.xml -v examples
           name: Test
       - store_test_results:
           path: test-results
