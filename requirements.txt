@@ -2,3 +2,4 @@ setuptools-lint==0.4.1
 pytest==2.9.1
 pytest-cov==2.2.1
 mock==2.0.0
+requests==2.24.0
