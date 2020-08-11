@@ -76,7 +76,9 @@ jobs:
             export SPLUNK_HOME=/opt/splunk
             wget -qO /tmp/splunk.tgz ${SPLUNK_BUILD_URL}
             sudo tar -C /opt -zxf /tmp/splunk.tgz
+            sudo chown $USER:$USER /opt/splunk
             sudo cp -r examples/data/solnlib_demo $SPLUNK_HOME/etc/apps
+
             ls $SPLUNK_HOME/etc/apps
       #- python/load-cache
       - run:
