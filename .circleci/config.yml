@@ -55,7 +55,7 @@ jobs:
     parameters:
       os:
         type: executor
-      splunk:
+      splunk-version:
         type: string
     executor: << parameters.os >>
     steps:
