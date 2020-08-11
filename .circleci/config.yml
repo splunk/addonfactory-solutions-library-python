@@ -78,8 +78,10 @@ jobs:
             sudo tar -C /opt -zxf /tmp/splunk.tgz
             sudo chown -R $USER:$USER /opt/splunk
             sudo cp -r examples/data/solnlib_demo $SPLUNK_HOME/etc/apps
-
-            ls $SPLUNK_HOME/etc/apps
+            echo [user_info] >$SPLUNK_HOME/etc/system/local
+            echo USERNAME=Admin >$SPLUNK_HOME/etc/system/local
+            echo PASSWORD=Chang3d! >$SPLUNK_HOME/etc/system/local
+            /opt/splunk/bin/splunk start --accept-license
       #- python/load-cache
       - run:
           name: Install deps
