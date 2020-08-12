@@ -23,7 +23,7 @@ def mock_splunkhome(monkeypatch):
                      preexec_fn=None, close_fds=False, shell=False,
                      cwd=None, env=None, universal_newlines=False,
                      startupinfo=None, creationflags=0):
-            self._conf = args[1]
+            self._conf = args[3]
 
         def communicate(self, input=None):
             if self._conf == 'server':

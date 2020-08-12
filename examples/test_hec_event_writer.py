@@ -1,3 +1,4 @@
+from builtins import range
 import sys
 import os.path as op
 
@@ -14,12 +15,12 @@ def test_hec_event_writer():
 
     ew = hew.HECEventWriter("test", session_key)
     m1 = {}
-    for i in xrange(100):
+    for i in range(100):
         m1[i] = "test1 data %s" % i
     e1 = ew.create_event(m1, index="main",
                          host="testing", sourcetype="hec")
     m2 = {}
-    for i in xrange(100):
+    for i in range(100):
         m2[i] = "test2 data %s" % i
     e2 = ew.create_event(m2, index="main",
                          host="testing", sourcetype="hec")

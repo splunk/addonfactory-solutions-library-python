@@ -1,3 +1,4 @@
+from builtins import range
 import sys
 import os.path as op
 import pytest
@@ -19,7 +20,7 @@ def test_credential_manager():
     cm.set_password('testuser1', 'password1')
     assert cm.get_password('testuser1') == 'password1'
 
-    long_password = ''.join(['1111111111' for i in xrange(30)])
+    long_password = ''.join(['1111111111' for i in range(30)])
     cm.set_password('testuser2', long_password)
     assert cm.get_password('testuser2') == long_password
 

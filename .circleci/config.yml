@@ -20,7 +20,7 @@ jobs:
     executor: << parameters.os >>
     steps:
       - checkout
-      - python/load-cache
+      #- python/load-cache
       - run:
           name: install deps
           command: |
@@ -50,6 +50,75 @@ jobs:
           path: test-results
       - store_artifacts:
           path: htmlcov
+
+  test-splunk:
+    parameters:
+      os:
+        type: executor
+      splunk-version:
+        type: string
+      python-version:
+        type: string
+    executor: << parameters.os >>
+    steps:
+      - checkout
+      - run: git submodule sync
+      - run: git submodule update --init
+      - run:
+          name: Install Splunk
+          command: |
+            pip install git+https://github.com/pixelb/crudini
+            export SPLUNK_PRODUCT=splunk
+            export SPLUNK_VERSION=$(crudini --get deps/build/addonfactory_test_matrix_splunk/splunk_matrix.conf "<<parameters.splunk-version>>" VERSION)
+            export SPLUNK_BUILD=$(crudini --get deps/build/addonfactory_test_matrix_splunk/splunk_matrix.conf "<<parameters.splunk-version>>" BUILD)
+            export SPLUNK_SLUG=$SPLUNK_VERSION-SPLUNK_BUILD
+            export SPLUNK_ARCH=x86_64
+            export SPLUNK_LINUX_FILENAME=splunk-${SPLUNK_VERSION}-${SPLUNK_BUILD}-Linux-${SPLUNK_ARCH}.tgz
+            export SPLUNK_BUILD_URL=https://download.splunk.com/products/${SPLUNK_PRODUCT}/releases/${SPLUNK_VERSION}/linux/${SPLUNK_LINUX_FILENAME}
+            echo $SPLUNK_BUILD_URL
+            export SPLUNK_HOME=/opt/splunk
+            wget -qO /tmp/splunk.tgz ${SPLUNK_BUILD_URL}
+            sudo tar -C /opt -zxf /tmp/splunk.tgz
+            sudo cp -r examples/data/solnlib_demo $SPLUNK_HOME/etc/apps
+            sudo cp -r solnlib $SPLUNK_HOME/etc/apps/solnlib_demo/bin/
+            sudo mkdir -p $SPLUNK_HOME/etc/apps/Splunk_TA_test/default/
+            sudo chown -R $USER:$USER /opt/splunk
+            ls $SPLUNK_HOME/etc/apps/solnlib_demo/bin/
+            echo [user_info] >$SPLUNK_HOME/etc/system/local/user-seed.conf
+            echo USERNAME=Admin >>$SPLUNK_HOME/etc/system/local/user-seed.conf
+            echo PASSWORD=Chang3d! >>$SPLUNK_HOME/etc/system/local/user-seed.conf
+            /opt/splunk/bin/splunk start --accept-license
+      #- python/load-cache
+      - run:
+          name: Install deps
+          command: |
+            pip install --upgrade pip
+            pip install --upgrade virtualenv
+            unset PYENV_ROOT
+            curl -L https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer | bash
+            export PATH="$HOME/.pyenv/bin:$PATH"
+            eval "$(pyenv init -)"
+            pyenv install << parameters.python-version >>
+            pyenv global << parameters.python-version >>
+            virtualenv .venv
+            pip install --upgrade virtualenv
+            source .venv/bin/activate
+            pip install -r requirements.txt
+            pip install -e .
+            mkdir test-results || true
+      - python/save-cache
+      - run:
+          command: |
+            source .venv/bin/activate
+            SPLUNK_HOME=/opt/splunk/ python -m pytest --junitxml=test-results/results.xml -v examples
+          name: Test
+      - store_test_results:
+          path: test-results
+      - store_artifacts:
+          path: test-results
+      - store_artifacts:
+          path: htmlcov
+
 workflows:
   main:
     jobs:
@@ -57,4 +126,10 @@ workflows:
           matrix:
             parameters:
               os: [linux]
+              python-version: ["2.7.17", "3.7.4"]
+      - test-splunk:
+          matrix:
+            parameters:
+              os: [linux]
+              splunk-version: ["7.2", "7.3", "8.0"]
               python-version: ["2.7.17", "3.7.4"]

@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os.path as op
 import sys
 
@@ -14,23 +15,23 @@ def test_server_info():
 
     si = server_info.ServerInfo(session_key, scheme=context.scheme,
                                 host=context.host, port=context.port)
-    print 'Local splunk server info'
+    print('Local splunk server info')
 
-    print '    -name: ', si.server_name
+    print('    -name: ', si.server_name)
 
-    print '    -version: ', si.version
+    print('    -version: ', si.version)
 
-    print '    -is a cluster captain: ', si.is_captain()
+    print('    -is a cluster captain: ', si.is_captain())
 
-    print '    -is a clound instance: ', si.is_cloud_instance()
+    print('    -is a clound instance: ', si.is_cloud_instance())
 
-    print '    -is a search head: ', si.is_search_head()
+    print('    -is a search head: ', si.is_search_head())
 
-    print '    -is a SHC member: ', si.is_shc_member()
+    print('    -is a SHC member: ', si.is_shc_member())
 
     try:
         shc_members = si.get_shc_members()
     except server_info.ServerInfoException as e:
-        print e.message
+        print(e.message)
     else:
-        print '    -SHC members are: ', shc_members
+        print('    -SHC members are: ', shc_members)

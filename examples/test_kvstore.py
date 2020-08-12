@@ -1,3 +1,4 @@
+from builtins import range
 import json
 import os.path as op
 import sys
@@ -27,7 +28,7 @@ def test_kvstore():
               'user': 'string'}
 
     last_ex = None
-    for i in xrange(3):
+    for i in range(3):
         try:
             kvstore.create('sessions', fields=fields)
             break
