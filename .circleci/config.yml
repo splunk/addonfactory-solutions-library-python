@@ -81,6 +81,7 @@ jobs:
             sudo tar -C /opt -zxf /tmp/splunk.tgz
             sudo cp -r examples/data/solnlib_demo $SPLUNK_HOME/etc/apps
             sudo cp -r solnlib $SPLUNK_HOME/etc/apps/solnlib_demo/bin/
+            sudo mkdir -p $SPLUNK_HOME/etc/apps/Splunk_TA_test/default/
             sudo chown -R $USER:$USER /opt/splunk
             ls $SPLUNK_HOME/etc/apps/solnlib_demo/bin/
             echo [user_info] >$SPLUNK_HOME/etc/system/local/user-seed.conf
