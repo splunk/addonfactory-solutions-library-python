@@ -17,6 +17,7 @@
 import re
 import os.path as op
 from setuptools import setup, Command, find_packages
+import versioneer
 
 with open('solnlib/__init__.py', 'r') as fd:
     version = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]',
@@ -126,7 +127,7 @@ setup(
     install_requires=[
         'requests'
     ],
-
+    version=versioneer.get_version(),
     cmdclass={'test': TestCommand,
               'jtest': JTestCommand,
               'cov': CoverageCommand,
