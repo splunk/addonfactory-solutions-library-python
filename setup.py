@@ -110,8 +110,6 @@ setup(
 
     description='The Splunk Software Development Kit for Splunk Solutions',
 
-    version=version,
-
     author='Splunk, Inc.',
 
     author_email='Shanghai-TA-dev@splunk.com',
