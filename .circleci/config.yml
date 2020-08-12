@@ -196,22 +196,22 @@ jobs:
       - store_artifacts:
           path: htmlcov
 
-publish-pypi:
-  docker:
-    - image: circleci/python:3.7
-  steps:
-    - setup_remote_docker:
-        docker_layer_caching: true
-    - attach_workspace:
-        at: /tmp/workspace
-    - checkout
-    - run:
-        name: "Publish on PyPI"
-        command: |
-          PATH=$PATH:/usr/local/go/bin
-          pip install twine
-          python setup.py sdist bdist_wheel
-          twine upload dist/*          
+  publish-pypi:
+    docker:
+      - image: circleci/python:3.7
+    steps:
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - attach_workspace:
+          at: /tmp/workspace
+      - checkout
+      - run:
+          name: "Publish on PyPI"
+          command: |
+            PATH=$PATH:/usr/local/go/bin
+            pip install twine
+            python setup.py sdist bdist_wheel
+            twine upload dist/*          
 
 workflows:
   main:
