@@ -134,7 +134,7 @@ setup(
 
     classifiers=[
         'Programming Language :: Python',
-        'Development Status :: 1 - Alpha',
+        "Development Status :: 6 - Mature",
         'Environment :: Other Environment',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: Apache Software License',
