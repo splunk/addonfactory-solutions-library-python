@@ -211,7 +211,7 @@ jobs:
             PATH=$PATH:/usr/local/go/bin
             pip install twine
             python setup.py sdist bdist_wheel
-            twine upload dist/*          
+            twine upload dist/*
 
 workflows:
   main:
@@ -223,7 +223,7 @@ workflows:
               python-version: ["2.7.17", "3.7.4"]
           filters:
             branches:
-              only: /.*/              
+              only: /.*/
       - test-splunk:
           matrix:
             parameters:
@@ -232,7 +232,7 @@ workflows:
               python-version: ["2.7.17", "3.7.4"]
           filters:
             branches:
-              only: /.*/             
+              only: /.*/
       - splunk-release/tag:
           name: tag-alpha
           tag_level: alpha
@@ -241,6 +241,8 @@ workflows:
           filters:
             branches:
               only: develop
+          requires:
+            - test-unit
       - approval-tag-beta:
           requires:
             - tag-alpha
@@ -311,7 +313,7 @@ workflows:
           gh_user: ${GH_USER}
           gh_token: ${GH_PAT}
           requires:
-            - approval-tag-final-patch              
+            - approval-tag-final-patch
   publish:
     jobs:
       - publish-pypi:
