@@ -1,0 +1,4 @@
+include LICENSE
+include README.txt
+include versioneer.py
+include solnlib/_version.py
