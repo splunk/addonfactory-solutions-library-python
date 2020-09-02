@@ -20,7 +20,7 @@ def test_time_parser():
     assert tp.to_utc('2011-07-06T21:54:23.000-07:00') == \
         datetime.datetime(2011, 7, 7, 4, 54, 23)
     assert tp.to_local('2011-07-06T21:54:23.000-07:00') == \
-        '2011-07-07T12:54:23.000+08:00'
+        '2011-07-07T04:54:23.000+00:00'
 
     with pytest.raises(time_parser.InvalidTimeFormatException):
         tp.to_seconds('2011-07-06T21:54:23.000-07;00')

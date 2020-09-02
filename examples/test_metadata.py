@@ -10,7 +10,7 @@ def test_metadata_reader():
     mr = metadata.MetadataReader(context.app)
 
     modtime = mr.get('collections', 'sessions', 'modtime')
-    assert type(modtime) == str
+    assert type(modtime.encode('UTF-8')) == str
 
     modtime = mr.get_float('collections', 'sessions', 'modtime')
     assert type(modtime) == float
