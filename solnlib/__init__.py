@@ -18,7 +18,6 @@ The Splunk Software Development Kit for Solutions.
 
 from . import (
     acl,
-    api_documenter,
     compression,
     conf_manager,
     credentials,
@@ -40,7 +39,6 @@ from . import (
 )
 
 __all__ = ['acl',
-           'api_documenter',
            'compression',
            'conf_manager',
            'credentials',
@@ -60,4 +58,4 @@ __all__ = ['acl',
            'user_access',
            'utils']
 
-__version__ = '2.0.7'
+__version__ = '0.0.0'
