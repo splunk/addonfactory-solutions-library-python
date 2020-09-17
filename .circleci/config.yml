@@ -109,17 +109,14 @@ jobs:
             eval "$(pyenv init -)"
             pyenv install << parameters.python-version >>
             pyenv global << parameters.python-version >>
-            virtualenv .venv
-            pip install --upgrade virtualenv
-            source .venv/bin/activate
-            pip install -r requirements.txt
-            pip install -e .
-            mkdir test-results || true
-      - python/save-cache
+            curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
+            source $HOME/.poetry/env
+            poetry install
+            poetry run poetry-dynamic-versioning
       - run:
           command: |
-            source .venv/bin/activate
-            python -m pytest --junitxml=test-results/results.xml --cov=solnlib --cov-report=html tests
+            source $HOME/.poetry/env            
+            poetry run pytest --junitxml=test-results/results.xml --cov=solnlib --cov-report=html tests
           name: Test
       - store_test_results:
           path: test-results
@@ -177,17 +174,15 @@ jobs:
             eval "$(pyenv init -)"
             pyenv install << parameters.python-version >>
             pyenv global << parameters.python-version >>
-            virtualenv .venv
-            pip install --upgrade virtualenv
-            source .venv/bin/activate
-            pip install -r requirements.txt
-            pip install -e .
+            curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
+            source $HOME/.poetry/env
+            poetry install
+            poetry run poetry-dynamic-versioning
             mkdir test-results || true
-      - python/save-cache
       - run:
           command: |
-            source .venv/bin/activate
-            SPLUNK_HOME=/opt/splunk/ python -m pytest --junitxml=test-results/results.xml -v examples
+            source $HOME/.poetry/env            
+            SPLUNK_HOME=/opt/splunk/ poetry run pytest --junitxml=test-results/results.xml -v examples
           name: Test
       - store_test_results:
           path: test-results
