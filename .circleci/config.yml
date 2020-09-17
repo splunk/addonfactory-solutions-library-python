@@ -152,9 +152,6 @@ jobs:
             pip install pytest-expect
             pip install pyaml
             mkdir test-results || true
-      - run:
-          command: |
-            source .venv/bin/activate
             python -m pytest --junitxml=test-results/results.xml --cov=solnlib --cov-report=html tests
           name: Test
       - store_test_results:
@@ -222,10 +219,6 @@ jobs:
             pip install pytest-expect
             pip install pyaml
             mkdir test-results || true
-      - python/save-cache
-      - run:
-          command: |
-            source .venv/bin/activate
             SPLUNK_HOME=/opt/splunk/ python -m pytest --junitxml=test-results/results.xml -v examples
           name: Test
       - store_test_results:
