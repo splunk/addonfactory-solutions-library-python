@@ -113,6 +113,7 @@ jobs:
             source $HOME/.poetry/env
             poetry install
             poetry run poetry-dynamic-versioning
+            mkdir test-results || true
       - run:
           command: |
             source $HOME/.poetry/env            
