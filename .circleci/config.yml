@@ -149,7 +149,6 @@ jobs:
             pip install --upgrade virtualenv
             source .venv/bin/activate
             pip install /tmp/workspace/dist/*
-            pip install poetry-dynamic-versioning
             pip install pytest
             pip install pytest-cov
             pip install pytest-expect
@@ -223,7 +222,6 @@ jobs:
             pip install --upgrade virtualenv
             source .venv/bin/activate
             pip install /tmp/workspace/dist/*
-            pip install poetry-dynamic-versioning
             pip install pytest
             pip install pytest-cov
             pip install pytest-expect
