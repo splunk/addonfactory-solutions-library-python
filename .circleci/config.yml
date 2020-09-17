@@ -206,6 +206,8 @@ jobs:
             echo PASSWORD=Chang3d! >>$SPLUNK_HOME/etc/system/local/user-seed.conf
             /opt/splunk/bin/splunk start --accept-license
       #- python/load-cache
+      - attach_workspace:
+          at: /tmp/workspace
       - run:
           name: Install deps
           command: |
