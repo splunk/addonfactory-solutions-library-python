@@ -15,7 +15,8 @@ sortedcontainers = "^2.2"
 
 [tool.poetry.dev-dependencies]
 mock = [
-    { version = "^4", python = "<3.7" }
+    { version = "^3", python = "^2.7" },
+    { version = "^4", python = "^3.7" }
 ]
 pytest-expect = "^1.1.0"
 pytest = [
