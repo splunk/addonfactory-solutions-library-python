@@ -146,9 +146,6 @@ jobs:
             pyenv install << parameters.python-version >>
             pyenv global << parameters.python-version >>
             pyenv local << parameters.python-version >>
-            virtualenv .venv
-            pip install --upgrade virtualenv
-            source .venv/bin/activate
             pip install /tmp/workspace/dist/*
             pip install pytest
             pip install pytest-cov
@@ -219,9 +216,6 @@ jobs:
             pyenv install << parameters.python-version >>
             pyenv global << parameters.python-version >>
             pyenv local << parameters.python-version >>
-            virtualenv .venv
-            pip install --upgrade virtualenv
-            source .venv/bin/activate
             pip install /tmp/workspace/dist/*
             pip install pytest
             pip install pytest-cov
