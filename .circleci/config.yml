@@ -145,6 +145,7 @@ jobs:
             eval "$(pyenv init -)"
             pyenv install << parameters.python-version >>
             pyenv global << parameters.python-version >>
+            pyenv local << parameters.python-version >>
             virtualenv .venv
             pip install --upgrade virtualenv
             source .venv/bin/activate
@@ -217,6 +218,7 @@ jobs:
             eval "$(pyenv init -)"
             pyenv install << parameters.python-version >>
             pyenv global << parameters.python-version >>
+            pyenv local << parameters.python-version >>
             virtualenv .venv
             pip install --upgrade virtualenv
             source .venv/bin/activate
