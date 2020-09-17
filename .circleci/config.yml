@@ -88,6 +88,41 @@ executors:
     macos:
       xcode: 11.4
 jobs:
+  build:
+    docker:
+      - image: circleci/python:3.7
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - poetry-{{ checksum "poetry.lock" }}
+      - run:
+          name: Install Tools
+          command: |
+            curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
+      - run:
+          name: Build
+          command: |
+            source $HOME/.poetry/env
+            poetry install
+            poetry run poetry-dynamic-versioning
+            poetry build
+      - save_cache:
+          key: poetry-{{ checksum "poetry.lock" }}
+          paths:
+            - ~/.poetry
+      - store_artifacts:
+          path: dist
+      - store_artifacts:
+          path: output
+      - persist_to_workspace:
+          # Must be an absolute path, or relative path from working_directory. This is a directory on the container which is
+          # taken to be the root directory of the workspace.
+          root: .
+          # Must be relative path from root
+          paths:
+            - dist
+            - output
   test-unit:
     parameters:
       os:
@@ -97,7 +132,8 @@ jobs:
     executor: << parameters.os >>
     steps:
       - checkout
-      #- python/load-cache
+      - attach_workspace:
+          at: /tmp/workspace
       - run:
           name: install deps
           command: |
@@ -109,15 +145,15 @@ jobs:
             eval "$(pyenv init -)"
             pyenv install << parameters.python-version >>
             pyenv global << parameters.python-version >>
-            curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
-            source $HOME/.poetry/env
-            poetry install
-            poetry run poetry-dynamic-versioning
+            virtualenv .venv
+            pip install --upgrade virtualenv
+            source .venv/bin/activate
+            pip install /tmp/workspace/dist/*
             mkdir test-results || true
       - run:
           command: |
-            source $HOME/.poetry/env            
-            poetry run pytest --junitxml=test-results/results.xml --cov=solnlib --cov-report=html tests
+            source .venv/bin/activate
+            python -m pytest --junitxml=test-results/results.xml --cov=solnlib --cov-report=html tests
           name: Test
       - store_test_results:
           path: test-results
@@ -175,15 +211,17 @@ jobs:
             eval "$(pyenv init -)"
             pyenv install << parameters.python-version >>
             pyenv global << parameters.python-version >>
-            curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
-            source $HOME/.poetry/env
-            poetry install
-            poetry run poetry-dynamic-versioning
+            virtualenv .venv
+            pip install --upgrade virtualenv
+            source .venv/bin/activate
+            pip install -r requirements.txt
+            pip install -e .
             mkdir test-results || true
+      - python/save-cache
       - run:
           command: |
-            source $HOME/.poetry/env            
-            SPLUNK_HOME=/opt/splunk/ poetry run pytest --junitxml=test-results/results.xml -v examples
+            source .venv/bin/activate
+            SPLUNK_HOME=/opt/splunk/ python -m pytest --junitxml=test-results/results.xml -v examples
           name: Test
       - store_test_results:
           path: test-results
@@ -212,7 +250,10 @@ jobs:
 workflows:
   main:
     jobs:
+      - build
       - test-unit:
+          requires:
+            - build
           matrix:
             parameters:
               os: [linux]
@@ -221,6 +262,8 @@ workflows:
             branches:
               only: /.*/
       - test-splunk:
+          requires:
+            - build
           matrix:
             parameters:
               os: [linux]
