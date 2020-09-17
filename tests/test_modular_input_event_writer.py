@@ -4,10 +4,9 @@ import json
 
 import common
 
-sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 from solnlib.modular_input import ClassicEventWriter
 from solnlib.modular_input import HECEventWriter
-from solnlib.packages.splunklib import binding
+from splunklib import binding
 
 
 def test_classic_event_writer(monkeypatch):

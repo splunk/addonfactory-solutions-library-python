@@ -33,8 +33,8 @@ from .net_utils import check_css_params
 from .net_utils import is_valid_hostname
 from .net_utils import is_valid_port
 from .net_utils import is_valid_scheme
-from .packages.splunklib import binding
-from .packages.splunklib import client
+from splunklib import binding
+from splunklib import client
 from .splunkenv import get_splunkd_access_info
 
 __all__ = ['SplunkRestClient']
@@ -78,7 +78,7 @@ def _request_handler(context):
     '''
 
     try:
-        from .packages import requests
+        import requests
     except ImportError:
         # FIXME proxy ?
         return binding.handler(

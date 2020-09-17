@@ -8,7 +8,7 @@ import common
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 import solnlib.time_parser as stp
-from solnlib.packages.splunklib import binding
+from splunklib import binding
 
 
 def test_time_parser(monkeypatch):

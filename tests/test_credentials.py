@@ -9,9 +9,9 @@ sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 import common
 
 from solnlib import credentials
-from solnlib.packages.splunklib import binding
-from solnlib.packages.splunklib import client
-from solnlib.packages.splunklib.data import record
+from splunklib import binding
+from splunklib import client
+from splunklib.data import record
 
 
 def test_credential_manager(monkeypatch):

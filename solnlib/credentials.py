@@ -24,7 +24,7 @@ from .net_utils import check_css_params
 from .net_utils import is_valid_hostname
 from .net_utils import is_valid_port
 from .net_utils import is_valid_scheme
-from .packages.splunklib import binding
+from splunklib import binding
 from .splunkenv import get_splunkd_access_info
 from .utils import retry
 
