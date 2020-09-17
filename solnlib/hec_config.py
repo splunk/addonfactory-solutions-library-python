@@ -13,7 +13,7 @@
 # under the License.
 
 from . import splunk_rest_client as rest_client
-from .packages.splunklib import binding
+from splunklib import binding
 from .utils import retry
 
 __all__ = ['HECConfig']

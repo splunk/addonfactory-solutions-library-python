@@ -8,8 +8,8 @@ import common
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 from solnlib.modular_input import KVStoreCheckpointer
 from solnlib.modular_input import FileCheckpointer
-from solnlib.packages.splunklib import binding
-from solnlib.packages.splunklib import client
+from splunklib import binding
+from splunklib import client
 
 
 cur_dir = op.dirname(op.abspath(__file__))

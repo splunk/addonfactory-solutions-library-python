@@ -8,8 +8,8 @@ import common
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 from solnlib import user_access
-from solnlib.packages.splunklib import binding
-from solnlib.packages.splunklib import client
+from splunklib import binding
+from splunklib import client
 
 
 def test_object_acl_manager(monkeypatch):

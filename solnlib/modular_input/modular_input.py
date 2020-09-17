@@ -31,18 +31,18 @@ except ImportError:
         from urllib import parse as urlparse
 
 from abc import ABCMeta, abstractmethod
-from ..packages.splunklib.six import with_metaclass
+from splunklib.six import with_metaclass
 
 try:
     import xml.etree.cElementTree as ET
 except ImportError:
     import xml.etree.ElementTree as ET
 
-from ..packages.splunklib import binding
-from ..packages.splunklib.modularinput.argument import Argument
-from ..packages.splunklib.modularinput.scheme import Scheme
-from ..packages.splunklib.modularinput.input_definition import InputDefinition
-from ..packages.splunklib.modularinput.validation_definition import ValidationDefinition
+from splunklib import binding
+from splunklib.modularinput.argument import Argument
+from splunklib.modularinput.scheme import Scheme
+from splunklib.modularinput.input_definition import InputDefinition
+from splunklib.modularinput.validation_definition import ValidationDefinition
 
 from .. import utils
 from . import checkpointer

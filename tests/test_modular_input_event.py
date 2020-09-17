@@ -2,7 +2,6 @@ import sys
 import os.path as op
 import json
 
-sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 from solnlib.modular_input import XMLEvent
 from solnlib.modular_input import HECEvent
 

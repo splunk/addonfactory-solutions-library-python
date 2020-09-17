@@ -25,7 +25,7 @@ import traceback
 from . import splunk_rest_client as rest_client
 from .credentials import CredentialManager
 from .credentials import CredentialNotExistException
-from .packages.splunklib import binding
+from splunklib import binding
 from .utils import retry
 
 __all__ = ['ConfStanzaNotExistException',

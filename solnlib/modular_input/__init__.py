@@ -26,7 +26,7 @@ from .event_writer import ClassicEventWriter
 from .event_writer import HECEventWriter
 from .modular_input import ModularInput
 from .modular_input import ModularInputException
-from ..packages.splunklib.modularinput.argument import Argument
+from splunklib.modularinput.argument import Argument
 
 __all__ = ['EventException',
            'XMLEvent',

@@ -26,7 +26,7 @@ import threading
 import traceback
 from time import time
 
-from .packages import sortedcontainers as sc
+import sortedcontainers as sc
 
 __all__ = ['Timer',
            'TimerQueueStruct',

@@ -28,8 +28,8 @@ from .event import XMLEvent, HECEvent
 from .. import splunk_rest_client as rest_client
 from .. import utils
 from ..hec_config import HECConfig
-from ..packages.splunklib import binding
-from ..packages.splunklib.six import with_metaclass
+from splunklib import binding
+from splunklib.six import with_metaclass
 from ..splunkenv import get_splunkd_access_info
 from ..utils import retry
 from random import randint
