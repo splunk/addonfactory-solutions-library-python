@@ -151,6 +151,7 @@ jobs:
             pip install pytest-cov
             pip install pytest-expect
             pip install pyaml
+            pip install mock
             mkdir test-results || true
             python -m pytest --junitxml=test-results/results.xml --cov=solnlib --cov-report=html tests
       - store_test_results:
