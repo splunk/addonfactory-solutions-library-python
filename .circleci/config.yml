@@ -95,13 +95,11 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - poetry-{{ checksum "poetry.lock" }}
+            - poetry-cache-{{ checksum "poetry.lock" }}
       - run:
           name: Install Tools
           command: |
             curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
-            pip install poetry-dynamic-versioning
-            pip install tomlkit
       - run:
           name: Build
           command: |
@@ -110,9 +108,9 @@ jobs:
             poetry run poetry-dynamic-versioning
             poetry build
       - save_cache:
-          key: poetry-{{ checksum "poetry.lock" }}
+          key: poetry-cache-{{ checksum "poetry.lock" }}
           paths:
-            - ~/.poetry
+            - ~/.cache/poetry
       - store_artifacts:
           path: dist
       - store_artifacts:
@@ -238,12 +236,11 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - poetry-{{ checksum "poetry.lock" }}
+            - poetry-cache-{{ checksum "poetry.lock" }}
       - run:
           name: Install Tools
           command: |
             curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
-            pip install poetry-dynamic-versioning
       - run:
           name: Build
           command: |
