@@ -100,6 +100,7 @@ jobs:
           name: Install Tools
           command: |
             curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
+            pip install poetry-dynamic-versioning
       - run:
           name: Build
           command: |
@@ -241,6 +242,7 @@ jobs:
           name: Install Tools
           command: |
             curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
+            pip install poetry-dynamic-versioning
       - run:
           name: Build
           command: |
@@ -276,7 +278,7 @@ workflows:
               only: /.*/
       - splunk-release/tag:
           name: tag-alpha
-          tag_level: alpha
+          tag_level: a
           gh_user: ${GH_USER}
           gh_token: ${GH_PAT}
           filters:
@@ -293,7 +295,7 @@ workflows:
               only: develop
       - splunk-release/tag:
           name: tag-beta
-          tag_level: beta
+          tag_level: b
           gh_user: ${GH_USER}
           gh_token: ${GH_PAT}
           requires:
