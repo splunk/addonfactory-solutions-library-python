@@ -101,6 +101,7 @@ jobs:
           command: |
             curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
             pip install poetry-dynamic-versioning
+            pip install tomlkit
       - run:
           name: Build
           command: |
