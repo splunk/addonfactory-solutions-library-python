@@ -32,6 +32,6 @@ def test_server_info():
     try:
         shc_members = si.get_shc_members()
     except server_info.ServerInfoException as e:
-        print(e.message)
+        print(e)
     else:
         print('    -SHC members are: ', shc_members)
