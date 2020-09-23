@@ -12,6 +12,7 @@ future = "^0"
 splunk-sdk = "^1.6"
 schematics = "^2.1"
 sortedcontainers = "^2.2"
+six = "*"
 
 [tool.poetry.dev-dependencies]
 mock = [

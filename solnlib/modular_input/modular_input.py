@@ -31,7 +31,7 @@ except ImportError:
         from urllib import parse as urlparse
 
 from abc import ABCMeta, abstractmethod
-from splunklib.six import with_metaclass
+from six import with_metaclass
 
 try:
     import xml.etree.cElementTree as ET
