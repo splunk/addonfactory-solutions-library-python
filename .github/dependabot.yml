@@ -11,7 +11,10 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
-  # Keep Dockerfile up to date, batching pull requests weekly
+  - package-ecosystem: "gitsubmodule"
+    directory: "/deps/apps/addonfactory_test_matrix_splunk"
+    schedule:
+      interval: "daily"
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
