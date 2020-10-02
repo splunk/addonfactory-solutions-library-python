@@ -3,14 +3,16 @@
 ## SPDX-License-Identifier: LicenseRef-Splunk-1-2020
 ##
 ##
-version: 1
-update_configs:
+version: 2
+updates:
   # Keep package.json (& lockfiles) up to date as soon as
   # new versions are published to the npm registry
-  - package_manager: "submodules"
+  - package-ecosystem: "gitsubmodule"
     directory: "/"
-    update_schedule: "daily"
+    schedule:
+      interval: "daily"
   # Keep Dockerfile up to date, batching pull requests weekly
-  - package_manager: "python"
+  - package-ecosystem: "pip"
     directory: "/"
-    update_schedule: "live"
+    schedule:
+      interval: "daily"
