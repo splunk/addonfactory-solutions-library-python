@@ -13,21 +13,20 @@ from solnlib import metadata
 
 
 class TestMetadataReader(object):
-
     def test_get(self, monkeypatch):
         common.mock_splunkhome(monkeypatch)
 
         mr = metadata.MetadataReader(common.app)
 
-        assert mr.get('sessions', 'test', 'modtime') == '1453272423.443622000'
+        assert mr.get("sessions", "test", "modtime") == "1453272423.443622000"
         with pytest.raises(ValueError):
-            mr.get('conf_bad', 'stanza_bad', 'modtime')
+            mr.get("conf_bad", "stanza_bad", "modtime")
 
     def test_get_float(self, monkeypatch):
         common.mock_splunkhome(monkeypatch)
 
-        mr = metadata.MetadataReader('unittest')
+        mr = metadata.MetadataReader("unittest")
 
-        assert mr.get_float('sessions', 'test', 'modtime') == 1453272423.443622000
+        assert mr.get_float("sessions", "test", "modtime") == 1453272423.443622000
         with pytest.raises(ValueError):
-            mr.get_float('sessions', 'test', 'version')
+            mr.get_float("sessions", "test", "version")

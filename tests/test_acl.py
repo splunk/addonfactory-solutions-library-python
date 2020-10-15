@@ -28,12 +28,14 @@ def _mock_get(self, path_segment, owner=None, app=None, sharing=None, **query):
     return common.make_response_record(_old_acl)
 
 
-def _mock_post(self, path_segment, owner=None, app=None, sharing=None, headers=None, **query):
-    if 'perms.read=admin' in query['body'] and 'perms.write=admin' in query['body']:
-            return common.make_response_record(_new_acl1)
-    elif 'perms.read=admin' in query['body']:
+def _mock_post(
+    self, path_segment, owner=None, app=None, sharing=None, headers=None, **query
+):
+    if "perms.read=admin" in query["body"] and "perms.write=admin" in query["body"]:
+        return common.make_response_record(_new_acl1)
+    elif "perms.read=admin" in query["body"]:
         return common.make_response_record(_new_acl2)
-    elif 'perms.write=admin' in query['body']:
+    elif "perms.write=admin" in query["body"]:
         return common.make_response_record(_new_acl3)
     else:
         return common.make_response_record(_old_acl)
@@ -42,33 +44,34 @@ def _mock_post(self, path_segment, owner=None, app=None, sharing=None, headers=N
 class TestACLManager(object):
     def test_get(self, monkeypatch):
         common.mock_splunkhome(monkeypatch)
-        monkeypatch.setattr(binding.Context, 'get', _mock_get)
+        monkeypatch.setattr(binding.Context, "get", _mock_get)
 
         aclm = acl.ACLManager(common.SESSION_KEY, common.app)
-        perms = aclm.get('data/transforms/extractions/_acl')
-        assert perms == json.loads(_old_acl)['entry'][0]['acl']
+        perms = aclm.get("data/transforms/extractions/_acl")
+        assert perms == json.loads(_old_acl)["entry"][0]["acl"]
 
     def test_update(self, monkeypatch):
         common.mock_splunkhome(monkeypatch)
-        monkeypatch.setattr(binding.Context, 'get', _mock_get)
-        monkeypatch.setattr(binding.Context, 'post', _mock_post)
+        monkeypatch.setattr(binding.Context, "get", _mock_get)
+        monkeypatch.setattr(binding.Context, "post", _mock_post)
 
         aclm = acl.ACLManager(common.SESSION_KEY, common.app)
 
-        perms = aclm.update('data/transforms/extractions/_acl',
-                            perms_read=['admin'], perms_write=['admin'])
-        assert perms == json.loads(_new_acl1)['entry'][0]['acl']
+        perms = aclm.update(
+            "data/transforms/extractions/_acl",
+            perms_read=["admin"],
+            perms_write=["admin"],
+        )
+        assert perms == json.loads(_new_acl1)["entry"][0]["acl"]
 
-        perms = aclm.update('data/transforms/extractions/_acl',
-                            perms_read=['admin'])
-        assert perms == json.loads(_new_acl2)['entry'][0]['acl']
+        perms = aclm.update("data/transforms/extractions/_acl", perms_read=["admin"])
+        assert perms == json.loads(_new_acl2)["entry"][0]["acl"]
 
-        perms = aclm.update('data/transforms/extractions/_acl',
-                            perms_write=['admin'])
-        assert perms == json.loads(_new_acl3)['entry'][0]['acl']
+        perms = aclm.update("data/transforms/extractions/_acl", perms_write=["admin"])
+        assert perms == json.loads(_new_acl3)["entry"][0]["acl"]
 
-        perms = aclm.update('data/transforms/extractions/_acl')
-        assert perms == json.loads(_old_acl)['entry'][0]['acl']
+        perms = aclm.update("data/transforms/extractions/_acl")
+        assert perms == json.loads(_old_acl)["entry"][0]["acl"]
 
         with pytest.raises(acl.ACLException):
-            aclm.update('data/transforms/extractions', perms_write=['admin'])
+            aclm.update("data/transforms/extractions", perms_write=["admin"])

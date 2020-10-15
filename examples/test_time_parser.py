@@ -15,20 +15,26 @@ import context
 
 def test_time_parser():
     session_key = credentials.get_session_key(
-        context.username, context.password, scheme=context.scheme,
-        host=context.host, port=context.port)
+        context.username,
+        context.password,
+        scheme=context.scheme,
+        host=context.host,
+        port=context.port,
+    )
 
     tp = time_parser.TimeParser(session_key)
 
-    assert tp.to_seconds('2011-07-06T21:54:23.000-07:00') == 1310014463.0
-    assert tp.to_utc('2011-07-06T21:54:23.000-07:00') == \
-        datetime.datetime(2011, 7, 7, 4, 54, 23)
-    assert tp.to_local('2011-07-06T21:54:23.000-07:00') == \
-        '2011-07-07T04:54:23.000+00:00'
+    assert tp.to_seconds("2011-07-06T21:54:23.000-07:00") == 1310014463.0
+    assert tp.to_utc("2011-07-06T21:54:23.000-07:00") == datetime.datetime(
+        2011, 7, 7, 4, 54, 23
+    )
+    assert (
+        tp.to_local("2011-07-06T21:54:23.000-07:00") == "2011-07-07T04:54:23.000+00:00"
+    )
 
     with pytest.raises(time_parser.InvalidTimeFormatException):
-        tp.to_seconds('2011-07-06T21:54:23.000-07;00')
+        tp.to_seconds("2011-07-06T21:54:23.000-07;00")
     with pytest.raises(time_parser.InvalidTimeFormatException):
-        tp.to_utc('2011-07-06T21:54:23.000-07;00')
+        tp.to_utc("2011-07-06T21:54:23.000-07;00")
     with pytest.raises(time_parser.InvalidTimeFormatException):
-        tp.to_local('2011-07-06T21:54:23.000-07;00')
+        tp.to_local("2011-07-06T21:54:23.000-07;00")

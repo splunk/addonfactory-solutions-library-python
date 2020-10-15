@@ -13,15 +13,15 @@ from solnlib import net_utils
 
 
 def test_resolve_hostname(monkeypatch):
-    invalid_ip = '192.1.1'
-    resolvable_ip = '192.168.0.1'
-    unresolvable_ip1 = '192.168.1.1'
-    unresolvable_ip2 = '192.168.1.2'
-    unresolvable_ip3 = '192.168.1.3'
+    invalid_ip = "192.1.1"
+    resolvable_ip = "192.168.0.1"
+    unresolvable_ip1 = "192.168.1.1"
+    unresolvable_ip2 = "192.168.1.2"
+    unresolvable_ip3 = "192.168.1.3"
 
     def mock_gethostbyaddr(addr):
         if addr == resolvable_ip:
-            return ('unittestServer', None, None)
+            return ("unittestServer", None, None)
         elif addr == unresolvable_ip1:
             raise socket.gaierror()
         elif addr == unresolvable_ip2:
@@ -29,7 +29,7 @@ def test_resolve_hostname(monkeypatch):
         else:
             raise socket.timeout()
 
-    monkeypatch.setattr(socket, 'gethostbyaddr', mock_gethostbyaddr)
+    monkeypatch.setattr(socket, "gethostbyaddr", mock_gethostbyaddr)
 
     with pytest.raises(ValueError):
         net_utils.resolve_hostname(invalid_ip)
@@ -40,42 +40,44 @@ def test_resolve_hostname(monkeypatch):
 
 
 def test_is_valid_hostname():
-    assert net_utils.is_valid_hostname('splunk')
-    assert net_utils.is_valid_hostname('splunk.com')
-    assert net_utils.is_valid_hostname('localhost')
-    assert not net_utils.is_valid_hostname('')
-    assert not net_utils.is_valid_hostname('localhost:8000')
-    assert not net_utils.is_valid_hostname('http://localhost:8000')
+    assert net_utils.is_valid_hostname("splunk")
+    assert net_utils.is_valid_hostname("splunk.com")
+    assert net_utils.is_valid_hostname("localhost")
+    assert not net_utils.is_valid_hostname("")
+    assert not net_utils.is_valid_hostname("localhost:8000")
+    assert not net_utils.is_valid_hostname("http://localhost:8000")
 
 
 def test_is_valid_port():
     assert not net_utils.is_valid_port(0)
-    assert not net_utils.is_valid_port('0')
-    assert net_utils.is_valid_port('1')
+    assert not net_utils.is_valid_port("0")
+    assert net_utils.is_valid_port("1")
     assert net_utils.is_valid_port(1)
     assert net_utils.is_valid_port(8080)
-    assert net_utils.is_valid_port('8080')
-    assert net_utils.is_valid_port('0808')
-    assert net_utils.is_valid_port('65535')
+    assert net_utils.is_valid_port("8080")
+    assert net_utils.is_valid_port("0808")
+    assert net_utils.is_valid_port("65535")
     assert net_utils.is_valid_port(65535)
-    assert not net_utils.is_valid_port('65536')
+    assert not net_utils.is_valid_port("65536")
     assert not net_utils.is_valid_port(65536)
 
 
 def test_is_valid_scheme():
-    assert net_utils.is_valid_scheme('http')
-    assert net_utils.is_valid_scheme('https')
-    assert net_utils.is_valid_scheme('HTTP')
-    assert net_utils.is_valid_scheme('HTTPS')
-    assert net_utils.is_valid_scheme('HTTp')
-    assert not net_utils.is_valid_scheme('non-http')
+    assert net_utils.is_valid_scheme("http")
+    assert net_utils.is_valid_scheme("https")
+    assert net_utils.is_valid_scheme("HTTP")
+    assert net_utils.is_valid_scheme("HTTPS")
+    assert net_utils.is_valid_scheme("HTTp")
+    assert not net_utils.is_valid_scheme("non-http")
 
 
 def test_check_css_params():
-    @net_utils.check_css_params(a1=lambda x: x > 0,
-                                a2=lambda x: x is not None,
-                                a3=lambda x: x is None,
-                                a4=lambda x: x % 2 == 0)
+    @net_utils.check_css_params(
+        a1=lambda x: x > 0,
+        a2=lambda x: x is not None,
+        a3=lambda x: x is None,
+        a4=lambda x: x % 2 == 0,
+    )
     def test_func(a1, a2=None, *args, **kwargs):
         pass
 

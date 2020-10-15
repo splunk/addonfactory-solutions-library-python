@@ -34,44 +34,44 @@ def test_datatime_to_seconds(monkeypatch):
 
 
 def test_is_false(monkeypatch):
-    for val in ('0', 'FALSE', 'F', 'N', 'NO', 'NONE', '', None):
+    for val in ("0", "FALSE", "F", "N", "NO", "NONE", "", None):
         assert utils.is_false(val)
 
-    for val in ('1', 'TRUE', 'T', 'Y', 'YES'):
+    for val in ("1", "TRUE", "T", "Y", "YES"):
         assert not utils.is_false(val)
 
-    for val in ('00', 'FF', 'NN', 'NONO', '434324'):
+    for val in ("00", "FF", "NN", "NONO", "434324"):
         assert not utils.is_false(val)
 
 
 def test_is_true(monkeypatch):
-    for val in ('1', 'TRUE', 'T', 'Y', 'YES'):
+    for val in ("1", "TRUE", "T", "Y", "YES"):
         assert utils.is_true(val)
 
-    for val in ('0', 'FALSE', 'F', 'N', 'NO', 'NONE', '', None):
+    for val in ("0", "FALSE", "F", "N", "NO", "NONE", "", None):
         assert not utils.is_true(val)
 
-    for val in ('00', 'FF', 'NN', 'NONO', '434324'):
+    for val in ("00", "FF", "NN", "NONO", "434324"):
         assert not utils.is_true(val)
 
 
 def test_escape_json_control_chars(monkeypatch):
-    str1 = r'hello\nworld'
-    escaped_str1 = r'hello\\nworld'
+    str1 = r"hello\nworld"
+    escaped_str1 = r"hello\\nworld"
     assert escaped_str1 == utils.escape_json_control_chars(str1)
 
-    str1 = r'hello\rworld'
-    escaped_str1 = r'hello\\rworld'
+    str1 = r"hello\rworld"
+    escaped_str1 = r"hello\\rworld"
     assert escaped_str1 == utils.escape_json_control_chars(str1)
 
-    str1 = r'hello\r\nworld'
-    escaped_str1 = r'hello\\r\\nworld'
+    str1 = r"hello\r\nworld"
+    escaped_str1 = r"hello\\r\\nworld"
     assert escaped_str1 == utils.escape_json_control_chars(str1)
 
 
 def test_retry(monkeypatch):
     def _old_func():
-        raise ValueError('Exception for test.')
+        raise ValueError("Exception for test.")
 
     _new_func = utils.retry(retries=1)(_old_func)
     with pytest.raises(ValueError):
@@ -85,7 +85,7 @@ def test_retry(monkeypatch):
     def mock_sleep(seconds):
         mock_sleep_time[0] += seconds
 
-    monkeypatch.setattr(time, 'sleep', mock_sleep)
+    monkeypatch.setattr(time, "sleep", mock_sleep)
 
     retries = 3
     tried = [0]
@@ -107,8 +107,8 @@ def test_retry(monkeypatch):
     def mock_error(msg, *args, **kwargs):
         record[1] += 1
 
-    monkeypatch.setattr(logging, 'warning', mock_warning)
-    monkeypatch.setattr(logging, 'error', mock_error)
+    monkeypatch.setattr(logging, "warning", mock_warning)
+    monkeypatch.setattr(logging, "error", mock_error)
     mock_func()
 
     assert record[0] == 4
@@ -116,31 +116,31 @@ def test_retry(monkeypatch):
 
 
 def test_extract_http_scheme_host_port(monkeypatch):
-    h1 = 'https://localhost:8089'
+    h1 = "https://localhost:8089"
     scheme, host, port = utils.extract_http_scheme_host_port(h1)
-    assert scheme == 'https' and host == 'localhost' and port == 8089
+    assert scheme == "https" and host == "localhost" and port == 8089
 
-    h2 = 'https://localhost:8089/'
+    h2 = "https://localhost:8089/"
     scheme, host, port = utils.extract_http_scheme_host_port(h2)
-    assert scheme == 'https' and host == 'localhost' and port == 8089
+    assert scheme == "https" and host == "localhost" and port == 8089
 
-    h3 = 'https://localhost:8089/servicesNS/'
+    h3 = "https://localhost:8089/servicesNS/"
     scheme, host, port = utils.extract_http_scheme_host_port(h3)
-    assert scheme == 'https' and host == 'localhost' and port == 8089
+    assert scheme == "https" and host == "localhost" and port == 8089
 
-    h1 = 'http://localhost:8089'
+    h1 = "http://localhost:8089"
     scheme, host, port = utils.extract_http_scheme_host_port(h1)
-    assert scheme == 'http' and host == 'localhost' and port == 8089
+    assert scheme == "http" and host == "localhost" and port == 8089
 
-    h2 = 'http://localhost:8089/'
+    h2 = "http://localhost:8089/"
     scheme, host, port = utils.extract_http_scheme_host_port(h2)
-    assert scheme == 'http' and host == 'localhost' and port == 8089
+    assert scheme == "http" and host == "localhost" and port == 8089
 
-    h3 = 'http://localhost:8089/servicesNS/'
+    h3 = "http://localhost:8089/servicesNS/"
     scheme, host, port = utils.extract_http_scheme_host_port(h3)
-    assert scheme == 'http' and host == 'localhost' and port == 8089
+    assert scheme == "http" and host == "localhost" and port == 8089
 
-    invalid = 'localhost:8089'
+    invalid = "localhost:8089"
     try:
         scheme, host, port = utils.extract_http_scheme_host_port(invalid)
     except ValueError:

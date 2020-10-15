@@ -17,12 +17,11 @@ def _mock_getppid():
 
 
 class TestOrphanProcessChecker(object):
-
     def setup(self):
         self._called = False
 
     def test_is_orphan(self, monkeypatch):
-        monkeypatch.setattr(os, 'getppid', _mock_getppid)
+        monkeypatch.setattr(os, "getppid", _mock_getppid)
 
         def orphan_callback():
             self._called = True
@@ -36,12 +35,11 @@ class TestOrphanProcessChecker(object):
 
 
 class TestOrphanProcessMonitor(object):
-
     def setup(self):
         self._called = False
 
     def test_monitor(self, monkeypatch):
-        monkeypatch.setattr(os, 'getppid', _mock_getppid)
+        monkeypatch.setattr(os, "getppid", _mock_getppid)
 
         def orphan_callback():
             self._called = True

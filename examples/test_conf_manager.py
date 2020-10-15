@@ -15,27 +15,36 @@ import context
 
 def test_conf_manager():
     session_key = credentials.get_session_key(
-        context.username, context.password, scheme=context.scheme,
-        host=context.host, port=context.port)
+        context.username,
+        context.password,
+        scheme=context.scheme,
+        host=context.host,
+        port=context.port,
+    )
 
     cfm = conf_manager.ConfManager(
-        session_key, context.app, owner=context.owner,
-        scheme=context.scheme, host=context.host, port=context.port)
+        session_key,
+        context.app,
+        owner=context.owner,
+        scheme=context.scheme,
+        host=context.host,
+        port=context.port,
+    )
 
     try:
-        conf = cfm.get_conf('test')
+        conf = cfm.get_conf("test")
     except conf_manager.ConfManagerException:
-        conf = cfm.create_conf('test')
+        conf = cfm.create_conf("test")
 
-    assert not conf.stanza_exist('test_stanza')
-    conf.update('test_stanza', {'k1': 1, 'k2': 2}, ['k1'])
-    assert conf.get('test_stanza')['k1'] == 1
-    assert int(conf.get('test_stanza')['k2']) == 2
-    assert conf.get('test_stanza')['eai:appName'] == 'solnlib_demo'
+    assert not conf.stanza_exist("test_stanza")
+    conf.update("test_stanza", {"k1": 1, "k2": 2}, ["k1"])
+    assert conf.get("test_stanza")["k1"] == 1
+    assert int(conf.get("test_stanza")["k2"]) == 2
+    assert conf.get("test_stanza")["eai:appName"] == "solnlib_demo"
     assert len(conf.get_all()) == 1
-    conf.delete('test_stanza')
+    conf.delete("test_stanza")
     with pytest.raises(conf_manager.ConfStanzaNotExistException):
-        conf.get('test_stanza')
+        conf.get("test_stanza")
     with pytest.raises(conf_manager.ConfStanzaNotExistException):
-        conf.delete('test_stanza')
+        conf.delete("test_stanza")
     conf.reload()

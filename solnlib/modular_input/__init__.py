@@ -3,9 +3,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-'''
+"""
 Splunk modular input.
-'''
+"""
 
 from .checkpointer import CheckpointerException
 from .checkpointer import FileCheckpointer
@@ -19,14 +19,16 @@ from .modular_input import ModularInput
 from .modular_input import ModularInputException
 from splunklib.modularinput.argument import Argument
 
-__all__ = ['EventException',
-           'XMLEvent',
-           'HECEvent',
-           'ClassicEventWriter',
-           'HECEventWriter',
-           'CheckpointerException',
-           'KVStoreCheckpointer',
-           'FileCheckpointer',
-           'Argument',
-           'ModularInputException',
-           'ModularInput']
+__all__ = [
+    "EventException",
+    "XMLEvent",
+    "HECEvent",
+    "ClassicEventWriter",
+    "HECEventWriter",
+    "CheckpointerException",
+    "KVStoreCheckpointer",
+    "FileCheckpointer",
+    "Argument",
+    "ModularInputException",
+    "ModularInput",
+]

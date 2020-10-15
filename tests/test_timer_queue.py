@@ -28,6 +28,7 @@ def fun(i, interval):
     def do_fun():
         count[i][1] = time.time()
         count[i][-1] += 1
+
     return do_fun
 
 
@@ -38,15 +39,16 @@ def test_timer_queue():
     r = random.Random()
     for i in range(n):
         interval = r.randint(1, t)
-        timer = tq.add_timer(
-            fun(i, interval), time.time() + interval, interval)
+        timer = tq.add_timer(fun(i, interval), time.time() + interval, interval)
         timers.append(timer)
 
     time.sleep(t * 2)
     tq.stop()
 
     for start, end, interval, c in count:
-        if isinstance((end - start), numbers.Integral) and isinstance(interval, numbers.Integral):
+        if isinstance((end - start), numbers.Integral) and isinstance(
+            interval, numbers.Integral
+        ):
             diff = int(math.fabs(c - (end - start) // interval - 1))
         else:
             diff = int(math.fabs(c - (end - start) / interval - 1))

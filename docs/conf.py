@@ -24,35 +24,35 @@ import solnlib
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-needs_sphinx = '1.2'
+needs_sphinx = "1.2"
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.todo',
-    'sphinx.ext.viewcode',
+    "sphinx.ext.autodoc",
+    "sphinx.ext.todo",
+    "sphinx.ext.viewcode",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+templates_path = ["_templates"]
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
 # source_suffix = ['.rst', '.md']
-source_suffix = '.rst'
+source_suffix = ".rst"
 
 # The encoding of source files.
 # source_encoding = 'utf-8-sig'
 
 # The master toctree document.
-master_doc = 'index'
+master_doc = "index"
 
 # General information about the project.
-project = 'Splunk Solution SDK for Python'
-copyright = '2016, Splunk Inc'
-author = 'Splunk Inc'
+project = "Splunk Solution SDK for Python"
+copyright = "2016, Splunk Inc"
+author = "Splunk Inc"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -78,7 +78,7 @@ release = solnlib.__version__
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ['_build']
+exclude_patterns = ["_build"]
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
@@ -96,7 +96,7 @@ exclude_patterns = ['_build']
 # show_authors = False
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'sphinx'
+pygments_style = "sphinx"
 
 # A list of ignored prefixes for module index sorting.
 # modindex_common_prefix = []
@@ -112,7 +112,7 @@ todo_include_todos = True
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'default'
+html_theme = "default"
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -206,20 +206,17 @@ html_show_sphinx = False
 # html_search_scorer = 'scorer.js'
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'SplunkSolutionPythonSDKdoc'
+htmlhelp_basename = "SplunkSolutionPythonSDKdoc"
 
 # -- Options for LaTeX output ---------------------------------------------
 
 latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
     # 'papersize': 'letterpaper',
-
     # The font size ('10pt', '11pt' or '12pt').
     # 'pointsize': '10pt',
-
     # Additional stuff for the LaTeX preamble.
     # 'preamble': '',
-
     # Latex figure (float) alignment
     # 'figure_align': 'htbp',
 }
@@ -227,11 +224,15 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
-latex_documents = [(master_doc,
-                    'SplunkSolutionPythonSDKdoc.tex',
-                    'Splunk Solution SDK for Python Documentation',
-                    'SPlunk Inc',
-                    'manual')]
+latex_documents = [
+    (
+        master_doc,
+        "SplunkSolutionPythonSDKdoc.tex",
+        "Splunk Solution SDK for Python Documentation",
+        "SPlunk Inc",
+        "manual",
+    )
+]
 
 # The name of an image file (relative to this directory) to place at the top of
 # the title page.
@@ -258,11 +259,15 @@ latex_documents = [(master_doc,
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [('index',
-              'solnlib',
-              'Splunk Solution SDK for Python API Documentation',
-              ['Splunk Inc'],
-              1)]
+man_pages = [
+    (
+        "index",
+        "solnlib",
+        "Splunk Solution SDK for Python API Documentation",
+        ["Splunk Inc"],
+        1,
+    )
+]
 
 # If true, show URL addresses after external links.
 # man_show_urls = False
@@ -273,13 +278,17 @@ man_pages = [('index',
 # Grouping the document tree into Texinfo files. List of tuples
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
-texinfo_documents = [('index',
-                      'solnlib',
-                      'Splunk Solution SDK for Python API Documentation',
-                      'Splunk Inc',
-                      'solnlib',
-                      'API reference for Splunk Solution SDK for Python.',
-                      'Miscellaneous')]
+texinfo_documents = [
+    (
+        "index",
+        "solnlib",
+        "Splunk Solution SDK for Python API Documentation",
+        "Splunk Inc",
+        "solnlib",
+        "API reference for Splunk Solution SDK for Python.",
+        "Miscellaneous",
+    )
+]
 
 # Documents to append as an appendix to all manuals.
 # texinfo_appendices = []
@@ -340,7 +349,7 @@ epub_copyright = copyright
 # epub_post_files = []
 
 # A list of files that should not be packed into the epub file.
-epub_exclude_files = ['search.html']
+epub_exclude_files = ["search.html"]
 
 # The depth of the table of contents in toc.ncx.
 # epub_tocdepth = 3

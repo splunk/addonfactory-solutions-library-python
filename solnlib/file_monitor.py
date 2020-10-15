@@ -3,11 +3,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-'''
+"""
 This module contains file monitoring class that can be used to check files
 change periodically and call callback function to handle properly when
 detecting files change.
-'''
+"""
 
 import time
 import logging
@@ -15,17 +15,16 @@ import traceback
 import threading
 import os.path as op
 
-__all__ = ['FileChangesChecker',
-           'FileMonitor']
+__all__ = ["FileChangesChecker", "FileMonitor"]
 
 
 class FileChangesChecker(object):
-    '''Files change checker.
+    """Files change checker.
 
     :param callback: Callback function for files change.
     :param files: Files to be monidtored with full path.
     :type files: ``list, tuple``
-    '''
+    """
 
     def __init__(self, callback, files):
         self._callback = callback
@@ -36,20 +35,19 @@ class FileChangesChecker(object):
             try:
                 self.file_mtimes[k] = op.getmtime(k)
             except OSError:
-                logging.debug('Getmtime for %s, failed: %s', k,
-                              traceback.format_exc())
+                logging.debug("Getmtime for %s, failed: %s", k, traceback.format_exc())
 
     def check_changes(self):
-        '''Check files change.
+        """Check files change.
 
         If some files are changed and callback function is not None, call
         callback function to handle files change.
 
         :returns: True if files changed else False
         :rtype: ``bool``
-        '''
+        """
 
-        logging.debug('Checking files=%s', self._files)
+        logging.debug("Checking files=%s", self._files)
         file_mtimes = self.file_mtimes
         changed_files = []
         for f, last_mtime in list(file_mtimes.items()):
@@ -58,7 +56,7 @@ class FileChangesChecker(object):
                 if current_mtime != last_mtime:
                     file_mtimes[f] = current_mtime
                     changed_files.append(f)
-                    logging.info('Detect %s has changed', f)
+                    logging.info("Detect %s has changed", f)
             except OSError:
                 pass
 
@@ -70,7 +68,7 @@ class FileChangesChecker(object):
 
 
 class FileMonitor(object):
-    '''Files change monitor.
+    """Files change monitor.
 
     Monitor files change in a separated thread and call callback
     when there is files change.
@@ -85,7 +83,7 @@ class FileMonitor(object):
       >>> import splunksolutionlib.file_monitor as fm
       >>> fm = fm.FileMonitor(fm_callback, files_list, 5)
       >>> fm.start()
-    '''
+    """
 
     def __init__(self, callback, files, interval=1):
         self._checker = FileChangesChecker(callback, files)
@@ -95,10 +93,10 @@ class FileMonitor(object):
         self._started = False
 
     def start(self):
-        '''Start file monitor.
+        """Start file monitor.
 
         Start a background thread to monitor files change.
-        '''
+        """
 
         if self._started:
             return
@@ -107,10 +105,10 @@ class FileMonitor(object):
         self._thr.start()
 
     def stop(self):
-        '''Stop file monitor.
+        """Stop file monitor.
 
         Stop the background thread to monitor files change.
-        '''
+        """
 
         self._started = False
 
