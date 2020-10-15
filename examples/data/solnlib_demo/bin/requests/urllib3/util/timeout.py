@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2020 2020
+#
+# SPDX-License-Identifier: Apache-2.0
+
 from __future__ import absolute_import
 # The default socket timeout, used by httplib to indicate that no timeout was
 # specified by the user

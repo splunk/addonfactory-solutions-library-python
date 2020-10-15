@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2020 2020
+#
+# SPDX-License-Identifier: Apache-2.0
+
 """
 This module uses ctypes to bind a whole bunch of functions and constants from
 SecureTransport. The goal here is to provide the low-level API to

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2020 2020
+#
+# SPDX-License-Identifier: Apache-2.0
+
 """
 This module provides a pool manager that uses Google App Engine's
 `URLFetch Service <https://cloud.google.com/appengine/docs/python/urlfetch>`_.

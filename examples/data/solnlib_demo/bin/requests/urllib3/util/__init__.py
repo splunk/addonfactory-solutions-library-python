@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2020 2020
+#
+# SPDX-License-Identifier: Apache-2.0
+
 from __future__ import absolute_import
 # For backwards compatibility, provide imports that used to be here.
 from .connection import is_connection_dropped

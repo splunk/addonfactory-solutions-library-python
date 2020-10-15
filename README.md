@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2020 2020
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # README
 
 Splunk Solutions SDK is an open source packaged solution for getting data into Splunk using modular inputs.

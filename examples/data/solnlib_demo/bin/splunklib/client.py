@@ -1,29 +1,7 @@
 # Copyright 2011-2015 Splunk, Inc.
+# SPDX-FileCopyrightText: 2020 2020
 #
-# Licensed under the Apache License, Version 2.0 (the "License"): you may
-# not use this file except in compliance with the License. You may obtain
-# a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-# License for the specific language governing permissions and limitations
-# under the License.
-#
-# The purpose of this module is to provide a friendlier domain interface to
-# various Splunk endpoints. The approach here is to leverage the binding
-# layer to capture endpoint context and provide objects and methods that
-# offer simplified access their corresponding endpoints. The design avoids
-# caching resource state. From the perspective of this module, the 'policy'
-# for caching resource state belongs in the application or a higher level
-# framework, and its the purpose of this module to provide simplified
-# access to that resource state.
-#
-# A side note, the objects below that provide helper methods for updating eg:
-# Entity state, are written so that they may be used in a fluent style.
-#
+# SPDX-License-Identifier: Apache-2.0
 
 """The **splunklib.client** module provides a Pythonic interface to the
 `Splunk REST API <http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTcontents>`_,

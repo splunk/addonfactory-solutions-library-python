@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2020 2020
+#
+# SPDX-License-Identifier: Apache-2.0
+
 """
 Given a list of integers, made up of (hopefully) a small number of long runs
 of consecutive integers, compute a representation of the form
