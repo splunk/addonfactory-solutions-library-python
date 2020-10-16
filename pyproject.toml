@@ -14,7 +14,7 @@ repository = "https://github.com/splunk/addonfactory-solutions-library-python"
 python = "~2.7 || ^3.7"
 requests = "^2.24"
 future = "^0"
-splunk-sdk = "^1.6"
+splunk-sdk = "^1.6.10"
 schematics = "^2.1"
 sortedcontainers = "^2.2"
 six = "*"
@@ -34,7 +34,7 @@ poetry-dynamic-versioning = { version = "^0.8", python = "^3.7" }
 pyyaml = "^5.3"
 reuse = "*"
 black = [
-    { version = "20.8b1" , python = "^3.7" }
+    { version = "20.8b1",  python = "^3.7" }
 ]
 
 [tool.poetry-dynamic-versioning]
