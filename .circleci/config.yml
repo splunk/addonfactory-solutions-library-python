@@ -259,7 +259,7 @@ workflows:
           matrix:
             parameters:
               os: [linux]
-              python-version: ["2.7.17", "3.7.4"]
+              python-version: ["3.7.4"]
           filters:
             branches:
               only: /.*/
@@ -270,7 +270,7 @@ workflows:
             parameters:
               os: [linux]
               splunk-version: ["7.2", "7.3", "8.0"]
-              python-version: ["2.7.17", "3.7.4"]
+              python-version: ["3.7.4"]
           filters:
             branches:
               only: /.*/
