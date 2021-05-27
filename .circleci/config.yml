@@ -137,8 +137,6 @@ jobs:
       - run:
           name: install deps
           command: |
-            pip install --upgrade pip
-            pip install --upgrade virtualenv
             unset PYENV_ROOT
             curl -L https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer | bash
             export PATH="$HOME/.pyenv/bin:$PATH"
@@ -146,6 +144,8 @@ jobs:
             pyenv install << parameters.python-version >>
             pyenv global << parameters.python-version >>
             pyenv local << parameters.python-version >>
+            pip install --upgrade pip
+            pip install --upgrade virtualenv
             curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
             poetry install
             mkdir test-results || true
@@ -200,8 +200,6 @@ jobs:
       - run:
           name: Install deps
           command: |
-            pip install --upgrade pip
-            pip install --upgrade virtualenv
             unset PYENV_ROOT
             curl -L https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer | bash
             export PATH="$HOME/.pyenv/bin:$PATH"
@@ -209,6 +207,8 @@ jobs:
             pyenv install << parameters.python-version >>
             pyenv global << parameters.python-version >>
             pyenv local << parameters.python-version >>
+            pip install --upgrade pip
+            pip install --upgrade virtualenv
             curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
             poetry install            
             mkdir test-results || true
