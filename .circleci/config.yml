@@ -146,12 +146,8 @@ jobs:
             pyenv install << parameters.python-version >>
             pyenv global << parameters.python-version >>
             pyenv local << parameters.python-version >>
-            pip install /tmp/workspace/dist/*
-            pip install pytest
-            pip install pytest-cov
-            pip install pytest-expect
-            pip install pyaml
-            pip install mock
+            curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
+            poetry install
             mkdir test-results || true
             python -m pytest --junitxml=test-results/results.xml --cov=solnlib --cov-report=html tests
       - store_test_results:
@@ -213,11 +209,8 @@ jobs:
             pyenv install << parameters.python-version >>
             pyenv global << parameters.python-version >>
             pyenv local << parameters.python-version >>
-            pip install /tmp/workspace/dist/*
-            pip install pytest
-            pip install pytest-cov
-            pip install pytest-expect
-            pip install pyaml
+            curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
+            poetry install            
             mkdir test-results || true
             SPLUNK_HOME=/opt/splunk/ python -m pytest --junitxml=test-results/results.xml -v examples
       - store_test_results:
@@ -269,7 +262,7 @@ workflows:
           matrix:
             parameters:
               os: [linux]
-              splunk-version: ["7.2", "7.3", "8.0"]
+              splunk-version: ["8.0", "8.1", "8.2"]
               python-version: ["3.7.4"]
           filters:
             branches:
