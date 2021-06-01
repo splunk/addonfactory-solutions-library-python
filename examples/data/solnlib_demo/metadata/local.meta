@@ -1,0 +1,11 @@
+
+[collections/mycollection]
+access = read : [ * ]
+owner = admin
+modtime = 1622554901.741956000
+
+[eventtypes/test1]
+access = read : [ * ]
+export = system
+owner = admin
+modtime = 1622554901.741956000

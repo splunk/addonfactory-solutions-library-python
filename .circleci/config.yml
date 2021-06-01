@@ -126,8 +126,8 @@ jobs:
 
   semgrep:
     environment:
-        SEMGREP_REPO_URL: << pipeline.project.git_url >>
-        SEMGREP_BRANCH: << pipeline.git.branch >>
+      SEMGREP_REPO_URL: << pipeline.project.git_url >>
+      SEMGREP_BRANCH: << pipeline.git.branch >>
     docker:
       - image: returntocorp/semgrep-agent:v1
         user: root
@@ -147,13 +147,13 @@ jobs:
             export REPO_BRANCH=$(echo "<< pipeline.git.branch >>")
             DASHBOARD_URL=$(python3 -c "from urllib.parse import quote; import os; print('https://semgrep.dev/manage/findings?repo=' + quote(os.environ['SEMGREP_REPO_NAME'], safe='') + '&tab=findings&ref_type=branch&ref=' + quote(os.environ['REPO_BRANCH'], safe=''))")
             echo "View Result at Semgrep Dashboard: $DASHBOARD_URL"
-            
+
             # Semgrep Exclude files
             dos2unix .semgrepignore
             SEMGREP_EXCLUDE=$(sed "/^#/d" .semgrepignore | sed "/^:/d" | sed -r '/^\s*$/d' | sed ':a;N;$!ba;s/\n/ --exclude /g')
             echo "Excluding Semgrep Files: --exclude $SEMGREP_EXCLUDE"
             # Generate xml file
-            semgrep --config="p/r2c-ci" --config="p/r2c-security-audit" --config="p/bandit" --error --strict --timeout=0 --junit-xml -o /root/project/test-results/semgrep-scan.xml --exclude $SEMGREP_EXCLUDE     
+            semgrep --config="p/r2c-ci" --config="p/r2c-security-audit" --config="p/bandit" --error --strict --timeout=0 --junit-xml -o /root/project/test-results/semgrep-scan.xml --exclude $SEMGREP_EXCLUDE
       - store_artifacts:
           path: test-results
           destination: test-results
@@ -162,11 +162,10 @@ jobs:
 
   test-unit:
     parameters:
-      os:
-        type: executor
       python-version:
         type: string
-    executor: << parameters.os >>
+    docker:
+      - image: circleci/python:3.7.4
     steps:
       - checkout
       - attach_workspace:
@@ -174,23 +173,11 @@ jobs:
       - run:
           name: install deps
           command: |
-            pip install --upgrade pip
-            pip install --upgrade virtualenv
-            unset PYENV_ROOT
-            curl -L https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer | bash
-            export PATH="$HOME/.pyenv/bin:$PATH"
-            eval "$(pyenv init -)"
-            pyenv install << parameters.python-version >>
-            pyenv global << parameters.python-version >>
-            pyenv local << parameters.python-version >>
-            pip install /tmp/workspace/dist/*
-            pip install pytest
-            pip install pytest-cov
-            pip install pytest-expect
-            pip install pyaml
-            pip install mock
             mkdir test-results || true
-            python -m pytest --junitxml=test-results/results.xml --cov=solnlib --cov-report=html tests
+            curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python3 -
+            source $HOME/.poetry/env
+            poetry install
+            poetry run pytest --junitxml=test-results/results.xml --cov=solnlib --cov-report=html tests
       - store_test_results:
           path: test-results
       - store_artifacts:
@@ -200,13 +187,12 @@ jobs:
 
   test-splunk:
     parameters:
-      os:
-        type: executor
       splunk-version:
         type: string
       python-version:
         type: string
-    executor: << parameters.os >>
+    docker:
+      - image: circleci/python:3.7.4
     steps:
       - checkout
       - run: git submodule sync
@@ -214,7 +200,7 @@ jobs:
       - run:
           name: Install Splunk
           command: |
-            pip install git+https://github.com/pixelb/crudini
+            pip install --user git+https://github.com/pixelb/crudini
             export SPLUNK_PRODUCT=splunk
             export SPLUNK_VERSION=$(crudini --get deps/build/addonfactory_test_matrix_splunk/splunk_matrix.conf "<<parameters.splunk-version>>" VERSION)
             export SPLUNK_BUILD=$(crudini --get deps/build/addonfactory_test_matrix_splunk/splunk_matrix.conf "<<parameters.splunk-version>>" BUILD)
@@ -231,32 +217,20 @@ jobs:
             sudo mkdir -p $SPLUNK_HOME/etc/apps/Splunk_TA_test/default/
             sudo chown -R $USER:$USER /opt/splunk
             ls $SPLUNK_HOME/etc/apps/solnlib_demo/bin/
-            echo [user_info] >$SPLUNK_HOME/etc/system/local/user-seed.conf
-            echo USERNAME=Admin >>$SPLUNK_HOME/etc/system/local/user-seed.conf
-            echo PASSWORD=Chang3d! >>$SPLUNK_HOME/etc/system/local/user-seed.conf
-            /opt/splunk/bin/splunk start --accept-license
+            echo -e "[user_info]\nUSERNAME=Admin\nPASSWORD=Chang3d"'!' | sudo tee -a /opt/splunk/etc/system/local/user-seed.conf
+            echo 'OPTIMISTIC_ABOUT_FILE_LOCKING=1' | sudo tee -a /opt/splunk/etc/splunk-launch.conf
+            sudo /opt/splunk/bin/splunk start --accept-license
       #- python/load-cache
       - attach_workspace:
           at: /tmp/workspace
       - run:
           name: Install deps
           command: |
-            pip install --upgrade pip
-            pip install --upgrade virtualenv
-            unset PYENV_ROOT
-            curl -L https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer | bash
-            export PATH="$HOME/.pyenv/bin:$PATH"
-            eval "$(pyenv init -)"
-            pyenv install << parameters.python-version >>
-            pyenv global << parameters.python-version >>
-            pyenv local << parameters.python-version >>
-            pip install /tmp/workspace/dist/*
-            pip install pytest
-            pip install pytest-cov
-            pip install pytest-expect
-            pip install pyaml
             mkdir test-results || true
-            SPLUNK_HOME=/opt/splunk/ python -m pytest --junitxml=test-results/results.xml -v examples
+            curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python3 -
+            source $HOME/.poetry/env
+            poetry install
+            SPLUNK_HOME=/opt/splunk/ poetry run pytest --junitxml=test-results/results.xml -v examples
       - store_test_results:
           path: test-results
       - store_artifacts:
@@ -292,7 +266,7 @@ workflows:
       - build
       - semgrep:
           context:
-            - gdi-semgrep      
+            - gdi-semgrep
           filters:
             branches:
               only: /.*/
@@ -301,8 +275,7 @@ workflows:
             - build
           matrix:
             parameters:
-              os: [linux]
-              python-version: ["2.7.17", "3.7.4"]
+              python-version: ["3.7.4"]
           filters:
             branches:
               only: /.*/
@@ -311,9 +284,8 @@ workflows:
             - build
           matrix:
             parameters:
-              os: [linux]
-              splunk-version: ["7.2", "7.3", "8.0"]
-              python-version: ["2.7.17", "3.7.4"]
+              splunk-version: ["8.0", "8.1", "8.2"]
+              python-version: ["3.7.4"]
           filters:
             branches:
               only: /.*/
