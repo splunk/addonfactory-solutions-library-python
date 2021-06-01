@@ -11,31 +11,25 @@ license = "Apache-2.0"
 repository = "https://github.com/splunk/addonfactory-solutions-library-python"
 
 [tool.poetry.dependencies]
-python = "~2.7 || ^3.7"
+python = "^3.7"
 requests = "^2.24"
 future = "^0"
-splunk-sdk = "^1.6 && <1.6.14"
+splunk-sdk = "^1.6"
 schematics = "^2.1"
 sortedcontainers = "^2.2"
 six = "*"
 
 [tool.poetry.dev-dependencies]
-mock = [
-    { version = "^3", python = "^2.7" },
-    { version = "^4", python = "^3.7" }
-]
+mock = "^4"
 pytest-expect = "^1.1.0"
-pytest = [
-    { version = "^4.6", python = "^2.7" },
-    { version = "^6.0", python = "^3.7" }
-]
 pytest-cov = "^2"
-poetry-dynamic-versioning = { version = "^0.8", python = "^3.7" }
+poetry-dynamic-versioning = "^0"
 pyyaml = "^5.3"
 reuse = "*"
 black = [
     { version = "20.8b1",  python = "^3.7" }
 ]
+pytest = "^6.2"
 
 [tool.poetry-dynamic-versioning]
 enable = true
