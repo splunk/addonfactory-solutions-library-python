@@ -189,6 +189,7 @@ class HECEventWriter(EventWriter):
     :param hec_uri: (optional) If hec_uri and hec_token are provided, they will
        higher precedence than hec_input_name
     :type hec_token: ``string``
+    :type custom_logger: Python logger-like object
     :param context: Other configurations for Splunk rest client.
     :type context: ``dict``
 
@@ -217,10 +218,15 @@ class HECEventWriter(EventWriter):
         port=None,
         hec_uri=None,
         hec_token=None,
+        logger=None,
         **context
     ):
         super(HECEventWriter, self).__init__()
         self._session_key = session_key
+        if logger:
+            self.logger = logger
+        else:
+            self.logger = logging
 
         if not all([scheme, host, port]):
             scheme, host, port = get_splunkd_access_info()
@@ -331,7 +337,7 @@ class HECEventWriter(EventWriter):
         settings = hc.get_settings()
         if utils.is_true(settings.get("disabled")):
             # Enable HEC input
-            logging.info("Enabling HEC")
+            self.logging.info("Enabling HEC")
             settings["disabled"] = "0"
             settings["enableSSL"] = context.get("hec_enablessl", "1")
             settings["port"] = context.get("hec_port", "8088")
@@ -340,7 +346,7 @@ class HECEventWriter(EventWriter):
         hec_input = hc.get_input(hec_input_name)
         if not hec_input:
             # Create HEC input
-            logging.info("Create HEC datainput, name=%s", hec_input_name)
+            self.logging.info("Create HEC datainput, name=%s", hec_input_name)
             hinput = {
                 "index": context.get("index", "main"),
             }
@@ -409,7 +415,7 @@ class HECEventWriter(EventWriter):
                         headers=self.headers,
                     )
                 except binding.HTTPError as e:
-                    logging.warn("Write events through HEC failed. Status=%s", e.status)
+                    self.logging.warn("Write events through HEC failed. Status=%s", e.status)
                     last_ex = e
                     if e.status in [self.TOO_MANY_REQUESTS, self.SERVICE_UNAVAILABLE]:
                         # wait time for n retries: 10, 20, 40, 80, 80, 80, 80, ....
@@ -424,7 +430,7 @@ class HECEventWriter(EventWriter):
             else:
                 # When failed after retry, we reraise the exception
                 # to exit the function to let client handle this situation
-                logging.error(
+                self.logging.error(
                     "Write events through HEC failed: %s. status=%s",
                     traceback.format_exc(),
                     last_ex.status,
