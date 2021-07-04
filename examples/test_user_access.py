@@ -53,7 +53,7 @@ def test_object_acl_manager():
         replace_existing=False,
     )
     obj_acl = oaclm.get_acl(obj_collection, obj_id1)
-    assert set((obj_acl.obj_perms["read"])) == set(["admin", "user1"])
+    assert set(obj_acl.obj_perms["read"]) == {"admin", "user1"}
 
     oaclm.update_acls(
         obj_collection,

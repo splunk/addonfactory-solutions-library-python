@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from builtins import range
 import json
 import os.path as op
 import sys

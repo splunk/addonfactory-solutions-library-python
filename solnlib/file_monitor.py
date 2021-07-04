@@ -18,7 +18,7 @@ import os.path as op
 __all__ = ["FileChangesChecker", "FileMonitor"]
 
 
-class FileChangesChecker(object):
+class FileChangesChecker:
     """Files change checker.
 
     :param callback: Callback function for files change.
@@ -67,7 +67,7 @@ class FileChangesChecker(object):
         return False
 
 
-class FileMonitor(object):
+class FileMonitor:
     """Files change monitor.
 
     Monitor files change in a separated thread and call callback

@@ -10,7 +10,7 @@ from .utils import retry
 __all__ = ["HECConfig"]
 
 
-class HECConfig(object):
+class HECConfig:
     """HTTP Event Collector configuration.
 
     :param session_key: Splunk access token.

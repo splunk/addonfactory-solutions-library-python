@@ -107,7 +107,7 @@ class CustomModularInput(ModularInput):
 
 
 def test_modular_input(monkeypatch):
-    class _MockStdout(object):
+    class _MockStdout:
         def __init__(self):
             self._buf = ""
 

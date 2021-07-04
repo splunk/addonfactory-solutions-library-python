@@ -14,7 +14,7 @@ def to_sorted_json_string(obj):
     return json.dumps(json.loads(str(obj)), sort_keys=True)
 
 
-class TestXMLEvent(object):
+class TestXMLEvent:
     @classmethod
     def setup_class(cls):
         cls.xe1 = XMLEvent(
@@ -52,7 +52,7 @@ class TestXMLEvent(object):
         )
 
         cls.xe4 = XMLEvent(
-            data=u"This is utf-8 \u2603 data4.",
+            data="This is utf-8 \u2603 data4.",
             time=1372274622.493,
             index="main",
             host="localhost",
@@ -83,11 +83,11 @@ class TestXMLEvent(object):
             '<stream><event stanza="test_scheme://test"><time>1372274622.493</time><index>main</index><host>localhost</host><source>Splunk</source><sourcetype>misc</sourcetype><data>This is a test data3.</data></event></stream>'
         ]
         assert XMLEvent.format_events([self.xe4]) == [
-            u'<stream><event stanza="test_scheme://test"><time>1372274622.493</time><index>main</index><host>localhost</host><source>Splunk</source><sourcetype>misc</sourcetype><data>This is utf-8 \u2603 data4.</data></event></stream>'
+            '<stream><event stanza="test_scheme://test"><time>1372274622.493</time><index>main</index><host>localhost</host><source>Splunk</source><sourcetype>misc</sourcetype><data>This is utf-8 \u2603 data4.</data></event></stream>'
         ]
 
 
-class TestHECEvent(object):
+class TestHECEvent:
     @classmethod
     def setup_class(cls):
         cls.he1 = HECEvent(

@@ -36,7 +36,7 @@ class ObjectACLException(Exception):
     pass
 
 
-class ObjectACL(object):
+class ObjectACL:
     """Object ACL record.
 
     :param obj_collection: Collection where object currently stored.
@@ -241,7 +241,7 @@ class ObjectACLNotExistException(Exception):
     pass
 
 
-class ObjectACLManager(object):
+class ObjectACLManager:
     """Object ACL manager.
 
     :param collection_name: Collection name to store object ACL info.
@@ -441,7 +441,7 @@ class ObjectACLManager(object):
                 raise
 
             raise ObjectACLNotExistException(
-                "Object ACL info of %s_%s does not exist." % (obj_collection, obj_id)
+                "Object ACL info of {}_{} does not exist.".format(obj_collection, obj_id)
             )
 
         return ObjectACL.parse(obj_acl)
@@ -496,7 +496,7 @@ class ObjectACLManager(object):
                 raise
 
             raise ObjectACLNotExistException(
-                "Object ACL info of %s_%s does not exist." % (obj_collection, obj_id)
+                "Object ACL info of {}_{} does not exist.".format(obj_collection, obj_id)
             )
 
     @retry(exceptions=[binding.HTTPError])
@@ -556,7 +556,7 @@ class AppCapabilityNotExistException(Exception):
     pass
 
 
-class AppCapabilityManager(object):
+class AppCapabilityManager:
     """App capability manager.
 
     :param collection_name: Collection name to store capabilities.

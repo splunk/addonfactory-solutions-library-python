@@ -29,7 +29,7 @@ class CheckpointerException(Exception):
     pass
 
 
-class Checkpointer(with_metaclass(ABCMeta, object)):
+class Checkpointer(metaclass=ABCMeta):
     """Base class of checkpointer."""
 
     @abstractmethod
@@ -264,7 +264,7 @@ class FileCheckpointer(Checkpointer):
         if op.exists(file_name):
             try:
                 os.remove(file_name)
-            except IOError:
+            except OSError:
                 pass
 
         os.rename(file_name + "_new", file_name)
@@ -276,9 +276,9 @@ class FileCheckpointer(Checkpointer):
     def get(self, key):
         file_name = op.join(self._checkpoint_dir, self.encode_key(key))
         try:
-            with open(file_name, "r") as fp:
+            with open(file_name) as fp:
                 return json.load(fp)
-        except (IOError, ValueError):
+        except (OSError, ValueError):
             return None
 
     def delete(self, key):

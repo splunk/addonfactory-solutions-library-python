@@ -14,7 +14,7 @@ import time
 __all__ = ["OrphanProcessChecker", "OrphanProcessMonitor"]
 
 
-class OrphanProcessChecker(object):
+class OrphanProcessChecker:
     """Orphan process checker.
 
     Only work for Linux platform. On Windows platform, is_orphan
@@ -61,7 +61,7 @@ class OrphanProcessChecker(object):
         return res
 
 
-class OrphanProcessMonitor(object):
+class OrphanProcessMonitor:
     """Orpan process monitor.
 
     Check if process become orphan in background thread per

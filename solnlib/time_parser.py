@@ -21,7 +21,7 @@ class InvalidTimeFormatException(Exception):
     pass
 
 
-class TimeParser(object):
+class TimeParser:
     """Datetime parser.
 
     Use splunkd rest to parse datetime.

@@ -12,7 +12,7 @@ from solnlib import server_info
 from splunklib import binding
 
 
-class TestServerInfo(object):
+class TestServerInfo:
     def test_server_name(self, monkeypatch):
         common.mock_splunkhome(monkeypatch)
         common.mock_serverinfo(monkeypatch)
@@ -69,7 +69,7 @@ class TestServerInfo(object):
         assert si.get_shc_members() == [
             ("SHC01_SearchHead02_1_85", "https://192.168.1.85:8089"),
             ("SHC01_SearchHead03_1_86", "https://192.168.1.86:8089"),
-            ("SHC01_SearchHead01_1_84", u"https://192.168.1.84:8089"),
+            ("SHC01_SearchHead01_1_84", "https://192.168.1.84:8089"),
         ]
 
     def test_is_captain_ready(self, monkeypatch):

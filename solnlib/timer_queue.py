@@ -22,7 +22,7 @@ import sortedcontainers as sc
 __all__ = ["Timer", "TimerQueueStruct", "TimerQueue"]
 
 
-class Timer(object):
+class Timer:
     """Timer wraps the callback and timestamp related attributes.
 
     :param callback: Arbitrary callable object.
@@ -79,7 +79,7 @@ class Timer(object):
 TEARDOWN_SENTINEL = None
 
 
-class TimerQueueStruct(object):
+class TimerQueueStruct:
     """
     The underlying data structure for TimerQueue
     """
@@ -187,8 +187,8 @@ class TimerQueueStruct(object):
         return _calc_sleep_time(next_expired_time)
 
 
-class TimerQueue(object):
-    """A simple timer queue implementation.
+class TimerQueue:
+    r"""A simple timer queue implementation.
 
     It runs a separate thread to handle timers Note: to effectively use this
     timer queue, the timer callback should be short, otherwise it will cause

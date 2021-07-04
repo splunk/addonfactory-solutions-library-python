@@ -401,7 +401,7 @@ def _generate_documentation(context, method_list):
     generator.update_spec()
 
 
-class _SwaggerSpecGenerator(object):
+class _SwaggerSpecGenerator:
     """Private class to generate the swagger spec file."""
 
     def __init__(self, swagger_api):
@@ -451,7 +451,7 @@ class _SwaggerSpecGenerator(object):
             )
 
 
-class _SwaggerApi(object):
+class _SwaggerApi:
     """
     Private class to generate the swagger
      documentation and default params values.
@@ -459,7 +459,7 @@ class _SwaggerApi(object):
 
     def __init__(self):
         if op.isfile(tempfile.gettempdir() + op.sep + "temp.yaml"):
-            with open(tempfile.gettempdir() + op.sep + "temp.yaml", "r") as stream:
+            with open(tempfile.gettempdir() + op.sep + "temp.yaml") as stream:
                 try:
                     spec = yaml.safe_load(stream)
                     self.swagger = spec["swagger"]
@@ -606,10 +606,10 @@ class _SwaggerApi(object):
             definition["requirements"] = req
         for param in params:
             # get type of property
-            type_info = re.findall("\((.*?)\)\s", str(params.get(param)), re.DOTALL)
+            type_info = re.findall(r"\((.*?)\)\s", str(params.get(param)), re.DOTALL)
             if type_info and len(type_info) > 0:
                 type_info = type_info[0]
-            prop_type = re.findall("\<(.*?)\(", str(params.get(param)), re.DOTALL)
+            prop_type = re.findall(r"\<(.*?)\(", str(params.get(param)), re.DOTALL)
             if prop_type and len(prop_type) > 0:
                 prop_type = prop_type[0]
             if prop_type in self.type_converter:

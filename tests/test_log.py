@@ -48,7 +48,7 @@ def test_log_enter_exit(monkeypatch):
     test2()
 
 
-class TestLogs(object):
+class TestLogs:
     def test_get_logger(self, monkeypatch):
         logger = log.Logs().get_logger("logging")
 

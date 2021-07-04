@@ -15,7 +15,7 @@ def test_metadata_reader():
     mr = metadata.MetadataReader(context.app)
 
     modtime = mr.get("collections", "sessions", "modtime")
-    assert isinstance(modtime, six.text_type)
+    assert isinstance(modtime, str)
 
     modtime = mr.get_float("collections", "sessions", "modtime")
     assert type(modtime) == float

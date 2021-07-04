@@ -21,7 +21,7 @@ SESSION_KEY = "nU1aB6BntzwREOnGowa7pN6avV3B6JefliAZIzCX9"
 
 
 def mock_splunkhome(monkeypatch):
-    class MockPopen(object):
+    class MockPopen:
         def __init__(
             self,
             args,
@@ -83,7 +83,7 @@ def mock_gethostname(monkeypatch):
 
 
 def make_response_record(body, status=200):
-    class _MocBufReader(object):
+    class _MocBufReader:
         def __init__(self, buf):
             if isinstance(buf, str):
                 self._buf = buf.encode("utf-8")

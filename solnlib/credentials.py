@@ -35,7 +35,7 @@ class CredentialNotExistException(Exception):
     pass
 
 
-class CredentialManager(object):
+class CredentialManager:
     """Credential manager.
 
     :param session_key: Splunk access token.
@@ -125,7 +125,7 @@ class CredentialManager(object):
                 return password["clear_password"]
 
         raise CredentialNotExistException(
-            "Failed to get password of realm=%s, user=%s." % (self._realm, user)
+            "Failed to get password of realm={}, user={}.".format(self._realm, user)
         )
 
     @retry(exceptions=[binding.HTTPError])
@@ -211,7 +211,7 @@ class CredentialManager(object):
         """
         all_passwords = self._get_all_passwords_in_realm()
         deleted = False
-        ent_pattern = re.compile("(%s%s\d+)" % (user.replace("\\", "\\\\"), self.SEP))
+        ent_pattern = re.compile(r"({}{}\d+)".format(user.replace("\\", "\\\\"), self.SEP))
         for password in list(all_passwords):
             match = (user == password.username) or ent_pattern.match(password.username)
             if match and password.realm == self._realm:
@@ -220,7 +220,7 @@ class CredentialManager(object):
 
         if not deleted:
             raise CredentialNotExistException(
-                "Failed to delete password of realm=%s, user=%s" % (self._realm, user)
+                "Failed to delete password of realm={}, user={}".format(self._realm, user)
             )
 
     def _get_all_passwords_in_realm(self):

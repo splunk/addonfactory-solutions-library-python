@@ -72,7 +72,7 @@ def test_conf_manager(monkeypatch):
                 if kwargs["name"] in all_stanzas:
                     stanza_mgr = client.Stanza(
                         self.service,
-                        "configs/conf-test/{0}/".format(kwargs["name"]),
+                        "configs/conf-test/{}/".format(kwargs["name"]),
                         skip_refresh=True,
                     )
                     stanza_mgr._state = common.record(
@@ -90,7 +90,7 @@ def test_conf_manager(monkeypatch):
                 for stanza_name, stanza in list(all_stanzas.items()):
                     stanza_mgr = client.Stanza(
                         self.service,
-                        "configs/conf-test/{0}/".format(stanza_name),
+                        "configs/conf-test/{}/".format(stanza_name),
                         skip_refresh=True,
                     )
                     stanza_mgr._state = common.record(
@@ -111,7 +111,7 @@ def test_conf_manager(monkeypatch):
 
     def mock_configuration_file_create(self, name, **params):
         stanza_mgr = client.Stanza(
-            self.service, "configs/conf-test/{0}/".format(name), skip_refresh=True
+            self.service, "configs/conf-test/{}/".format(name), skip_refresh=True
         )
         stanza_mgr._state = common.record({"title": name, "content": {}})
         return stanza_mgr
