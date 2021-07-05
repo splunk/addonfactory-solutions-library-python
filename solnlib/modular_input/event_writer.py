@@ -337,7 +337,7 @@ class HECEventWriter(EventWriter):
         settings = hc.get_settings()
         if utils.is_true(settings.get("disabled")):
             # Enable HEC input
-            self.logging.info("Enabling HEC")
+            self.logger.info("Enabling HEC")
             settings["disabled"] = "0"
             settings["enableSSL"] = context.get("hec_enablessl", "1")
             settings["port"] = context.get("hec_port", "8088")
@@ -346,7 +346,7 @@ class HECEventWriter(EventWriter):
         hec_input = hc.get_input(hec_input_name)
         if not hec_input:
             # Create HEC input
-            self.logging.info("Create HEC datainput, name=%s", hec_input_name)
+            self.logger.info("Create HEC datainput, name=%s", hec_input_name)
             hinput = {
                 "index": context.get("index", "main"),
             }
@@ -415,7 +415,7 @@ class HECEventWriter(EventWriter):
                         headers=self.headers,
                     )
                 except binding.HTTPError as e:
-                    self.logging.warn("Write events through HEC failed. Status=%s", e.status)
+                    self.logger.warn("Write events through HEC failed. Status=%s", e.status)
                     last_ex = e
                     if e.status in [self.TOO_MANY_REQUESTS, self.SERVICE_UNAVAILABLE]:
                         # wait time for n retries: 10, 20, 40, 80, 80, 80, 80, ....
@@ -430,7 +430,7 @@ class HECEventWriter(EventWriter):
             else:
                 # When failed after retry, we reraise the exception
                 # to exit the function to let client handle this situation
-                self.logging.error(
+                self.logger.error(
                     "Write events through HEC failed: %s. status=%s",
                     traceback.format_exc(),
                     last_ex.status,
