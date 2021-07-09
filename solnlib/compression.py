@@ -16,7 +16,7 @@ from io import BytesIO
 __all__ = ["GzipHandler", "ZipHandler"]
 
 
-class GzipHandler(object):
+class GzipHandler:
     """
     Class for handling gzip-formatted string content.
     """
@@ -57,7 +57,7 @@ class GzipHandler(object):
         return gzip.GzipFile(fileobj=BytesIO(data), mode="rb").read()
 
 
-class ZipHandler(object):
+class ZipHandler:
     """
     Class for handling zip files.
     """

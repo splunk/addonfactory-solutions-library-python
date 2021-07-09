@@ -207,7 +207,7 @@ class SplunkRestClient(client.Service):
             scheme, host, port = get_splunkd_access_info()
 
         handler = _request_handler(context)
-        super(SplunkRestClient, self).__init__(
+        super().__init__(
             handler=handler,
             scheme=scheme,
             host=host,

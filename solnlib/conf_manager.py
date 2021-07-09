@@ -31,7 +31,7 @@ class ConfStanzaNotExistException(Exception):
     pass
 
 
-class ConfFile(object):
+class ConfFile:
     """Configuration file.
 
     :param name: Configuration file name.
@@ -211,12 +211,12 @@ class ConfFile(object):
                 raise
 
             raise ConfStanzaNotExistException(
-                "Stanza: %s does not exist in %s.conf" % (stanza_name, self._name)
+                "Stanza: {} does not exist in {}.conf".format(stanza_name, self._name)
             )
 
         if len(stanza_mgrs) == 0:
             raise ConfStanzaNotExistException(
-                "Stanza: %s does not exist in %s.conf" % (stanza_name, self._name)
+                "Stanza: {} does not exist in {}.conf".format(stanza_name, self._name)
             )
 
         stanza = self._decrypt_stanza(stanza_mgrs[0].name, stanza_mgrs[0].content)
@@ -326,7 +326,7 @@ class ConfFile(object):
                 "Delete stanza: %s error: %s.", stanza_name, traceback.format_exc()
             )
             raise ConfStanzaNotExistException(
-                "Stanza: %s does not exist in %s.conf" % (stanza_name, self._name)
+                "Stanza: {} does not exist in {}.conf".format(stanza_name, self._name)
             )
 
     @retry(exceptions=[binding.HTTPError])
@@ -349,7 +349,7 @@ class ConfManagerException(Exception):
     pass
 
 
-class ConfManager(object):
+class ConfManager:
     """Configuration file manager.
 
     :param session_key: Splunk access token.

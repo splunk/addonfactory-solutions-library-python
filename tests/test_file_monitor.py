@@ -22,7 +22,7 @@ def teardown_module(module):
     os.remove(_monitor_file)
 
 
-class TestFileChangesChecker(object):
+class TestFileChangesChecker:
     def test_check_changes(self, monkeypatch):
         self._called = False
 
@@ -44,7 +44,7 @@ class TestFileChangesChecker(object):
         assert self._called is True
 
 
-class TestFileMonitor(object):
+class TestFileMonitor:
     def test_check_monitor(self, monkeypatch):
         self._called = False
 

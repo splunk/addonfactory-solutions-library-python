@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # solnlib documentation build configuration file, created by
 # sphinx-quickstart on Sat Feb 27 15:17:42 2016.

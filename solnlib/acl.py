@@ -20,7 +20,7 @@ class ACLException(Exception):
     pass
 
 
-class ACLManager(object):
+class ACLManager:
     """ACL manager.
 
     :param session_key: Splunk access token.

@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 try:
-    from mock import Mock
+    from unittest.mock import Mock
 except:
     from unittest.mock import Mock
 
@@ -16,7 +16,7 @@ sys.modules["splunk.rest"] = Mock()
 from solnlib.api_documenter import *
 
 
-class TestApiDocumenter(object):
+class TestApiDocumenter:
     @api()
     def test_init(self, *args, **kwargs):
         assert True

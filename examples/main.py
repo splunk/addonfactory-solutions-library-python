@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from __future__ import print_function
 import sys
 import os
 import os.path as op
@@ -24,7 +23,7 @@ solnlib_lib_target_dir = make_splunkhome_path(
 
 def setup_environment():
     print("Setup solnlib demo environment...")
-    print("Copying %s to %s" % (source_dir, target_dir))
+    print("Copying {} to {}".format(source_dir, target_dir))
     shutil.copytree(source_dir, target_dir)
     shutil.copytree(solnlib_lib_dir, solnlib_lib_target_dir)
     os.system(splunk_bin + " start")

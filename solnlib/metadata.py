@@ -24,7 +24,7 @@ from .splunkenv import make_splunkhome_path
 __all__ = ["MetadataReader"]
 
 
-class MetadataReader(object):
+class MetadataReader:
     """Metadata reader for `app`.
 
     :param app: App name.
@@ -46,7 +46,7 @@ class MetadataReader(object):
             # May raise ConfigParser.ParsingError
             self._cfg.read(local_meta)
         else:
-            raise IOError("No such file: %s." % local_meta)
+            raise OSError("No such file: %s." % local_meta)
 
     def get(self, conf, stanza, option):
         """Return the metadata value of option in [conf/stanza] section.

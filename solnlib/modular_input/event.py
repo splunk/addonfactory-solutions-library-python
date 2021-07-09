@@ -10,7 +10,7 @@ This module provides Splunk modular input event encapsulation.
 import json
 
 try:
-    import xml.etree.cElementTree as ET
+    import xml.etree.ElementTree as ET
 except ImportError:
     import xml.etree.ElementTree as ET
 
@@ -32,7 +32,7 @@ class EventException(Exception):
     pass
 
 
-class Event(object):
+class Event:
     """Base class of modular input event."""
 
     def __init__(

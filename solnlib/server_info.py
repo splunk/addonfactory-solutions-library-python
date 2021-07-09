@@ -21,7 +21,7 @@ class ServerInfoException(Exception):
     pass
 
 
-class ServerInfo(object):
+class ServerInfo:
     """This class is a wrapper of splunk server info.
 
     :param session_key: Splunk access token.

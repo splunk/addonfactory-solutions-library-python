@@ -16,7 +16,7 @@ def _mock_getppid():
     return random.randint(1, 65535)
 
 
-class TestOrphanProcessChecker(object):
+class TestOrphanProcessChecker:
     def setup(self):
         self._called = False
 
@@ -34,7 +34,7 @@ class TestOrphanProcessChecker(object):
         assert self._called
 
 
-class TestOrphanProcessMonitor(object):
+class TestOrphanProcessMonitor:
     def setup(self):
         self._called = False
 

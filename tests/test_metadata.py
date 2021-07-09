@@ -12,7 +12,7 @@ sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 from solnlib import metadata
 
 
-class TestMetadataReader(object):
+class TestMetadataReader:
     def test_get(self, monkeypatch):
         common.mock_splunkhome(monkeypatch)
 

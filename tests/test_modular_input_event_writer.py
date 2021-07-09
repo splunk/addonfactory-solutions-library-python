@@ -14,7 +14,7 @@ from splunklib import binding
 
 
 def test_classic_event_writer(monkeypatch):
-    class MockStdout(object):
+    class MockStdout:
         def __init__(self):
             self._buf = ""
             self.write_count = 0

@@ -41,7 +41,7 @@ def _mock_post(
         return common.make_response_record(_old_acl)
 
 
-class TestACLManager(object):
+class TestACLManager:
     def test_get(self, monkeypatch):
         common.mock_splunkhome(monkeypatch)
         monkeypatch.setattr(binding.Context, "get", _mock_get)

@@ -28,7 +28,7 @@ from random import randint
 __all__ = ["ClassicEventWriter", "HECEventWriter"]
 
 
-class EventWriter(with_metaclass(ABCMeta, object)):
+class EventWriter(metaclass=ABCMeta):
     """Base class of event writer."""
 
     description = "EventWriter"
@@ -221,7 +221,7 @@ class HECEventWriter(EventWriter):
         logger=None,
         **context
     ):
-        super(HECEventWriter, self).__init__()
+        super().__init__()
         self._session_key = session_key
         if logger:
             self.logger = logger
