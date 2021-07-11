@@ -13,11 +13,9 @@ repository = "https://github.com/splunk/addonfactory-solutions-library-python"
 [tool.poetry.dependencies]
 python = "^3.7"
 requests = "^2.24"
-future = "^0"
 splunk-sdk = "1.6.16"
 schematics = "^2.1"
 sortedcontainers = "^2.2"
-six = "*"
 
 [tool.poetry.dev-dependencies]
 mock = "^4"

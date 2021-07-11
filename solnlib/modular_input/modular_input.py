@@ -23,7 +23,6 @@ except ImportError:
         from urllib import parse as urlparse
 
 from abc import ABCMeta, abstractmethod
-from six import with_metaclass
 
 try:
     import xml.etree.ElementTree as ET

@@ -19,7 +19,6 @@ from abc import ABCMeta, abstractmethod
 
 from .. import splunk_rest_client as rest_client
 from splunklib import binding
-from six import with_metaclass
 from ..utils import retry
 
 __all__ = ["CheckpointerException", "KVStoreCheckpointer", "FileCheckpointer"]

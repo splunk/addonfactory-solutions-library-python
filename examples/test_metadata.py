@@ -4,7 +4,6 @@
 
 import sys
 import os.path as op
-import six
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 from solnlib import metadata
