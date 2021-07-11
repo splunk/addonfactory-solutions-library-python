@@ -12,7 +12,6 @@ import logging.handlers
 import os.path as op
 from threading import Lock
 
-from six import with_metaclass
 from .pattern import Singleton
 from .splunkenv import make_splunkhome_path
 

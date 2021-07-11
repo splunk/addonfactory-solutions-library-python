@@ -128,14 +128,6 @@ optional = false
 python-versions = ">=3.5,<4.0"
 
 [[package]]
-name = "future"
-version = "0.18.2"
-description = "Clean single-source support for Python 3 and 2"
-category = "main"
-optional = false
-python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
-
-[[package]]
 name = "idna"
 version = "2.10"
 description = "Internationalized Domain Names in Applications (IDNA)"
@@ -406,7 +398,7 @@ python-versions = "*"
 name = "six"
 version = "1.16.0"
 description = "Python 2 and 3 compatibility utilities"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*"
 
@@ -494,7 +486,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=1.2.3)", "pytest-flake8", "pyt
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "a1e5605bdac3c7953e0a2836ed451f51d67d8865b9433ca30d4442d01866b9e5"
+content-hash = "ad50a6b614274bd8d32d11a5f249d2d2d8eb9981ea0ada75e431b3d20e4730d1"
 
 [metadata.files]
 appdirs = [
@@ -593,9 +585,6 @@ coverage = [
 dunamai = [
     {file = "dunamai-1.5.5-py3-none-any.whl", hash = "sha256:525ac30db6ca4f8e48b9f198c2e8fbc2a9ce3ea189768361c621ea635212ee49"},
     {file = "dunamai-1.5.5.tar.gz", hash = "sha256:32f30db71e8fd1adeb42fac45c04433680e47a28298447cd30304e0bba95a7dd"},
-]
-future = [
-    {file = "future-0.18.2.tar.gz", hash = "sha256:b1bead90b70cf6ec3f0710ae53a525360fa360d306a86583adc6bf83a4db537d"},
 ]
 idna = [
     {file = "idna-2.10-py2.py3-none-any.whl", hash = "sha256:b97d804b1e9b523befed77c48dacec60e6dcb0b5391d57af6a65a312a90648c0"},

@@ -20,7 +20,6 @@ from .. import splunk_rest_client as rest_client
 from .. import utils
 from ..hec_config import HECConfig
 from splunklib import binding
-from six import with_metaclass
 from ..splunkenv import get_splunkd_access_info
 from ..utils import retry
 from random import randint
