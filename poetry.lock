@@ -387,14 +387,6 @@ python-debian = "*"
 requests = "*"
 
 [[package]]
-name = "schematics"
-version = "2.1.0"
-description = "Python Data Structures for Humans"
-category = "main"
-optional = false
-python-versions = "*"
-
-[[package]]
 name = "six"
 version = "1.16.0"
 description = "Python 2 and 3 compatibility utilities"
@@ -486,7 +478,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=1.2.3)", "pytest-flake8", "pyt
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "ad50a6b614274bd8d32d11a5f249d2d2d8eb9981ea0ada75e431b3d20e4730d1"
+content-hash = "f61bf1eeb004dbce88979f304d31cf03df584f6fe3681baa7a23e22753b0a7ae"
 
 [metadata.files]
 appdirs = [
@@ -771,10 +763,6 @@ requests = [
 reuse = [
     {file = "reuse-0.12.1-py3-none-any.whl", hash = "sha256:a07fce3a43eefa2e3140a7510b6171788cc95a3c9cc840517c10d6de28c42d6d"},
     {file = "reuse-0.12.1.tar.gz", hash = "sha256:4ed065f24c5fc929ebf8853663e14ca486fe4108d7aebceebf51e2c597ec2186"},
-]
-schematics = [
-    {file = "schematics-2.1.0-py2.py3-none-any.whl", hash = "sha256:8fcc6182606fd0b24410a1dbb066d9bbddbe8da9c9509f47b743495706239283"},
-    {file = "schematics-2.1.0.tar.gz", hash = "sha256:a40b20635c0e43d18d3aff76220f6cd95ea4decb3f37765e49529b17d81b0439"},
 ]
 six = [
     {file = "six-1.16.0-py2.py3-none-any.whl", hash = "sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254"},
