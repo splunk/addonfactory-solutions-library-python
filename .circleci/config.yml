@@ -26,7 +26,7 @@ orbs:
               command: |
                 git remote set-url origin https://<<parameters.gh_user>>:<<parameters.gh_token>>@github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}.git
                 ./semtag <<parameters.tag_level>>
-      merge-to-master:
+      merge-to-main:
         parameters:
           gh_user:
             description: Git Hub username
@@ -41,9 +41,9 @@ orbs:
                 git remote set-url origin https://<<parameters.gh_user>>:<<parameters.gh_token>>@github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}.git
                 git config --global user.email "addonreleasesrv@splunk.com"
                 git config --global user.name "Add on release service"
-                git pull origin master
-                git merge master -m "Merge from master"
-                git checkout master
+                git pull origin main
+                git merge main -m "Merge from main"
+                git checkout main
                 git merge develop
                 git push
     jobs:
@@ -65,7 +65,7 @@ orbs:
               tag_level: <<parameters.tag_level>>
               gh_user: <<parameters.gh_user>>
               gh_token: <<parameters.gh_token>>
-      merge-to-master:
+      merge-to-main:
         executor: python37
         parameters:
           gh_user:
@@ -76,7 +76,7 @@ orbs:
             type: string
         steps:
           - checkout
-          - merge-to-master:
+          - merge-to-main:
               gh_user: <<parameters.gh_user>>
               gh_token: <<parameters.gh_token>>
 
@@ -321,19 +321,19 @@ workflows:
           gh_token: ${GH_PAT}
           requires:
             - approval-tag-beta
-      - approval-merge-beta-to-master:
+      - approval-merge-beta-to-main:
           requires:
             - tag-beta
           type: approval
           filters:
             branches:
               only: develop
-      - splunk-release/merge-to-master:
-          name: merge-beta-to-master
+      - splunk-release/merge-to-main:
+          name: merge-beta-to-main
           gh_user: ${GH_USER}
           gh_token: ${GH_PAT}
           requires:
-            - approval-merge-beta-to-master
+            - approval-merge-beta-to-main
           filters:
             branches:
               only: develop
@@ -344,7 +344,7 @@ workflows:
           gh_token: ${GH_PAT}
           filters:
             branches:
-              only: master
+              only: main
       - approval-tag-final-major:
           type: approval
           requires:
