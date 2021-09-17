@@ -173,7 +173,7 @@ class ModularInput(metaclass=ABCMeta):
         """
 
         if self._checkpointer is not None:
-            return self._checkpoint_dir
+            return self._checkpointer
 
         self._checkpointer = self._create_checkpointer()
         return self._checkpointer
