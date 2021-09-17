@@ -203,6 +203,7 @@ class KVStoreCheckpointer(Checkpointer):
     @retry(exceptions=[binding.HTTPError])
     def update(self, key, state):
         record = {"_key": key, "state": json.dumps(state)}
+        # ZEP: why batch_save? update as alternative?
         self._collection_data.batch_save(record)
 
     @retry(exceptions=[binding.HTTPError])
