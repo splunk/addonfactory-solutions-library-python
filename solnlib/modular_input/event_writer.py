@@ -410,7 +410,7 @@ class HECEventWriter(EventWriter):
                 try:
                     self._rest_client.post(
                         self.HTTP_EVENT_COLLECTOR_ENDPOINT,
-                        body=event,
+                        body=event.encode('utf-8'),
                         headers=self.headers,
                     )
                 except binding.HTTPError as e:
