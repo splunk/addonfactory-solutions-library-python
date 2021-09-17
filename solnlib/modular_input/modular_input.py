@@ -187,9 +187,7 @@ class ModularInput(metaclass=ABCMeta):
 
     def _create_checkpointer(self):
         if self.use_kvstore_checkpointer:
-            checkpointer_name = ":".join(
-                [self.app, self.config_name, self.kvstore_checkpointer_collection_name]
-            )
+            checkpointer_name = self.kvstore_checkpointer_collection_name
             try:
                 return checkpointer.KVStoreCheckpointer(
                     checkpointer_name,
