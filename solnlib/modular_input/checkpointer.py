@@ -218,7 +218,7 @@ class KVStoreCheckpointer(Checkpointer):
     def batch_update(self, states):
         for state in states:
             state["state"] = json.dumps(state["state"])
-            self._collection_data.batch_save(*states)
+        self._collection_data.batch_save(*states)
 
     @retry(exceptions=[binding.HTTPError])
     def get(self, key):
