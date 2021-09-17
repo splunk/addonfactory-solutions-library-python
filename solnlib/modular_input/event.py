@@ -216,7 +216,7 @@ class HECEvent(Event):
         if hasattr(self, "_fields"):
             event["fields"] = self._fields
 
-        return json.dumps(event)
+        return json.dumps(event, ensure_ascii=False)
 
     @classmethod
     def format_events(cls, events: List, event_field: str = "event") -> List:
