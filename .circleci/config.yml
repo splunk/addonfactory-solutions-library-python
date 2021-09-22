@@ -228,10 +228,9 @@ jobs:
           command: |
             mkdir test-results || true
             curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python3 -
-            # rm poetry.lock is necessary for root execution to work correctly
-            rm poetry.lock
-            sudo python3 -m poetry install
-            sudo SPLUNK_HOME=/opt/splunk/ poetry run pytest  --junitxml=test-results/results.xml -v examples
+            source $HOME/.poetry/env
+            poetry install
+            SPLUNK_HOME=/opt/splunk/ poetry run pytest --junitxml=test-results/results.xml -v examples
       - store_test_results:
           path: test-results
       - store_artifacts:
