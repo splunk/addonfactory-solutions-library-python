@@ -7,12 +7,9 @@
 Net utilities.
 """
 import inspect
-import itertools
 import re
 import socket
 from functools import wraps
-
-from . import ip_math
 
 __all__ = ["resolve_hostname"]
 
@@ -29,7 +26,7 @@ def resolve_hostname(addr):
     :raises ValueError: If `addr` is not a valid address
     """
 
-    if ip_math.is_valid_ip(addr):
+    if is_valid_ip(addr):
         try:
             name, _, _ = socket.gethostbyaddr(addr)
             return name
@@ -46,6 +43,35 @@ def resolve_hostname(addr):
         return None
     else:
         raise ValueError("Invalid ip address.")
+
+
+def is_valid_ip(addr):
+    """Validate an IPV4 address.
+
+    :param addr: IP address to validate.
+    :type addr: ``string``
+    :returns: True if is valid else False.
+    :rtype: ``bool``
+    """
+
+    ip_rx = re.compile(
+        r"""
+        ^(((
+              [0-1]\d{2}                  # matches 000-199
+            | 2[0-4]\d                    # matches 200-249
+            | 25[0-5]                     # matches 250-255
+            | \d{1,2}                     # matches 0-9, 00-99
+        )\.){3})                          # 3 of the preceding stanzas
+        ([0-1]\d{2}|2[0-4]\d|25[0-5]|\d{1,2})$     # final octet
+    """,
+        re.VERBOSE,
+    )
+
+    try:
+        return ip_rx.match(addr.strip())
+    except AttributeError:
+        # Value was not a string
+        return False
 
 
 def is_valid_hostname(hostname):
