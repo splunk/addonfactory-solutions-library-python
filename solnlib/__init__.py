@@ -9,14 +9,11 @@ The Splunk Software Development Kit for Solutions.
 
 from . import (
     acl,
-    compression,
     conf_manager,
     credentials,
     file_monitor,
     hec_config,
-    ip_math,
     log,
-    metadata,
     net_utils,
     orphan_process_monitor,
     pattern,
@@ -31,14 +28,11 @@ from . import (
 
 __all__ = [
     "acl",
-    "compression",
     "conf_manager",
     "credentials",
     "file_monitor",
     "hec_config",
-    "ip_math",
     "log",
-    "metadata",
     "net_utils",
     "orphan_process_monitor",
     "pattern",

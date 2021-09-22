@@ -80,7 +80,7 @@ class Event:
            >>>     host='localhost',
            >>>     source='Splunk',
            >>>     sourcetype='misc',
-           >>>     fields= {'Cloud':'AWS','region': 'us-west-1'}
+           >>>     fields= {'Cloud':'AWS','region': 'us-west-1'},
            >>>     stanza='test_scheme://test',
            >>>     unbroken=True,
            >>>     done=True)
