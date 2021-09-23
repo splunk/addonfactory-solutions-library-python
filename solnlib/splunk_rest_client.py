@@ -13,10 +13,7 @@ import logging
 import os
 import traceback
 
-try:
-    from urllib.parse import quote
-except ImportError:
-    from urllib2 import quote
+from urllib.parse import quote
 
 from io import BytesIO
 

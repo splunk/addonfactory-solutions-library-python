@@ -11,17 +11,9 @@ import os
 import os.path as op
 import subprocess
 import socket
-
-try:
-    from ConfigParser import ConfigParser
-
-    CONF_PARSER_KWARGS = {}
-except ImportError:
-    from configparser import ConfigParser
-
-    CONF_PARSER_KWARGS = {"strict": False}
-
 from io import StringIO
+
+from configparser import ConfigParser
 
 from . import utils
 
@@ -274,7 +266,7 @@ def get_conf_stanzas(conf_name):
     if isinstance(out, bytes):
         out = out.decode()
 
-    parser = ConfigParser(**CONF_PARSER_KWARGS)
+    parser = ConfigParser(**{"strict": False})
     parser.optionxform = str
     parser.readfp(StringIO(out))
 

@@ -11,23 +11,11 @@ import logging
 import sys
 import traceback
 
-try:
-    from urllib3 import parse_url as urlparse
-    from urllib3.exceptions import InsecureRequestWarning
-
-    urllib3.disable_warnings(InsecureRequestWarning)
-except ImportError:
-    try:
-        from urllib2 import urlparse
-    except ImportError:
-        from urllib import parse as urlparse
+from urllib import parse as urlparse
 
 from abc import ABCMeta, abstractmethod
 
-try:
-    import xml.etree.ElementTree as ET
-except ImportError:
-    import xml.etree.ElementTree as ET
+import xml.etree.ElementTree as ET
 
 from splunklib import binding
 from splunklib.modularinput.argument import Argument
@@ -41,9 +29,6 @@ from . import event_writer
 from ..orphan_process_monitor import OrphanProcessMonitor
 
 __all__ = ["ModularInputException", "ModularInput"]
-
-
-SCHEME_ENCODING = "unicode" if sys.version_info >= (3, 0) else "utf-8"
 
 
 class ModularInputException(Exception):
@@ -283,7 +268,7 @@ class ModularInput(metaclass=ABCMeta):
                 )
             )
 
-        return ET.tostring(scheme.to_xml(), encoding=SCHEME_ENCODING)
+        return ET.tostring(scheme.to_xml(), encoding="unicode")
 
     def extra_arguments(self):
         """Extra arguments for modular input.
