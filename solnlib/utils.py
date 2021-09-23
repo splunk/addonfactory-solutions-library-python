@@ -13,11 +13,7 @@ import os
 import signal
 import time
 import traceback
-
-try:
-    from urllib import parse as urlparse
-except ImportError:
-    from urllib2 import urlparse
+from urllib import parse as urlparse
 
 from functools import wraps
 

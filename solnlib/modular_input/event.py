@@ -8,22 +8,7 @@ This module provides Splunk modular input event encapsulation.
 """
 
 import json
-
-try:
-    import xml.etree.ElementTree as ET
-except ImportError:
-    import xml.etree.ElementTree as ET
-
-try:
-    unicode
-except NameError:
-    unicode = str
-
-try:
-    basestring
-except NameError:
-    basestring = str
-
+import xml.etree.ElementTree as ET
 
 __all__ = ["EventException", "XMLEvent", "HECEvent"]
 
@@ -154,7 +139,7 @@ class XMLEvent(Event):
             if value:
                 ET.SubElement(_event, node).text = value
 
-        if isinstance(self._data, (unicode, basestring)):
+        if isinstance(self._data, str):
             ET.SubElement(_event, "data").text = self._data
         else:
             ET.SubElement(_event, "data").text = json.dumps(self._data)
