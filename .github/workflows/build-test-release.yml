@@ -118,9 +118,17 @@ jobs:
           echo -e "[user_info]\nUSERNAME=Admin\nPASSWORD=Chang3d"'!' | sudo tee -a /opt/splunk/etc/system/local/user-seed.conf
           echo 'OPTIMISTIC_ABOUT_FILE_LOCKING=1' | sudo tee -a /opt/splunk/etc/splunk-launch.conf
           sudo /opt/splunk/bin/splunk start --accept-license
-      - name: Install Splunk
+      - name: Run tests
         run: |
           curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python3 -
           source $HOME/.poetry/env
           poetry install
           SPLUNK_HOME=/opt/splunk/ poetry run pytest --junitxml=test-results/results.xml -v examples
+      - uses: actions/upload-artifact@v2.2.4
+        with:
+          name: test-splunk test-results
+          path: test-results
+      - uses: actions/upload-artifact@v2.2.4
+        with:
+          name: test-splunk htmlcov report
+          path: htmlcov
