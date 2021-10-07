@@ -13,7 +13,7 @@ on:
     branches: [main, develop]
 
 jobs:
-  test-unit:
+  run-unit-tests:
     name: test-unit
     runs-on: ubuntu-latest
     steps:
@@ -28,3 +28,11 @@ jobs:
           source $HOME/.poetry/env
           poetry install
           poetry run pytest --junitxml=test-results/results.xml --cov=solnlib --cov-report=html tests
+      - uses: actions/upload-artifact@v2.2.4
+        with:
+          name: unit tests test-results
+          path: test-results
+      - uses: actions/upload-artifact@v2.2.4
+        with:
+          name: unit tests htmlcov report
+          path: htmlcov
