@@ -79,3 +79,48 @@ jobs:
         with:
           name: unit tests htmlcov report
           path: htmlcov
+
+  test-splunk:
+    name: test-splunk
+    runs-on: ubuntu-latest
+    needs:
+      - build
+    strategy:
+      matrix:
+        splunk-version: ["8.0", "8.1", "8.2"]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+      - name: Install Splunk
+        run: |
+          pip install --user git+https://github.com/pixelb/crudini
+          export SPLUNK_PRODUCT=splunk
+          export SPLUNK_VERSION=$(crudini --get deps/build/addonfactory_test_matrix_splunk/splunk_matrix.conf ${{ matrix.splunk-version }} VERSION)
+          export SPLUNK_BUILD=$(crudini --get deps/build/addonfactory_test_matrix_splunk/splunk_matrix.conf ${{ matrix.splunk-version }} BUILD)
+          export SPLUNK_SLUG=$SPLUNK_VERSION-SPLUNK_BUILD
+          export SPLUNK_ARCH=x86_64
+          export SPLUNK_LINUX_FILENAME=splunk-${SPLUNK_VERSION}-${SPLUNK_BUILD}-Linux-${SPLUNK_ARCH}.tgz
+          export SPLUNK_BUILD_URL=https://download.splunk.com/products/${SPLUNK_PRODUCT}/releases/${SPLUNK_VERSION}/linux/${SPLUNK_LINUX_FILENAME}
+          echo $SPLUNK_BUILD_URL
+          export SPLUNK_HOME=/opt/splunk
+          wget -qO /tmp/splunk.tgz ${SPLUNK_BUILD_URL}
+          sudo tar -C /opt -zxf /tmp/splunk.tgz
+          sudo cp -r examples/data/solnlib_demo $SPLUNK_HOME/etc/apps
+          sudo cp -r solnlib $SPLUNK_HOME/etc/apps/solnlib_demo/bin/
+          sudo mkdir -p $SPLUNK_HOME/etc/apps/Splunk_TA_test/default/
+          sudo chown -R $USER:$USER /opt/splunk
+          ls $SPLUNK_HOME/etc/apps/solnlib_demo/bin/
+          echo -e "[user_info]\nUSERNAME=Admin\nPASSWORD=Chang3d"'!' | sudo tee -a /opt/splunk/etc/system/local/user-seed.conf
+          echo 'OPTIMISTIC_ABOUT_FILE_LOCKING=1' | sudo tee -a /opt/splunk/etc/splunk-launch.conf
+          sudo /opt/splunk/bin/splunk start --accept-license
+      - name: Install Splunk
+        run: |
+          curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python3 -
+          source $HOME/.poetry/env
+          poetry install
+          SPLUNK_HOME=/opt/splunk/ poetry run pytest --junitxml=test-results/results.xml -v examples
