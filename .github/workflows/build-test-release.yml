@@ -13,6 +13,19 @@ on:
     branches: [main, develop]
 
 jobs:
+  # copy of TA semgrep implementation
+  semgrep:
+    runs-on: ubuntu-latest
+    name: security-sast-semgrep
+    steps:
+      - uses: actions/checkout@v2
+      - name: Semgrep
+        id: semgrep
+        uses: returntocorp/semgrep-action@v1
+        with:
+          publishDeployment: ${{ secrets.SEMGREP_DEPLOYMENT_ID }}
+          publishToken: ${{ secrets.SEMGREP_PUBLISH_TOKEN }}
+
   build:
     name: build
     runs-on: ubuntu-latest
@@ -34,6 +47,8 @@ jobs:
         with:
           name: dist
           path: dist
+      # TODO check if needed
+      # GA error: No files were found with the provided path: output. No artifacts will be uploaded.
       - uses: actions/upload-artifact@v2.2.4
         with:
           name: output
