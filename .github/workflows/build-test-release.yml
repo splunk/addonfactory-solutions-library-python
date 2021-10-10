@@ -13,6 +13,59 @@ on:
     branches: [main, develop]
 
 jobs:
+  compliance-dependencies:
+    name: compliance-dependencies
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: ort-action
+        uses: splunk/addonfactory-ort-action@v1
+        id: ort-action
+        with:
+          WorkDir: .
+          UsePython3: "3.7"
+      - name: ort-action-artifacts-reports
+        uses: actions/upload-artifact@v2
+        with:
+          name: analysis-reports
+          path: |
+            .ort/reports/*
+        if: always()
+      - name: ort-action-artifacts-analyzer
+        uses: actions/upload-artifact@v2
+        with:
+          name: analysis-analyzer
+          path: |
+            .ort/analyzer/*
+        if: always()
+
+  compliance-copyrights:
+    name: compliance-copyrights
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: REUSE Compliance Check
+        uses: fsfe/reuse-action@v1.1
+
+  lint:
+    runs-on: ubuntu-latest
+    name: quality-lint
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          # Full git history is needed to get a proper list of changed files within `super-linter`
+          fetch-depth: 0
+      - name: quality-lint
+        uses: github/super-linter@v4
+        env:
+          VALIDATE_ALL_CODEBASE: false
+          DEFAULT_BRANCH: main
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FILTER_REGEX_EXCLUDE: README.md
+
   # copy of TA semgrep implementation
   semgrep:
     runs-on: ubuntu-latest
@@ -25,6 +78,29 @@ jobs:
         with:
           publishDeployment: ${{ secrets.SEMGREP_DEPLOYMENT_ID }}
           publishToken: ${{ secrets.SEMGREP_PUBLISH_TOKEN }}
+
+  snyk:
+    name: security-vuln-snyk
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+      - uses: snyk/actions/setup@master
+      - uses: actions/setup-go@v2.1.3
+        with:
+          go-version: "1.13"
+      - name: Snyk monitor
+        run: snyk test --sarif-file-output=snyk-scan_requirements.sarif --all-projects --print-deps --severity-threshold=high
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      - uses: actions/upload-artifact@v2
+        if: always()
+        with:
+          name: snyk-results
+          path: snyk-scan_requirements.sarif
 
   build:
     name: build
@@ -132,3 +208,12 @@ jobs:
         with:
           name: test-splunk htmlcov report
           path: htmlcov
+
+  update-semver:
+    name: Move Respository semver tags
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: haya14busa/action-update-semver@v1
