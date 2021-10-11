@@ -125,7 +125,6 @@ jobs:
           # shellcheck disable=SC1090
           source "$HOME/.poetry/env"
           poetry install
-          poetry run poetry-dynamic-versioning
           poetry build
       - uses: actions/upload-artifact@v2.2.4
         with:
