@@ -213,7 +213,7 @@ jobs:
           path: test-results
 
   publish:
-    if: always()
+    if: github.event_name != 'pull_request'
     needs:
       - compliance-dependencies
       - compliance-copyrights
@@ -229,7 +229,6 @@ jobs:
       NEEDS: ${{ toJson(needs) }}
     steps:
       - name: check if tests have passed or skipped
-        if: github.event_name != 'pull_request'
         id: check
         shell: bash
         run: |
@@ -241,7 +240,7 @@ jobs:
               echo "::set-output name=run-publish::false"
           fi
       - name: exit without publish
-        if: ${{ steps.check.outputs.run-publish == 'false' || github.event_name == 'pull_request'}}
+        if: ${{ steps.check.outputs.run-publish == 'false' }}
         run: |
           echo " some test job failed. "
           exit 1
