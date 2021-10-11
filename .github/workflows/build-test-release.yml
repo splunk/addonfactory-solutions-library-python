@@ -40,13 +40,15 @@ jobs:
         if: always()
 
   compliance-copyrights:
-    name: compliance-copyrights
+    name: Compliance Copyright Headers
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: REUSE Compliance Check
-        uses: fsfe/reuse-action@v1.1
+      - name: Check License Header
+        uses: apache/skywalking-eyes@main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   pre-commit:
     runs-on: ubuntu-latest

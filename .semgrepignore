@@ -25,6 +25,5 @@ tests/
 ## Additional files to be ignored
 .circleci/
 .github/
-.reuse/
 .vscode/
 .idea/
