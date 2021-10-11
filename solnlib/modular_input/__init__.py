@@ -9,8 +9,7 @@ Splunk modular input.
 
 from splunklib.modularinput.argument import Argument
 
-from .checkpointer import (CheckpointerException, FileCheckpointer,
-                           KVStoreCheckpointer)
+from .checkpointer import CheckpointerException, FileCheckpointer, KVStoreCheckpointer
 from .event import EventException, HECEvent, XMLEvent
 from .event_writer import ClassicEventWriter, HECEventWriter
 from .modular_input import ModularInput, ModularInputException
