@@ -12,3 +12,12 @@ repos:
     rev: 5.9.3
     hooks:
     -   id: isort
+-   repo: local
+    hooks:
+      - id: actionlint
+        name: actionlint
+        entry: actionlint
+        args: [-ignore, 'property ".+" is not defined in object type']
+        language: script
+        types: ["yaml"]
+        files: ^.github/workflows/
