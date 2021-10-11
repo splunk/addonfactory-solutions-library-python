@@ -30,7 +30,6 @@ sortedcontainers = "^2.2"
 
 [tool.poetry.dev-dependencies]
 mock = "^4"
-pytest-expect = "^1.1.0"
 pytest-cov = "^3"
 pyyaml = "^5.3"
 black = [
