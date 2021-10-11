@@ -29,7 +29,6 @@ splunk-sdk = "1.6.16"
 sortedcontainers = "^2.2"
 
 [tool.poetry.dev-dependencies]
-mock = "^4"
 pytest-cov = "^3"
 pytest = "^6.2"
 
