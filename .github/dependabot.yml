@@ -6,10 +6,6 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
-  - package-ecosystem: "gitsubmodule"
-    directory: "/deps/apps/addonfactory_test_matrix_splunk"
-    schedule:
-      interval: "daily"
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
