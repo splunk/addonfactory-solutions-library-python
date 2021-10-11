@@ -122,7 +122,8 @@ jobs:
         run: curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
       - name: Build
         run: |
-          source $HOME/.poetry/env
+          # shellcheck disable=SC1090
+          source "$HOME/.poetry/env"
           poetry install
           poetry run poetry-dynamic-versioning
           poetry build
@@ -148,8 +149,9 @@ jobs:
           python-version: 3.7
       - name: run tests
         run: |
+          # shellcheck disable=SC1090
           curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
-          source $HOME/.poetry/env
+          source "$HOME/.poetry/env"
           poetry install
           poetry run pytest --junitxml=test-results/results.xml --cov=solnlib --cov-report=html tests
       - uses: actions/upload-artifact@v2.2.4
@@ -181,28 +183,31 @@ jobs:
         run: |
           pip install --user git+https://github.com/pixelb/crudini
           export SPLUNK_PRODUCT=splunk
-          export SPLUNK_VERSION=$(crudini --get deps/build/addonfactory_test_matrix_splunk/splunk_matrix.conf ${{ matrix.splunk-version }} VERSION)
-          export SPLUNK_BUILD=$(crudini --get deps/build/addonfactory_test_matrix_splunk/splunk_matrix.conf ${{ matrix.splunk-version }} BUILD)
+          SPLUNK_VERSION=$(crudini --get deps/build/addonfactory_test_matrix_splunk/splunk_matrix.conf ${{ matrix.splunk-version }} VERSION)
+          export SPLUNK_VERSION
+          SPLUNK_BUILD=$(crudini --get deps/build/addonfactory_test_matrix_splunk/splunk_matrix.conf ${{ matrix.splunk-version }} BUILD)
+          export SPLUNK_BUILD
           export SPLUNK_SLUG=$SPLUNK_VERSION-SPLUNK_BUILD
           export SPLUNK_ARCH=x86_64
           export SPLUNK_LINUX_FILENAME=splunk-${SPLUNK_VERSION}-${SPLUNK_BUILD}-Linux-${SPLUNK_ARCH}.tgz
           export SPLUNK_BUILD_URL=https://download.splunk.com/products/${SPLUNK_PRODUCT}/releases/${SPLUNK_VERSION}/linux/${SPLUNK_LINUX_FILENAME}
-          echo $SPLUNK_BUILD_URL
+          echo "$SPLUNK_BUILD_URL"
           export SPLUNK_HOME=/opt/splunk
-          wget -qO /tmp/splunk.tgz ${SPLUNK_BUILD_URL}
+          wget -qO /tmp/splunk.tgz "${SPLUNK_BUILD_URL}"
           sudo tar -C /opt -zxf /tmp/splunk.tgz
           sudo cp -r examples/data/solnlib_demo $SPLUNK_HOME/etc/apps
           sudo cp -r solnlib $SPLUNK_HOME/etc/apps/solnlib_demo/bin/
           sudo mkdir -p $SPLUNK_HOME/etc/apps/Splunk_TA_test/default/
-          sudo chown -R $USER:$USER /opt/splunk
+          sudo chown -R "$USER":"$USER" /opt/splunk
           ls $SPLUNK_HOME/etc/apps/solnlib_demo/bin/
           echo -e "[user_info]\nUSERNAME=Admin\nPASSWORD=Chang3d"'!' | sudo tee -a /opt/splunk/etc/system/local/user-seed.conf
           echo 'OPTIMISTIC_ABOUT_FILE_LOCKING=1' | sudo tee -a /opt/splunk/etc/splunk-launch.conf
           sudo /opt/splunk/bin/splunk start --accept-license
       - name: Run tests
         run: |
+          # shellcheck disable=SC1090
           curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python3 -
-          source $HOME/.poetry/env
+          source "$HOME/.poetry/env"
           poetry install
           SPLUNK_HOME=/opt/splunk/ poetry run pytest --junitxml=test-results/results.xml -v examples
       - uses: actions/upload-artifact@v2.2.4
@@ -230,7 +235,7 @@ jobs:
         id: check
         shell: bash
         run: |
-          RUN_PUBLISH=`echo $NEEDS | jq ".[] |  select(  ( .result != \"skipped\" ) and .result != \"success\" ) | length == 0"`
+          RUN_PUBLISH=$(echo "$NEEDS" | jq ".[] |  select(  ( .result != \"skipped\" ) and .result != \"success\" ) | length == 0")
           if [[ $RUN_PUBLISH != *'false'* ]]
           then
               echo "::set-output name=run-publish::true"
