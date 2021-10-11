@@ -33,7 +33,7 @@
               "to": "__version__ = \"${nextRelease.version}\"",
               "results": [
                 {
-                  "file": "splunktaucclib/__init__.py",
+                  "file": "solnlib/__init__.py",
                   "hasChanged": true,
                   "numMatches": 1,
                   "numReplacements": 1
