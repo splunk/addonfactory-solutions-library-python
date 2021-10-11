@@ -2,15 +2,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import sys
 import datetime
-import pytest
 import os.path as op
+import sys
+
+import pytest
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-from solnlib import credentials
-from solnlib import time_parser
 import context
+
+from solnlib import credentials, time_parser
 
 
 def test_time_parser():

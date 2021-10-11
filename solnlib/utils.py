@@ -13,9 +13,8 @@ import os
 import signal
 import time
 import traceback
-from urllib import parse as urlparse
-
 from functools import wraps
+from urllib import parse as urlparse
 
 __all__ = [
     "handle_teardown_signals",

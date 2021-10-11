@@ -6,9 +6,8 @@
 """
 A simple thread safe timer queue implementation which has O(logn) time complexity.
 """
-import queue as Queue
-
 import logging
+import queue as Queue
 import threading
 import traceback
 from time import time

@@ -9,11 +9,11 @@ change periodically and call callback function to handle properly when
 detecting files change.
 """
 
-import time
 import logging
-import traceback
-import threading
 import os.path as op
+import threading
+import time
+import traceback
 
 __all__ = ["FileChangesChecker", "FileMonitor"]
 

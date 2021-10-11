@@ -2,12 +2,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import sys
-import os.path as op
 import json
+import os.path as op
+import sys
 
-from solnlib.modular_input import XMLEvent
-from solnlib.modular_input import HECEvent
+from solnlib.modular_input import HECEvent, XMLEvent
 
 
 def to_sorted_json_string(obj):

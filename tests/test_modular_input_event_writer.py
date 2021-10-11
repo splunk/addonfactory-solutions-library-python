@@ -2,15 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import json
 import os.path as op
 import sys
-import json
 
 import common
-
-from solnlib.modular_input import ClassicEventWriter
-from solnlib.modular_input import HECEventWriter
 from splunklib import binding
+
+from solnlib.modular_input import ClassicEventWriter, HECEventWriter
 
 
 def test_classic_event_writer(monkeypatch):

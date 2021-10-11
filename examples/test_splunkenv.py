@@ -2,9 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import sys
 import os
 import os.path as op
+import sys
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 from solnlib import splunkenv

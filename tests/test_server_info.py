@@ -8,8 +8,9 @@ import sys
 import common
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-from solnlib import server_info
 from splunklib import binding
+
+from solnlib import server_info
 
 
 class TestServerInfo:

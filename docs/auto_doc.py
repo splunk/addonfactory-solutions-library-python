@@ -7,14 +7,14 @@
 This program is used to construct sphinx rst directory tree from source code.
 """
 
-import re
-import sys
-import os
-import time
-import shutil
-import inspect
 import importlib
+import inspect
+import os
 import os.path as op
+import re
+import shutil
+import sys
+import time
 
 cur_dir = op.dirname(op.abspath(__file__))
 
