@@ -20,16 +20,12 @@ sortedcontainers = "^2.2"
 mock = "^4"
 pytest-expect = "^1.1.0"
 pytest-cov = "^3"
-poetry-dynamic-versioning = "^0"
 pyyaml = "^5.3"
 reuse = "*"
 black = [
     { version = "20.8b1",  python = "^3.7" }
 ]
 pytest = "^6.2"
-
-[tool.poetry-dynamic-versioning]
-enable = true
 
 [tool.isort]
 profile = "black"
