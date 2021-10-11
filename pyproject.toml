@@ -31,6 +31,9 @@ pytest = "^6.2"
 [tool.poetry-dynamic-versioning]
 enable = true
 
+[tool.isort]
+profile = "black"
+
 [build-system]
 requires = ["poetry>=1.0.0"]
 build-backend = "poetry.masonry.api"
