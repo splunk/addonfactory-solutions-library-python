@@ -31,10 +31,6 @@ sortedcontainers = "^2.2"
 [tool.poetry.dev-dependencies]
 mock = "^4"
 pytest-cov = "^3"
-pyyaml = "^5.3"
-black = [
-    { version = "20.8b1",  python = "^3.7" }
-]
 pytest = "^6.2"
 
 [tool.isort]
