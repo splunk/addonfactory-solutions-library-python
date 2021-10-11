@@ -13,8 +13,12 @@ import re
 from splunklib import binding
 
 from . import splunk_rest_client as rest_client
-from .net_utils import (check_css_params, is_valid_hostname, is_valid_port,
-                        is_valid_scheme)
+from .net_utils import (
+    check_css_params,
+    is_valid_hostname,
+    is_valid_port,
+    is_valid_scheme,
+)
 from .splunkenv import get_splunkd_access_info
 from .utils import retry
 

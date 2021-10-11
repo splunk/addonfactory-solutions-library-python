@@ -17,8 +17,12 @@ from urllib.parse import quote
 
 from splunklib import binding, client
 
-from .net_utils import (check_css_params, is_valid_hostname, is_valid_port,
-                        is_valid_scheme)
+from .net_utils import (
+    check_css_params,
+    is_valid_hostname,
+    is_valid_port,
+    is_valid_scheme,
+)
 from .splunkenv import get_splunkd_access_info
 
 __all__ = ["SplunkRestClient"]
