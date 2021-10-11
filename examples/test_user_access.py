@@ -2,14 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import sys
-import pytest
 import os.path as op
+import sys
+
+import pytest
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-from solnlib import credentials
-from solnlib import user_access
 import context
+
+from solnlib import credentials, user_access
 
 
 def test_object_acl_manager():

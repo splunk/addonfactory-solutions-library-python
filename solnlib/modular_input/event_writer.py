@@ -14,15 +14,16 @@ import threading
 import time
 import traceback
 from abc import ABCMeta, abstractmethod
+from random import randint
 
-from .event import XMLEvent, HECEvent
+from splunklib import binding
+
 from .. import splunk_rest_client as rest_client
 from .. import utils
 from ..hec_config import HECConfig
-from splunklib import binding
 from ..splunkenv import get_splunkd_access_info
 from ..utils import retry
-from random import randint
+from .event import HECEvent, XMLEvent
 
 __all__ = ["ClassicEventWriter", "HECEventWriter"]
 
@@ -414,7 +415,9 @@ class HECEventWriter(EventWriter):
                         headers=self.headers,
                     )
                 except binding.HTTPError as e:
-                    self.logger.warn("Write events through HEC failed. Status=%s", e.status)
+                    self.logger.warn(
+                        "Write events through HEC failed. Status=%s", e.status
+                    )
                     last_ex = e
                     if e.status in [self.TOO_MANY_REQUESTS, self.SERVICE_UNAVAILABLE]:
                         # wait time for n retries: 10, 20, 40, 80, 80, 80, 80, ....

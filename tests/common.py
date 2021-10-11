@@ -6,8 +6,7 @@ import os.path as op
 import socket
 import subprocess
 
-from splunklib import binding
-from splunklib import client
+from splunklib import binding, client
 from splunklib.data import record
 
 cur_dir = op.dirname(op.abspath(__file__))

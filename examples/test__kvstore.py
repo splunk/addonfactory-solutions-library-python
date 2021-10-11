@@ -11,11 +11,11 @@ import uuid
 import pytest
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-from solnlib.credentials import get_session_key
 import context
-from splunklib import binding
-from splunklib import client
+from splunklib import binding, client
 from splunklib.binding import HTTPError
+
+from solnlib.credentials import get_session_key
 
 
 def test_kvstore():

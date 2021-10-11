@@ -7,17 +7,13 @@
 Splunk modular input.
 """
 
-from .checkpointer import CheckpointerException
-from .checkpointer import FileCheckpointer
-from .checkpointer import KVStoreCheckpointer
-from .event import EventException
-from .event import HECEvent
-from .event import XMLEvent
-from .event_writer import ClassicEventWriter
-from .event_writer import HECEventWriter
-from .modular_input import ModularInput
-from .modular_input import ModularInputException
 from splunklib.modularinput.argument import Argument
+
+from .checkpointer import (CheckpointerException, FileCheckpointer,
+                           KVStoreCheckpointer)
+from .event import EventException, HECEvent, XMLEvent
+from .event_writer import ClassicEventWriter, HECEventWriter
+from .modular_input import ModularInput, ModularInputException
 
 __all__ = [
     "EventException",

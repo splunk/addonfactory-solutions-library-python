@@ -11,11 +11,10 @@ import pytest
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 
 import common
+from splunklib import binding, client
+from splunklib.data import record
 
 from solnlib import credentials
-from splunklib import binding
-from splunklib import client
-from splunklib.data import record
 
 
 def test_credential_manager(monkeypatch):

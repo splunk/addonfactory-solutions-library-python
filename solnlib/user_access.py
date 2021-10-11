@@ -10,8 +10,9 @@ Splunk user access control related utilities.
 import json
 import re
 
-from . import splunk_rest_client as rest_client
 from splunklib import binding
+
+from . import splunk_rest_client as rest_client
 from .utils import retry
 
 __all__ = [
@@ -441,7 +442,9 @@ class ObjectACLManager:
                 raise
 
             raise ObjectACLNotExistException(
-                "Object ACL info of {}_{} does not exist.".format(obj_collection, obj_id)
+                "Object ACL info of {}_{} does not exist.".format(
+                    obj_collection, obj_id
+                )
             )
 
         return ObjectACL.parse(obj_acl)
@@ -496,7 +499,9 @@ class ObjectACLManager:
                 raise
 
             raise ObjectACLNotExistException(
-                "Object ACL info of {}_{} does not exist.".format(obj_collection, obj_id)
+                "Object ACL info of {}_{} does not exist.".format(
+                    obj_collection, obj_id
+                )
             )
 
     @retry(exceptions=[binding.HTTPError])

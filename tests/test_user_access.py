@@ -6,14 +6,13 @@ import json
 import os.path as op
 import sys
 
+import common
 import pytest
 
-import common
-
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
+from splunklib import binding, client
+
 from solnlib import user_access
-from splunklib import binding
-from splunklib import client
 
 
 def test_object_acl_manager(monkeypatch):

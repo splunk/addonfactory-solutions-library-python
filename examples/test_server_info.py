@@ -6,9 +6,10 @@ import os.path as op
 import sys
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
+import context
+
 from solnlib import server_info
 from solnlib.credentials import get_session_key
-import context
 
 
 def test_server_info():

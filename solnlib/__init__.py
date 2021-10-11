@@ -7,24 +7,10 @@
 The Splunk Software Development Kit for Solutions.
 """
 
-from . import (
-    acl,
-    conf_manager,
-    credentials,
-    file_monitor,
-    hec_config,
-    log,
-    net_utils,
-    orphan_process_monitor,
-    pattern,
-    server_info,
-    splunk_rest_client,
-    splunkenv,
-    time_parser,
-    timer_queue,
-    user_access,
-    utils,
-)
+from . import (acl, conf_manager, credentials, file_monitor, hec_config, log,
+               net_utils, orphan_process_monitor, pattern, server_info,
+               splunk_rest_client, splunkenv, time_parser, timer_queue,
+               user_access, utils)
 
 __all__ = [
     "acl",

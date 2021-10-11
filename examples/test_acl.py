@@ -2,13 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import sys
 import os.path as op
+import sys
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
+import context
+
 from solnlib import acl
 from solnlib.credentials import get_session_key
-import context
 
 
 def test_acl_manager():

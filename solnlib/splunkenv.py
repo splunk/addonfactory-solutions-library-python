@@ -9,11 +9,10 @@ Splunk platform related utilities.
 
 import os
 import os.path as op
-import subprocess
 import socket
-from io import StringIO
-
+import subprocess
 from configparser import ConfigParser
+from io import StringIO
 
 from . import utils
 

@@ -2,9 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import sys
 import os
 import os.path as op
+import sys
 
 import common
 

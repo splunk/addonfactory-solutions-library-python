@@ -8,9 +8,9 @@ import sys
 import pytest
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-from solnlib import credentials
-from solnlib import conf_manager
 import context
+
+from solnlib import conf_manager, credentials
 
 
 def test_conf_manager():

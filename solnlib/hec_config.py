@@ -3,8 +3,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from . import splunk_rest_client as rest_client
 from splunklib import binding
+
+from . import splunk_rest_client as rest_client
 from .utils import retry
 
 __all__ = ["HECConfig"]

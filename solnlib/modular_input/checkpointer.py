@@ -17,8 +17,9 @@ import re
 import traceback
 from abc import ABCMeta, abstractmethod
 
-from .. import splunk_rest_client as rest_client
 from splunklib import binding
+
+from .. import splunk_rest_client as rest_client
 from ..utils import retry
 
 __all__ = ["CheckpointerException", "KVStoreCheckpointer", "FileCheckpointer"]
