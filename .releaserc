@@ -70,7 +70,7 @@
       [
         "@semantic-release/git",
         {
-          "assets": ["NOTICE", "pyproject.toml", "splunktaucclib/__init__.py"],
+          "assets": ["NOTICE", "pyproject.toml", "solnlin/__init__.py"],
           "message": "chore(release): ${nextRelease.version}\n\n${nextRelease.notes}",
         },
       ],
