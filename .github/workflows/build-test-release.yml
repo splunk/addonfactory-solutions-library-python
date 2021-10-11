@@ -50,23 +50,32 @@ jobs:
       - name: REUSE Compliance Check
         uses: fsfe/reuse-action@v1.1
 
-  lint:
+  pre-commit:
     runs-on: ubuntu-latest
-    name: quality-lint
     steps:
       - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
         with:
-          # Full git history is needed to get a proper list of changed files within `super-linter`
-          fetch-depth: 0
-      - name: quality-lint
-        uses: github/super-linter@v4
-        env:
-          VALIDATE_ALL_CODEBASE: false
-          DEFAULT_BRANCH: main
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          FILTER_REGEX_EXCLUDE: README.md
+          python-version: "3.7"
+      - name: Install actionlint
+        run: |
+          bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/v1.6.3/scripts/download-actionlint.bash)
+      - uses: pre-commit/action@v2.0.3
 
-  # copy of TA semgrep implementation
+  review_secrets:
+    name: security-detect-secrets
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: false
+          fetch-depth: "0"
+      - name: Trufflehog Actions Scan
+        uses: edplato/trufflehog-actions-scan@v0.9j-beta
+        with:
+          scanArguments: "--max_dept 50 -x .github/workflows/exclude-patterns.txt"
+
   semgrep:
     runs-on: ubuntu-latest
     name: security-sast-semgrep
@@ -123,8 +132,6 @@ jobs:
         with:
           name: dist
           path: dist
-      # TODO check if needed
-      # GA error: No files were found with the provided path: output. No artifacts will be uploaded.
       - uses: actions/upload-artifact@v2.2.4
         with:
           name: output
@@ -204,17 +211,14 @@ jobs:
         with:
           name: test-splunk test-results
           path: test-results
-      - uses: actions/upload-artifact@v2.2.4
-        with:
-          name: test-splunk htmlcov report
-          path: htmlcov
 
   publish:
     if: always()
     needs:
       - compliance-dependencies
       - compliance-copyrights
-      - lint
+      - pre-commit
+      - review_secrets
       - semgrep
       - snyk
       - build
