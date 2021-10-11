@@ -1,4 +1,3 @@
-
 version: 2
 updates:
   # Keep package.json (& lockfiles) up to date as soon as
