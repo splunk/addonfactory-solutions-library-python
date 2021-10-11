@@ -5,9 +5,6 @@
 *.DS_Store*
 /build
 dist
-docs/_build
-docs/solnlib
-docs/index.rst
 splunksolutionlib.egg-info
 __pycache__
 *.pyc

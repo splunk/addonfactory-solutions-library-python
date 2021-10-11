@@ -26,6 +26,5 @@ header:
     - "tests/**"
     - ".*"
     - "examples/data"
-    - "docs/**"
 
   comment: on-failure
