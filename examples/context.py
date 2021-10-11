@@ -2,8 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import sys
 import os.path as op
+import sys
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 from solnlib.splunkenv import get_splunkd_access_info

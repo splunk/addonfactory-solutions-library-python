@@ -2,13 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import sys
 import os.path as op
+import sys
+
 import pytest
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-from solnlib import credentials
 import context
+
+from solnlib import credentials
 
 
 def test_credential_manager():

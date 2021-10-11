@@ -13,10 +13,10 @@ import json
 import logging
 import traceback
 
-from . import splunk_rest_client as rest_client
-from .credentials import CredentialManager
-from .credentials import CredentialNotExistException
 from splunklib import binding
+
+from . import splunk_rest_client as rest_client
+from .credentials import CredentialManager, CredentialNotExistException
 from .utils import retry
 
 __all__ = [

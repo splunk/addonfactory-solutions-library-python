@@ -10,23 +10,19 @@ This module provides a base class of Splunk modular input.
 import logging
 import sys
 import traceback
-
-from urllib import parse as urlparse
-
-from abc import ABCMeta, abstractmethod
-
 import xml.etree.ElementTree as ET
+from abc import ABCMeta, abstractmethod
+from urllib import parse as urlparse
 
 from splunklib import binding
 from splunklib.modularinput.argument import Argument
-from splunklib.modularinput.scheme import Scheme
 from splunklib.modularinput.input_definition import InputDefinition
+from splunklib.modularinput.scheme import Scheme
 from splunklib.modularinput.validation_definition import ValidationDefinition
 
 from .. import utils
-from . import checkpointer
-from . import event_writer
 from ..orphan_process_monitor import OrphanProcessMonitor
+from . import checkpointer, event_writer
 
 __all__ = ["ModularInputException", "ModularInput"]
 

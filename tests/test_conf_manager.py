@@ -6,15 +6,14 @@ import hashlib
 import os.path as op
 import sys
 
+import common
 import pytest
 
-import common
-
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-from solnlib import conf_manager
-from splunklib import binding
-from splunklib import client
+from splunklib import binding, client
 from splunklib.data import record
+
+from solnlib import conf_manager
 
 
 def test_conf_manager(monkeypatch):

@@ -9,8 +9,9 @@ This module contains interfaces that support CRUD operations on ACL.
 
 import json
 
-from . import splunk_rest_client as rest_client
 from splunklib import binding
+
+from . import splunk_rest_client as rest_client
 from .utils import retry
 
 __all__ = ["ACLException", "ACLManager"]

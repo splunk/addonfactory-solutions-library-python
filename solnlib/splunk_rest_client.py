@@ -12,17 +12,17 @@ call instead of calling splunklib SDK directly in business logic code.
 import logging
 import os
 import traceback
-
+from io import BytesIO
 from urllib.parse import quote
 
-from io import BytesIO
+from splunklib import binding, client
 
-from .net_utils import check_css_params
-from .net_utils import is_valid_hostname
-from .net_utils import is_valid_port
-from .net_utils import is_valid_scheme
-from splunklib import binding
-from splunklib import client
+from .net_utils import (
+    check_css_params,
+    is_valid_hostname,
+    is_valid_port,
+    is_valid_scheme,
+)
 from .splunkenv import get_splunkd_access_info
 
 __all__ = ["SplunkRestClient"]

@@ -2,15 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import sys
 import os
 import os.path as op
 import shutil
+import sys
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-from solnlib.splunkenv import make_splunkhome_path
-from solnlib.splunkenv import get_splunk_bin
 import context
+
+from solnlib.splunkenv import get_splunk_bin, make_splunkhome_path
 
 splunk_bin = get_splunk_bin()
 source_dir = op.join(op.dirname(op.abspath(__file__)), "data", context.app)
@@ -38,17 +38,17 @@ def teardown_environment():
 
 
 def run_test():
-    import test_splunkenv
-    import test_server_info
-    import test_kvstore
-    import test_metadata
     import test_acl
-    import test_credentials
     import test_conf_manager
-    import test_user_access
+    import test_credentials
     import test_hec_config
     import test_hec_event_writer
+    import test_kvstore
+    import test_metadata
+    import test_server_info
+    import test_splunkenv
     import test_time_parser
+    import test_user_access
 
     print("check splunk environment...")
     test_splunkenv.test_splunkenv()
