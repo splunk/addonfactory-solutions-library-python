@@ -1,4 +1,3 @@
-# Copyright 2016 Splunk, Inc.
 #
 # Copyright 2021 Splunk Inc.
 #
@@ -263,7 +262,7 @@ def get_conf_stanzas(conf_name):
     if conf_name.endswith(".conf"):
         conf_name = conf_name[:-5]
 
-    # TODO: dynamically caculate SPLUNK_HOME
+    # TODO: dynamically calculate SPLUNK_HOME
     btool_cli = [
         op.join(os.environ["SPLUNK_HOME"], "bin", "splunk"),
         "cmd",
@@ -271,7 +270,9 @@ def get_conf_stanzas(conf_name):
         conf_name,
         "list",
     ]
-    p = subprocess.Popen(btool_cli, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    p = subprocess.Popen(  # nosemgrep: python.lang.security.audit.dangerous-subprocess-use.dangerous-subprocess-use
+        btool_cli, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
     out, _ = p.communicate()
 
     if isinstance(out, bytes):

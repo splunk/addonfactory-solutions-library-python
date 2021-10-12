@@ -1,4 +1,3 @@
-# Copyright 2016 Splunk, Inc.
 #
 # Copyright 2021 Splunk Inc.
 #
@@ -20,7 +19,9 @@ This module provides Splunk modular input event encapsulation.
 """
 
 import json
-import xml.etree.ElementTree as ET
+from xml.etree import ElementTree as ET  # nosemgrep
+
+import defusedxml.ElementTree as defused_et
 
 __all__ = ["EventException", "XMLEvent", "HECEvent"]
 
@@ -190,7 +191,9 @@ class XMLEvent(Event):
         for event in events:
             stream.append(event._to_xml())
 
-        return [ET.tostring(stream, encoding="utf-8", method="xml").decode("utf-8")]
+        return [
+            defused_et.tostring(stream, encoding="utf-8", method="xml").decode("utf-8")
+        ]
 
 
 class HECEvent(Event):

@@ -1,4 +1,3 @@
-# Copyright 2016 Splunk, Inc.
 #
 # Copyright 2021 Splunk Inc.
 #
@@ -22,10 +21,11 @@ This module provides a base class of Splunk modular input.
 import logging
 import sys
 import traceback
-import xml.etree.ElementTree as ET
 from abc import ABCMeta, abstractmethod
 from urllib import parse as urlparse
+from xml.etree import ElementTree as ET  # nosemgrep
 
+import defusedxml.ElementTree as defused_et
 from splunklib import binding
 from splunklib.modularinput.argument import Argument
 from splunklib.modularinput.input_definition import InputDefinition
@@ -276,7 +276,7 @@ class ModularInput(metaclass=ABCMeta):
                 )
             )
 
-        return ET.tostring(scheme.to_xml(), encoding="unicode")
+        return defused_et.tostring(scheme.to_xml(), encoding="unicode")
 
     def extra_arguments(self):
         """Extra arguments for modular input.
@@ -475,7 +475,7 @@ class ModularInput(metaclass=ABCMeta):
                 )
                 root = ET.Element("error")
                 ET.SubElement(root, "message").text = str(e)
-                sys.stderr.write(ET.tostring(root))
+                sys.stderr.write(defused_et.tostring(root))
                 sys.stderr.flush()
                 return 1
         else:
