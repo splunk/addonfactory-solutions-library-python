@@ -237,7 +237,7 @@ jobs:
         id: check
         shell: bash
         run: |
-          RUN_PUBLISH=`echo $NEEDS | jq ".[] |  select(  ( .result != \"skipped\" ) and .result != \"success\" ) | length == 0"`
+          RUN_PUBLISH=$(echo "$NEEDS" | jq ".[] |  select(  ( .result != \"skipped\" ) and .result != \"success\" ) | length == 0")
           if [[ $RUN_PUBLISH != *'false'* ]]
           then
               echo "::set-output name=run-publish::true"
