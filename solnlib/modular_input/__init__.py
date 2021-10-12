@@ -1,4 +1,3 @@
-# Copyright 2016 Splunk, Inc.
 #
 # Copyright 2021 Splunk Inc.
 #
