@@ -217,7 +217,7 @@ jobs:
           path: test-results
 
   publish:
-    if: always()
+    name: Build Release
     needs:
       - compliance-dependencies
       - compliance-copyrights
@@ -229,33 +229,31 @@ jobs:
       - run-unit-tests
       - test-splunk
     runs-on: ubuntu-latest
-    env:
-      NEEDS: ${{ toJson(needs) }}
     steps:
-      - name: check if tests have passed or skipped
-        if: github.event_name != 'pull_request'
-        id: check
-        shell: bash
-        run: |
-          RUN_PUBLISH=$(echo "$NEEDS" | jq ".[] |  select(  ( .result != \"skipped\" ) and .result != \"success\" ) | length == 0")
-          if [[ $RUN_PUBLISH != *'false'* ]]
-          then
-              echo "::set-output name=run-publish::true"
-          else
-              echo "::set-output name=run-publish::false"
-          fi
-      - name: exit without publish
-        if: ${{ steps.check.outputs.run-publish == 'false' || github.event_name == 'pull_request'}}
-        run: |
-          echo " some test job failed. "
-          exit 1
-      - name: Checkout
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v2
         with:
           submodules: false
+          # Very important: semantic-release won't trigger a tagged
+          # build if this is not set false
           persist-credentials: false
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.7"
+      - name: Install Poetry
+        run: curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python3 -
+      - name: Install Code
+        run: |
+          # shellcheck disable=SC1090
+          source "$HOME/.poetry/env"
+          poetry install
+      - name: Build
+        run: |
+          # shellcheck disable=SC1090
+          source "$HOME/.poetry/env"
+          poetry build
       - name: Semantic Release
-        uses: cycjimmy/semantic-release-action@v2.5.4
+        uses: cycjimmy/semantic-release-action@v2.6.0
         with:
           semantic_version: 17
           extra_plugins: |
@@ -263,7 +261,7 @@ jobs:
             @semantic-release/git
             @google/semantic-release-replace-plugin
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN_ADMIN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PYPI_USERNAME: ${{ secrets.PYPI_USERNAME }}
           PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
 
