@@ -229,7 +229,7 @@ class KVStoreCheckpointer(Checkpointer):
             record = self._collection_data.query_by_id(key)
         except binding.HTTPError as e:
             if e.status != 404:
-                logging.error("Get checkpoint failed: %s.", traceback.format_exc(e))
+                logging.error("Get checkpoint failed: %s.", traceback.format_exc())
                 raise
 
             return None
@@ -242,7 +242,7 @@ class KVStoreCheckpointer(Checkpointer):
             self._collection_data.delete_by_id(key)
         except binding.HTTPError as e:
             if e.status != 404:
-                logging.error("Delete checkpoint failed: %s.", traceback.format_exc(e))
+                logging.error("Delete checkpoint failed: %s.", traceback.format_exc())
                 raise
 
 
