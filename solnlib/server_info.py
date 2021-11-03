@@ -17,12 +17,12 @@
 """This module contains Splunk server info related functionalities."""
 
 import json
+from typing import Any, Dict, Optional
 
 from splunklib import binding
 
-from . import splunk_rest_client as rest_client
-from . import utils
-from .utils import retry
+from solnlib import splunk_rest_client as rest_client
+from solnlib import utils
 
 __all__ = ["ServerInfo", "ServerInfoException"]
 
@@ -42,10 +42,10 @@ class ServerInfo:
     def __init__(
         self,
         session_key: str,
-        scheme: str = None,
-        host: str = None,
-        port: int = None,
-        **context: dict
+        scheme: Optional[str] = None,
+        host: Optional[str] = None,
+        port: Optional[int] = None,
+        **context: Any
     ):
         """Initializes ServerInfo.
 
@@ -60,23 +60,75 @@ class ServerInfo:
             session_key, "-", scheme=scheme, host=host, port=port, **context
         )
 
-    @retry(exceptions=[binding.HTTPError])
+    @classmethod
+    def from_server_uri(
+        cls, server_uri: str, session_key: str, **context: Any
+    ) -> "ServerInfo":
+        """Creates ServerInfo class using server_uri and session_key.
+
+        Note: splunktalib uses these parameters to create it's ServerInfo class,
+        so this method should ease the transition from splunktalib to solnlib.
+
+        Arguments:
+            server_uri: splunkd URI.
+            session_key: Splunk access token.
+            context: Other configurations for Splunk rest client.
+
+        Returns:
+            An instance of `ServerInfo`.
+
+        Raises:
+            ValueError: server_uri is in the wrong format.
+        """
+        scheme, host, port = utils.extract_http_scheme_host_port(server_uri)
+        return ServerInfo(
+            session_key,
+            scheme=scheme,
+            host=host,
+            port=port,
+            **context,
+        )
+
+    def to_dict(self) -> Dict:
+        """Returns server information in a form dictionary.
+
+        Note: This method is implemented here to have compatibility with splunktalib's
+        analogue.
+
+        Returns:
+            Server information in a dictionary format.
+        """
+        return self._server_info()
+
+    @utils.retry(exceptions=[binding.HTTPError])
     def _server_info(self):
         return self._rest_client.info
 
     @property
     def server_name(self) -> str:
-        """Get server name."""
+        """Get server name.
+
+        Returns:
+            Server name.
+        """
         return self._server_info()["serverName"]
 
     @property
     def guid(self) -> str:
-        """Get guid for the server."""
+        """Get guid for the server.
+
+        Returns:
+            Server GUID.
+        """
         return self._server_info()["guid"]
 
     @property
     def version(self) -> str:
-        """Get Splunk server version."""
+        """Get Splunk server version.
+
+        Returns:
+            Splunk version.
+        """
         return self._server_info()["version"]
 
     def is_captain(self) -> bool:
@@ -133,7 +185,7 @@ class ServerInfo:
 
         return False
 
-    @retry(exceptions=[binding.HTTPError])
+    @utils.retry(exceptions=[binding.HTTPError])
     def get_shc_members(self) -> list:
         """Get SHC members.
 
@@ -162,7 +214,7 @@ class ServerInfo:
 
         return members
 
-    @retry(exceptions=[binding.HTTPError])
+    @utils.retry(exceptions=[binding.HTTPError])
     def is_captain_ready(self) -> bool:
         """Check if captain is ready.
 
@@ -173,7 +225,8 @@ class ServerInfo:
             True if captain is ready else False.
 
         Examples:
-            >>> serverinfo = solnlib.server_info.ServerInfo(session_key)
+            >>> from solnlib import server_info
+            >>> serverinfo = server_info.ServerInfo(session_key)
             >>> while 1:
             >>>    if serverinfo.is_captain_ready():
             >>>        break
@@ -189,7 +242,7 @@ class ServerInfo:
             cap_info["maintenance_mode"]
         )
 
-    @retry(exceptions=[binding.HTTPError])
+    @utils.retry(exceptions=[binding.HTTPError])
     def captain_info(self) -> dict:
         """Get captain information.
 
