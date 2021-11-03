@@ -14,19 +14,24 @@
 # limitations under the License.
 #
 import common
+import pytest
 from splunklib import binding
 
 from solnlib import server_info
 
 
+def test_from_server_uri():
+    server_info.ServerInfo.from_server_uri("https://localhost:8089", common.SESSION_KEY)
+
+
+def test_from_server_uri_when_invalid_server_uri():
+    with pytest.raises(ValueError):
+        server_info.ServerInfo.from_server_uri(
+            "no-schema://localhost:99999", common.SESSION_KEY
+        )
+
+
 class TestServerInfo:
-    def test_version(self, monkeypatch):
-        common.mock_splunkhome(monkeypatch)
-        common.mock_serverinfo(monkeypatch)
-
-        si = server_info.ServerInfo(common.SESSION_KEY)
-        assert si.version == "6.3.1511.2"
-
     def test_get_shc_members(self, monkeypatch):
         def _mock_get(self, path_segment, owner=None, app=None, sharing=None, **query):
             return common.make_response_record(
