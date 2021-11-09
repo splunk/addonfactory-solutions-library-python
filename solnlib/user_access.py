@@ -291,7 +291,7 @@ class ObjectACLManager:
         scheme=None,
         host=None,
         port=None,
-        **context
+        **context,
     ):
         collection_name = "{app}_{collection_name}".format(
             app=app, collection_name=collection_name
@@ -613,7 +613,7 @@ class AppCapabilityManager:
         scheme=None,
         host=None,
         port=None,
-        **context
+        **context,
     ):
         self._app = app
 
@@ -722,7 +722,7 @@ def check_user_access(
     scheme=None,
     host=None,
     port=None,
-    **context
+    **context,
 ):
     """User access checker.
 
@@ -778,7 +778,7 @@ def check_user_access(
         scheme=scheme,
         host=host,
         port=port,
-        **context
+        **context,
     ):
         raise UserAccessException(
             "Permission denied, %s does not have the capability: %s."
@@ -868,7 +868,7 @@ def get_user_capabilities(
     _rest_client = rest_client.SplunkRestClient(
         session_key, "-", scheme=scheme, host=host, port=port, **context
     )
-    url = "/services/authentication/users/{username}".format(username=username)
+    url = f"/services/authentication/users/{username}"
     try:
         response = _rest_client.get(url, output_mode="json").body.read()
     except binding.HTTPError as e:
@@ -947,7 +947,7 @@ def get_user_roles(session_key, username, scheme=None, host=None, port=None, **c
     _rest_client = rest_client.SplunkRestClient(
         session_key, "-", scheme=scheme, host=host, port=port, **context
     )
-    url = "/services/authentication/users/{username}".format(username=username)
+    url = f"/services/authentication/users/{username}"
     try:
         response = _rest_client.get(url, output_mode="json").body.read()
     except binding.HTTPError as e:

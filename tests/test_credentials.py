@@ -36,10 +36,10 @@ def test_credential_manager(monkeypatch):
         return list(credentials_store.values())
 
     def mock_storage_passwords_create(self, password, username, realm=None):
-        title = "{}:{}:".format(realm, username) if realm else ":{}:".format(username)
+        title = f"{realm}:{username}:" if realm else f":{username}:"
         password = client.StoragePassword(
             None,
-            "storage/passwords/{}".format(title),
+            f"storage/passwords/{title}",
             state=record(
                 {
                     "content": {
@@ -57,7 +57,7 @@ def test_credential_manager(monkeypatch):
         return password
 
     def mock_storage_passwords_delete(self, username, realm=None):
-        title = "{}:{}:".format(realm, username) if realm else ":{}:".format(username)
+        title = f"{realm}:{username}:" if realm else f":{username}:"
         if title in credentials_store:
             del credentials_store[title]
         else:

@@ -35,7 +35,7 @@ solnlib_lib_target_dir = make_splunkhome_path(
 
 def setup_environment():
     print("Setup solnlib demo environment...")
-    print("Copying {} to {}".format(source_dir, target_dir))
+    print(f"Copying {source_dir} to {target_dir}")
     shutil.copytree(source_dir, target_dir)
     shutil.copytree(solnlib_lib_dir, solnlib_lib_target_dir)
     os.system(splunk_bin + " start")

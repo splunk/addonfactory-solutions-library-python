@@ -44,4 +44,4 @@ def test_splunkenv():
     assert port
 
     uri = splunkenv.get_splunkd_uri()
-    assert uri == "{scheme}://{host}:{port}".format(scheme=scheme, host=host, port=port)
+    assert uri == f"{scheme}://{host}:{port}"

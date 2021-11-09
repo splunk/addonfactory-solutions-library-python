@@ -152,7 +152,7 @@ def check_css_params(**validators):
                 if arg in optional and optional[arg] == value:
                     continue
                 if not func(value):
-                    raise ValueError("Illegal argument: {}={}".format(arg, value))
+                    raise ValueError(f"Illegal argument: {arg}={value}")
             return f(*args, **kwargs)
 
         return wrapper

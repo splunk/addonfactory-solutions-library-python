@@ -47,7 +47,7 @@ def _get_proxy_info(context):
     if context.get("proxy_username") and context.get("proxy_password"):
         username = quote(context["proxy_username"], safe="")
         password = quote(context["proxy_password"], safe="")
-        user_pass = "{user}:{password}@".format(user=username, password=password)
+        user_pass = f"{username}:{password}@"
 
     proxy = "http://{user_pass}{host}:{port}".format(
         user_pass=user_pass, host=context["proxy_hostname"], port=context["proxy_port"]
@@ -148,7 +148,7 @@ def _request_handler(context):
                 verify=verify,
                 proxies=proxies,
                 cert=cert,
-                **kwargs
+                **kwargs,
             )
         except Exception as e:
             logging.error(
@@ -208,7 +208,7 @@ class SplunkRestClient(client.Service):
         scheme=None,
         host=None,
         port=None,
-        **context
+        **context,
     ):
         # Only do splunkd URI discovery in SPLUNK env (SPLUNK_HOME is set)
         if not all([scheme, host, port]) and os.environ.get("SPLUNK_HOME"):

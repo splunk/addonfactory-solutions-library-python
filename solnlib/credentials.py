@@ -98,7 +98,7 @@ class CredentialManager:
         scheme=None,
         host=None,
         port=None,
-        **context
+        **context,
     ):
         self._realm = realm
         self.service = rest_client.SplunkRestClient(
@@ -108,7 +108,7 @@ class CredentialManager:
             scheme=scheme,
             host=host,
             port=port,
-            **context
+            **context,
         )
         self._storage_passwords = self.service.storage_passwords
 
@@ -139,7 +139,7 @@ class CredentialManager:
                 return password["clear_password"]
 
         raise CredentialNotExistException(
-            "Failed to get password of realm={}, user={}.".format(self._realm, user)
+            f"Failed to get password of realm={self._realm}, user={user}."
         )
 
     @retry(exceptions=[binding.HTTPError])
@@ -244,7 +244,7 @@ class CredentialManager:
     def _get_all_passwords_in_realm(self):
         if self._realm:
             all_passwords = self._storage_passwords.list(
-                count=-1, search="realm={}".format(self._realm)
+                count=-1, search=f"realm={self._realm}"
             )
         else:
             all_passwords = self._storage_passwords.list(count=-1, search="")
@@ -255,7 +255,7 @@ class CredentialManager:
         all_passwords = self._storage_passwords.list(count=-1)
 
         results = {}
-        ptn = re.compile(r"(.+){cred_sep}(\d+)".format(cred_sep=self.SEP))
+        ptn = re.compile(fr"(.+){self.SEP}(\d+)")
         for password in all_passwords:
             match = ptn.match(password.name)
             if match:
