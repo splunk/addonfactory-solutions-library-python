@@ -140,7 +140,7 @@ def make_splunkhome_path(parts):
     # Check that we haven't escaped from intended parent directories.
     if os.path.relpath(fullpath, basepath)[0:2] == "..":
         raise ValueError(
-            'Illegal escape from parent directory "{}": {}'.format(basepath, fullpath)
+            f'Illegal escape from parent directory "{basepath}": {fullpath}'
         )
     return fullpath
 
@@ -207,7 +207,7 @@ def get_splunkd_uri():
         return os.environ["SPLUNKD_URI"]
 
     scheme, host, port = get_splunkd_access_info()
-    return "{scheme}://{host}:{port}".format(scheme=scheme, host=host, port=port)
+    return f"{scheme}://{host}:{port}"
 
 
 def get_conf_key_value(conf_name, stanza, key):

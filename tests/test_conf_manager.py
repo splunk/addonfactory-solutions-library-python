@@ -36,10 +36,10 @@ def test_conf_manager(monkeypatch):
         return credentials_store.values()
 
     def mock_storage_passwords_create(self, password, username, realm=None):
-        title = "{}:{}:".format(realm, username) if realm else ":{}:".format(username)
+        title = f"{realm}:{username}:" if realm else f":{username}:"
         password = client.StoragePassword(
             None,
-            "storage/passwords/{}".format(title),
+            f"storage/passwords/{title}",
             state=record(
                 {
                     "content": {
@@ -57,7 +57,7 @@ def test_conf_manager(monkeypatch):
         return password
 
     def mock_storage_passwords_delete(self, username, realm=None):
-        title = "{}:{}:".format(realm, username) if realm else ":{}:".format(username)
+        title = f"{realm}:{username}:" if realm else f":{username}:"
         if title in credentials_store:
             del credentials_store[title]
         else:
@@ -101,7 +101,7 @@ def test_conf_manager(monkeypatch):
                 for stanza_name, stanza in list(all_stanzas.items()):
                     stanza_mgr = client.Stanza(
                         self.service,
-                        "configs/conf-test/{}/".format(stanza_name),
+                        f"configs/conf-test/{stanza_name}/",
                         skip_refresh=True,
                     )
                     stanza_mgr._state = common.record(
@@ -122,7 +122,7 @@ def test_conf_manager(monkeypatch):
 
     def mock_configuration_file_create(self, name, **params):
         stanza_mgr = client.Stanza(
-            self.service, "configs/conf-test/{}/".format(name), skip_refresh=True
+            self.service, f"configs/conf-test/{name}/", skip_refresh=True
         )
         stanza_mgr._state = common.record({"title": name, "content": {}})
         return stanza_mgr
@@ -182,7 +182,7 @@ def test_conf_manager(monkeypatch):
     cfm = conf_manager.ConfManager(
         common.SESSION_KEY,
         common.app,
-        realm="__REST_CREDENTIAL__#{}#configs/conf-test".format(common.app),
+        realm=f"__REST_CREDENTIAL__#{common.app}#configs/conf-test",
     )
     conf = cfm.get_conf("test")
     assert not conf.stanza_exist("test_stanza")

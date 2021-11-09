@@ -146,9 +146,9 @@ class Logs(metaclass=Singleton):
     @classmethod
     def _get_log_file(cls, name):
         if cls._default_namespace:
-            name = "{}_{}.log".format(cls._default_namespace, name)
+            name = f"{cls._default_namespace}_{name}.log"
         else:
-            name = "{}.log".format(name)
+            name = f"{name}.log"
 
         if cls._default_directory:
             directory = cls._default_directory
