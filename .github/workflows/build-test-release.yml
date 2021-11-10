@@ -1,0 +1,274 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - "main"
+      - "develop"
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  compliance-dependencies:
+    name: compliance-dependencies
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: ort-action
+        uses: splunk/addonfactory-ort-action@v1
+        id: ort-action
+        with:
+          WorkDir: .
+          UsePython3: "3.7"
+      - name: ort-action-artifacts-reports
+        uses: actions/upload-artifact@v2
+        with:
+          name: analysis-reports
+          path: |
+            .ort/reports/*
+        if: always()
+      - name: ort-action-artifacts-analyzer
+        uses: actions/upload-artifact@v2
+        with:
+          name: analysis-analyzer
+          path: |
+            .ort/analyzer/*
+        if: always()
+
+  compliance-copyrights:
+    name: Compliance Copyright Headers
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Check License Header
+        uses: apache/skywalking-eyes@main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: "3.7"
+      - name: Install actionlint
+        run: |
+          bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/v1.6.3/scripts/download-actionlint.bash)
+      - uses: pre-commit/action@v2.0.3
+
+  review_secrets:
+    name: security-detect-secrets
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: false
+          fetch-depth: "0"
+      - name: Trufflehog Actions Scan
+        uses: edplato/trufflehog-actions-scan@v0.9j-beta
+        with:
+          scanArguments: "--max_depth 30 -x .github/workflows/exclude-patterns.txt"
+
+  semgrep:
+    runs-on: ubuntu-latest
+    name: security-sast-semgrep
+    steps:
+      - uses: actions/checkout@v2
+      - name: Semgrep
+        id: semgrep
+        uses: returntocorp/semgrep-action@v1
+        with:
+          publishToken: ${{ secrets.SEMGREP_PUBLISH_TOKEN }}
+
+  snyk:
+    name: security-vuln-snyk
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+      - uses: snyk/actions/setup@master
+      - uses: actions/setup-go@v2.1.3
+        with:
+          go-version: "1.13"
+      - name: Snyk monitor
+        run: snyk test --sarif-file-output=snyk-scan_requirements.sarif --all-projects --print-deps --severity-threshold=high
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      - uses: actions/upload-artifact@v2
+        if: always()
+        with:
+          name: snyk-results
+          path: snyk-scan_requirements.sarif
+
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+      - name: Install Tools
+        run: curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
+      - name: Build
+        run: |
+          # shellcheck disable=SC1090
+          source "$HOME/.poetry/env"
+          poetry install
+          poetry build
+      - uses: actions/upload-artifact@v2.2.4
+        with:
+          name: dist
+          path: dist
+      - uses: actions/upload-artifact@v2.2.4
+        with:
+          name: output
+          path: output
+
+  run-unit-tests:
+    name: test-unit
+    runs-on: ubuntu-latest
+    needs:
+      - build
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+      - name: run tests
+        run: |
+          curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
+          # shellcheck disable=SC1090
+          source "$HOME/.poetry/env"
+          poetry install
+          poetry run pytest --junitxml=test-results/results.xml --cov=solnlib --cov-report=html tests
+      - uses: actions/upload-artifact@v2.2.4
+        with:
+          name: unit tests test-results
+          path: test-results
+      - uses: actions/upload-artifact@v2.2.4
+        with:
+          name: unit tests htmlcov report
+          path: htmlcov
+
+  test-splunk:
+    name: test-splunk
+    runs-on: ubuntu-latest
+    needs:
+      - build
+    strategy:
+      matrix:
+        splunk-version: ["8.0", "8.1", "8.2"]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+      - name: Install Splunk
+        run: |
+          pip install --user git+https://github.com/pixelb/crudini
+          export SPLUNK_PRODUCT=splunk
+          SPLUNK_VERSION=$(crudini --get deps/build/addonfactory_test_matrix_splunk/splunk_matrix.conf ${{ matrix.splunk-version }} VERSION)
+          export SPLUNK_VERSION
+          SPLUNK_BUILD=$(crudini --get deps/build/addonfactory_test_matrix_splunk/splunk_matrix.conf ${{ matrix.splunk-version }} BUILD)
+          export SPLUNK_BUILD
+          export SPLUNK_SLUG=$SPLUNK_VERSION-SPLUNK_BUILD
+          export SPLUNK_ARCH=x86_64
+          export SPLUNK_LINUX_FILENAME=splunk-${SPLUNK_VERSION}-${SPLUNK_BUILD}-Linux-${SPLUNK_ARCH}.tgz
+          export SPLUNK_BUILD_URL=https://download.splunk.com/products/${SPLUNK_PRODUCT}/releases/${SPLUNK_VERSION}/linux/${SPLUNK_LINUX_FILENAME}
+          echo "$SPLUNK_BUILD_URL"
+          export SPLUNK_HOME=/opt/splunk
+          wget -qO /tmp/splunk.tgz "${SPLUNK_BUILD_URL}"
+          sudo tar -C /opt -zxf /tmp/splunk.tgz
+          sudo cp -r examples/data/solnlib_demo $SPLUNK_HOME/etc/apps
+          sudo cp -r solnlib $SPLUNK_HOME/etc/apps/solnlib_demo/bin/
+          sudo mkdir -p $SPLUNK_HOME/etc/apps/Splunk_TA_test/default/
+          sudo chown -R "$USER":"$USER" /opt/splunk
+          ls $SPLUNK_HOME/etc/apps/solnlib_demo/bin/
+          echo -e "[user_info]\nUSERNAME=Admin\nPASSWORD=Chang3d"'!' | sudo tee -a /opt/splunk/etc/system/local/user-seed.conf
+          echo 'OPTIMISTIC_ABOUT_FILE_LOCKING=1' | sudo tee -a /opt/splunk/etc/splunk-launch.conf
+          sudo /opt/splunk/bin/splunk start --accept-license
+      - name: Run tests
+        run: |
+          curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python3 -
+          # shellcheck disable=SC1090
+          source "$HOME/.poetry/env"
+          poetry install
+          SPLUNK_HOME=/opt/splunk/ poetry run pytest --junitxml=test-results/results.xml -v examples
+      - uses: actions/upload-artifact@v2.2.4
+        with:
+          name: test-splunk test-results
+          path: test-results
+
+  publish:
+    name: Build Release
+    needs:
+      - compliance-dependencies
+      - compliance-copyrights
+      - pre-commit
+      - review_secrets
+      - semgrep
+      - snyk
+      - build
+      - run-unit-tests
+      - test-splunk
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: false
+          # Very important: semantic-release won't trigger a tagged
+          # build if this is not set false
+          persist-credentials: false
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.7"
+      - name: Install Poetry
+        run: curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python3 -
+      - name: Install Code
+        run: |
+          # shellcheck disable=SC1090
+          source "$HOME/.poetry/env"
+          poetry install
+      - name: Build
+        run: |
+          # shellcheck disable=SC1090
+          source "$HOME/.poetry/env"
+          poetry build
+      - name: Semantic Release
+        uses: cycjimmy/semantic-release-action@v2.6.0
+        with:
+          semantic_version: 17
+          extra_plugins: |
+            @semantic-release/exec
+            @semantic-release/git
+            @google/semantic-release-replace-plugin
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN_ADMIN }}
+          PYPI_USERNAME: ${{ secrets.PYPI_USERNAME }}
+          PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+
+  update-semver:
+    name: Move Respository semver tags
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: haya14busa/action-update-semver@v1

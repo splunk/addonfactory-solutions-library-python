@@ -1,7 +1,18 @@
-# Copyright 2016 Splunk, Inc.
-# SPDX-FileCopyrightText: 2020 2020
 #
-# SPDX-License-Identifier: Apache-2.0
+# Copyright 2021 Splunk Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 
 """
 Splunk platform related utilities.
@@ -9,18 +20,9 @@ Splunk platform related utilities.
 
 import os
 import os.path as op
-import subprocess
 import socket
-
-try:
-    from ConfigParser import ConfigParser
-
-    CONF_PARSER_KWARGS = {}
-except ImportError:
-    from configparser import ConfigParser
-
-    CONF_PARSER_KWARGS = {"strict": False}
-
+import subprocess
+from configparser import ConfigParser
 from io import StringIO
 
 from . import utils
@@ -138,7 +140,7 @@ def make_splunkhome_path(parts):
     # Check that we haven't escaped from intended parent directories.
     if os.path.relpath(fullpath, basepath)[0:2] == "..":
         raise ValueError(
-            'Illegal escape from parent directory "{}": {}'.format(basepath, fullpath)
+            f'Illegal escape from parent directory "{basepath}": {fullpath}'
         )
     return fullpath
 
@@ -205,7 +207,7 @@ def get_splunkd_uri():
         return os.environ["SPLUNKD_URI"]
 
     scheme, host, port = get_splunkd_access_info()
-    return "{scheme}://{host}:{port}".format(scheme=scheme, host=host, port=port)
+    return f"{scheme}://{host}:{port}"
 
 
 def get_conf_key_value(conf_name, stanza, key):
@@ -260,7 +262,7 @@ def get_conf_stanzas(conf_name):
     if conf_name.endswith(".conf"):
         conf_name = conf_name[:-5]
 
-    # TODO: dynamically caculate SPLUNK_HOME
+    # TODO: dynamically calculate SPLUNK_HOME
     btool_cli = [
         op.join(os.environ["SPLUNK_HOME"], "bin", "splunk"),
         "cmd",
@@ -268,13 +270,15 @@ def get_conf_stanzas(conf_name):
         conf_name,
         "list",
     ]
-    p = subprocess.Popen(btool_cli, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    p = subprocess.Popen(  # nosemgrep: python.lang.security.audit.dangerous-subprocess-use.dangerous-subprocess-use
+        btool_cli, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
     out, _ = p.communicate()
 
     if isinstance(out, bytes):
         out = out.decode()
 
-    parser = ConfigParser(**CONF_PARSER_KWARGS)
+    parser = ConfigParser(**{"strict": False})
     parser.optionxform = str
     parser.readfp(StringIO(out))
 

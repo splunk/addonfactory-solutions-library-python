@@ -1,7 +1,18 @@
-# Copyright 2016 Splunk, Inc.
-# SPDX-FileCopyrightText: 2020 2020
 #
-# SPDX-License-Identifier: Apache-2.0
+# Copyright 2021 Splunk Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 
 """
 This module contains simple interfaces for Splunk config file management,
@@ -13,10 +24,10 @@ import json
 import logging
 import traceback
 
-from . import splunk_rest_client as rest_client
-from .credentials import CredentialManager
-from .credentials import CredentialNotExistException
 from splunklib import binding
+
+from . import splunk_rest_client as rest_client
+from .credentials import CredentialManager, CredentialNotExistException
 from .utils import retry
 
 __all__ = [
@@ -71,7 +82,7 @@ class ConfFile:
         host=None,
         port=None,
         realm=None,
-        **context
+        **context,
     ):
         self._name = name
         self._conf = conf
@@ -101,7 +112,7 @@ class ConfFile:
                 scheme=self._scheme,
                 host=self._host,
                 port=self._port,
-                **self._context
+                **self._context,
             )
 
         return self._cred_manager
@@ -211,12 +222,12 @@ class ConfFile:
                 raise
 
             raise ConfStanzaNotExistException(
-                "Stanza: {} does not exist in {}.conf".format(stanza_name, self._name)
+                f"Stanza: {stanza_name} does not exist in {self._name}.conf"
             )
 
         if len(stanza_mgrs) == 0:
             raise ConfStanzaNotExistException(
-                "Stanza: {} does not exist in {}.conf".format(stanza_name, self._name)
+                f"Stanza: {stanza_name} does not exist in {self._name}.conf"
             )
 
         stanza = self._decrypt_stanza(stanza_mgrs[0].name, stanza_mgrs[0].content)
@@ -246,7 +257,7 @@ class ConfFile:
         """
 
         if only_current_app:
-            stanza_mgrs = self._conf.list(search="eai:acl.app={}".format(self._app))
+            stanza_mgrs = self._conf.list(search=f"eai:acl.app={self._app}")
         else:
             stanza_mgrs = self._conf.list()
         res = {}
@@ -326,7 +337,7 @@ class ConfFile:
                 "Delete stanza: %s error: %s.", stanza_name, traceback.format_exc()
             )
             raise ConfStanzaNotExistException(
-                "Stanza: {} does not exist in {}.conf".format(stanza_name, self._name)
+                f"Stanza: {stanza_name} does not exist in {self._name}.conf"
             )
 
     @retry(exceptions=[binding.HTTPError])
@@ -394,7 +405,7 @@ class ConfManager:
         host=None,
         port=None,
         realm=None,
-        **context
+        **context,
     ):
         self._session_key = session_key
         self._app = app
@@ -410,7 +421,7 @@ class ConfManager:
             scheme=self._scheme,
             host=self._host,
             port=self._port,
-            **self._context
+            **self._context,
         )
         self._confs = None
         self._realm = realm
@@ -451,7 +462,7 @@ class ConfManager:
             self._host,
             self._port,
             self._realm,
-            **self._context
+            **self._context,
         )
 
     @retry(exceptions=[binding.HTTPError])
@@ -478,5 +489,5 @@ class ConfManager:
             self._host,
             self._port,
             self._realm,
-            **self._context
+            **self._context,
         )

@@ -1,7 +1,18 @@
-# Copyright 2016 Splunk, Inc.
-# SPDX-FileCopyrightText: 2020 2020
 #
-# SPDX-License-Identifier: Apache-2.0
+# Copyright 2021 Splunk Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 
 """
 This module provides a base class of Splunk modular input.
@@ -10,40 +21,22 @@ This module provides a base class of Splunk modular input.
 import logging
 import sys
 import traceback
-
-try:
-    from urllib3 import parse_url as urlparse
-    from urllib3.exceptions import InsecureRequestWarning
-
-    urllib3.disable_warnings(InsecureRequestWarning)
-except ImportError:
-    try:
-        from urllib2 import urlparse
-    except ImportError:
-        from urllib import parse as urlparse
-
 from abc import ABCMeta, abstractmethod
+from urllib import parse as urlparse
+from xml.etree import ElementTree as ET  # nosemgrep
 
-try:
-    import xml.etree.ElementTree as ET
-except ImportError:
-    import xml.etree.ElementTree as ET
-
+import defusedxml.ElementTree as defused_et
 from splunklib import binding
 from splunklib.modularinput.argument import Argument
-from splunklib.modularinput.scheme import Scheme
 from splunklib.modularinput.input_definition import InputDefinition
+from splunklib.modularinput.scheme import Scheme
 from splunklib.modularinput.validation_definition import ValidationDefinition
 
 from .. import utils
-from . import checkpointer
-from . import event_writer
 from ..orphan_process_monitor import OrphanProcessMonitor
+from . import checkpointer, event_writer
 
 __all__ = ["ModularInputException", "ModularInput"]
-
-
-SCHEME_ENCODING = "unicode" if sys.version_info >= (3, 0) else "utf-8"
 
 
 class ModularInputException(Exception):
@@ -281,7 +274,7 @@ class ModularInput(metaclass=ABCMeta):
                 )
             )
 
-        return ET.tostring(scheme.to_xml(), encoding=SCHEME_ENCODING)
+        return defused_et.tostring(scheme.to_xml(), encoding="unicode")
 
     def extra_arguments(self):
         """Extra arguments for modular input.
@@ -480,7 +473,7 @@ class ModularInput(metaclass=ABCMeta):
                 )
                 root = ET.Element("error")
                 ET.SubElement(root, "message").text = str(e)
-                sys.stderr.write(ET.tostring(root))
+                sys.stderr.write(defused_et.tostring(root))
                 sys.stderr.flush()
                 return 1
         else:

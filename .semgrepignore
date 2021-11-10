@@ -4,27 +4,6 @@
 .git/
 :include .gitignore
 
-# Common large directories
-node_modules/
-build/
-dist/
-vendor/
-env/
-.env/
-venv/
-.venv/
-*.min.js
-
-# Common test directories
-test/
 tests/
-
-# Semgrep rules folder
-.semgrep
-
-## Additional files to be ignored
-.circleci/
+examples/
 .github/
-.reuse/
-.vscode/
-.idea/

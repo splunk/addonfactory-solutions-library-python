@@ -1,20 +1,31 @@
-# SPDX-FileCopyrightText: 2020 2020
 #
-# SPDX-License-Identifier: Apache-2.0
+# Copyright 2021 Splunk Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 
 import hashlib
 import os.path as op
 import sys
 
+import common
 import pytest
 
-import common
-
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-from solnlib import conf_manager
-from splunklib import binding
-from splunklib import client
+from splunklib import binding, client
 from splunklib.data import record
+
+from solnlib import conf_manager
 
 
 def test_conf_manager(monkeypatch):
@@ -25,10 +36,10 @@ def test_conf_manager(monkeypatch):
         return credentials_store.values()
 
     def mock_storage_passwords_create(self, password, username, realm=None):
-        title = "{}:{}:".format(realm, username) if realm else ":{}:".format(username)
+        title = f"{realm}:{username}:" if realm else f":{username}:"
         password = client.StoragePassword(
             None,
-            "storage/passwords/{}".format(title),
+            f"storage/passwords/{title}",
             state=record(
                 {
                     "content": {
@@ -46,7 +57,7 @@ def test_conf_manager(monkeypatch):
         return password
 
     def mock_storage_passwords_delete(self, username, realm=None):
-        title = "{}:{}:".format(realm, username) if realm else ":{}:".format(username)
+        title = f"{realm}:{username}:" if realm else f":{username}:"
         if title in credentials_store:
             del credentials_store[title]
         else:
@@ -90,7 +101,7 @@ def test_conf_manager(monkeypatch):
                 for stanza_name, stanza in list(all_stanzas.items()):
                     stanza_mgr = client.Stanza(
                         self.service,
-                        "configs/conf-test/{}/".format(stanza_name),
+                        f"configs/conf-test/{stanza_name}/",
                         skip_refresh=True,
                     )
                     stanza_mgr._state = common.record(
@@ -111,7 +122,7 @@ def test_conf_manager(monkeypatch):
 
     def mock_configuration_file_create(self, name, **params):
         stanza_mgr = client.Stanza(
-            self.service, "configs/conf-test/{}/".format(name), skip_refresh=True
+            self.service, f"configs/conf-test/{name}/", skip_refresh=True
         )
         stanza_mgr._state = common.record({"title": name, "content": {}})
         return stanza_mgr
@@ -171,7 +182,7 @@ def test_conf_manager(monkeypatch):
     cfm = conf_manager.ConfManager(
         common.SESSION_KEY,
         common.app,
-        realm="__REST_CREDENTIAL__#{}#configs/conf-test".format(common.app),
+        realm=f"__REST_CREDENTIAL__#{common.app}#configs/conf-test",
     )
     conf = cfm.get_conf("test")
     assert not conf.stanza_exist("test_stanza")

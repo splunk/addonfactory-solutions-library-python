@@ -1,9 +1,6 @@
-# SPDX-FileCopyrightText: 2020 2020
-#
-# SPDX-License-Identifier: Apache-2.0
-
 import time
 import uuid
+
 from solnlib import log
 from solnlib.modular_input import *
 

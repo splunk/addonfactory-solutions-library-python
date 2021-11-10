@@ -1,7 +1,18 @@
-# Copyright 2016 Splunk, Inc.
-# SPDX-FileCopyrightText: 2020 2020
 #
-# SPDX-License-Identifier: Apache-2.0
+# Copyright 2021 Splunk Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 
 """
 Splunk user access control related utilities.
@@ -10,8 +21,9 @@ Splunk user access control related utilities.
 import json
 import re
 
-from . import splunk_rest_client as rest_client
 from splunklib import binding
+
+from . import splunk_rest_client as rest_client
 from .utils import retry
 
 __all__ = [
@@ -279,7 +291,7 @@ class ObjectACLManager:
         scheme=None,
         host=None,
         port=None,
-        **context
+        **context,
     ):
         collection_name = "{app}_{collection_name}".format(
             app=app, collection_name=collection_name
@@ -441,7 +453,9 @@ class ObjectACLManager:
                 raise
 
             raise ObjectACLNotExistException(
-                "Object ACL info of {}_{} does not exist.".format(obj_collection, obj_id)
+                "Object ACL info of {}_{} does not exist.".format(
+                    obj_collection, obj_id
+                )
             )
 
         return ObjectACL.parse(obj_acl)
@@ -496,7 +510,9 @@ class ObjectACLManager:
                 raise
 
             raise ObjectACLNotExistException(
-                "Object ACL info of {}_{} does not exist.".format(obj_collection, obj_id)
+                "Object ACL info of {}_{} does not exist.".format(
+                    obj_collection, obj_id
+                )
             )
 
     @retry(exceptions=[binding.HTTPError])
@@ -597,7 +613,7 @@ class AppCapabilityManager:
         scheme=None,
         host=None,
         port=None,
-        **context
+        **context,
     ):
         self._app = app
 
@@ -706,7 +722,7 @@ def check_user_access(
     scheme=None,
     host=None,
     port=None,
-    **context
+    **context,
 ):
     """User access checker.
 
@@ -762,7 +778,7 @@ def check_user_access(
         scheme=scheme,
         host=host,
         port=port,
-        **context
+        **context,
     ):
         raise UserAccessException(
             "Permission denied, %s does not have the capability: %s."
@@ -852,7 +868,7 @@ def get_user_capabilities(
     _rest_client = rest_client.SplunkRestClient(
         session_key, "-", scheme=scheme, host=host, port=port, **context
     )
-    url = "/services/authentication/users/{username}".format(username=username)
+    url = f"/services/authentication/users/{username}"
     try:
         response = _rest_client.get(url, output_mode="json").body.read()
     except binding.HTTPError as e:
@@ -931,7 +947,7 @@ def get_user_roles(session_key, username, scheme=None, host=None, port=None, **c
     _rest_client = rest_client.SplunkRestClient(
         session_key, "-", scheme=scheme, host=host, port=port, **context
     )
-    url = "/services/authentication/users/{username}".format(username=username)
+    url = f"/services/authentication/users/{username}"
     try:
         response = _rest_client.get(url, output_mode="json").body.read()
     except binding.HTTPError as e:

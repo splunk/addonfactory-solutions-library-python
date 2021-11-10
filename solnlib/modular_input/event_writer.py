@@ -1,7 +1,18 @@
-# Copyright 2016 Splunk, Inc.
-# SPDX-FileCopyrightText: 2020 2020
 #
-# SPDX-License-Identifier: Apache-2.0
+# Copyright 2021 Splunk Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 
 """
 This module provides two kinds of event writers (ClassicEventWriter,
@@ -14,15 +25,16 @@ import threading
 import time
 import traceback
 from abc import ABCMeta, abstractmethod
+from random import randint
 
-from .event import XMLEvent, HECEvent
+from splunklib import binding
+
 from .. import splunk_rest_client as rest_client
 from .. import utils
 from ..hec_config import HECConfig
-from splunklib import binding
 from ..splunkenv import get_splunkd_access_info
 from ..utils import retry
-from random import randint
+from .event import HECEvent, XMLEvent
 
 __all__ = ["ClassicEventWriter", "HECEventWriter"]
 
@@ -83,7 +95,7 @@ class EventWriter(metaclass=ABCMeta):
            >>>     host='localhost',
            >>>     source='Splunk',
            >>>     sourcetype='misc',
-           >>>     fields='{'accountid': '603514901691', 'Cloud': u'AWS'}'
+           >>>     fields={'accountid': '603514901691', 'Cloud': u'AWS'},
            >>>     stanza='test_scheme://test',
            >>>     unbroken=True,
            >>>     done=True)
@@ -414,7 +426,9 @@ class HECEventWriter(EventWriter):
                         headers=self.headers,
                     )
                 except binding.HTTPError as e:
-                    self.logger.warn("Write events through HEC failed. Status=%s", e.status)
+                    self.logger.warn(
+                        "Write events through HEC failed. Status=%s", e.status
+                    )
                     last_ex = e
                     if e.status in [self.TOO_MANY_REQUESTS, self.SERVICE_UNAVAILABLE]:
                         # wait time for n retries: 10, 20, 40, 80, 80, 80, 80, ....

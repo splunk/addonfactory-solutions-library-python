@@ -1,7 +1,18 @@
-# Copyright 2016 Splunk, Inc.
-# SPDX-FileCopyrightText: 2020 2020
 #
-# SPDX-License-Identifier: Apache-2.0
+# Copyright 2021 Splunk Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 
 """
 This module contains Splunk credential related interfaces.
@@ -10,12 +21,15 @@ This module contains Splunk credential related interfaces.
 import json
 import re
 
-from . import splunk_rest_client as rest_client
-from .net_utils import check_css_params
-from .net_utils import is_valid_hostname
-from .net_utils import is_valid_port
-from .net_utils import is_valid_scheme
 from splunklib import binding
+
+from . import splunk_rest_client as rest_client
+from .net_utils import (
+    check_css_params,
+    is_valid_hostname,
+    is_valid_port,
+    is_valid_scheme,
+)
 from .splunkenv import get_splunkd_access_info
 from .utils import retry
 
@@ -84,7 +98,7 @@ class CredentialManager:
         scheme=None,
         host=None,
         port=None,
-        **context
+        **context,
     ):
         self._realm = realm
         self.service = rest_client.SplunkRestClient(
@@ -94,7 +108,7 @@ class CredentialManager:
             scheme=scheme,
             host=host,
             port=port,
-            **context
+            **context,
         )
         self._storage_passwords = self.service.storage_passwords
 
@@ -125,7 +139,7 @@ class CredentialManager:
                 return password["clear_password"]
 
         raise CredentialNotExistException(
-            "Failed to get password of realm={}, user={}.".format(self._realm, user)
+            f"Failed to get password of realm={self._realm}, user={user}."
         )
 
     @retry(exceptions=[binding.HTTPError])
@@ -211,7 +225,9 @@ class CredentialManager:
         """
         all_passwords = self._get_all_passwords_in_realm()
         deleted = False
-        ent_pattern = re.compile(r"({}{}\d+)".format(user.replace("\\", "\\\\"), self.SEP))
+        ent_pattern = re.compile(
+            r"({}{}\d+)".format(user.replace("\\", "\\\\"), self.SEP)
+        )
         for password in list(all_passwords):
             match = (user == password.username) or ent_pattern.match(password.username)
             if match and password.realm == self._realm:
@@ -220,13 +236,15 @@ class CredentialManager:
 
         if not deleted:
             raise CredentialNotExistException(
-                "Failed to delete password of realm={}, user={}".format(self._realm, user)
+                "Failed to delete password of realm={}, user={}".format(
+                    self._realm, user
+                )
             )
 
     def _get_all_passwords_in_realm(self):
         if self._realm:
             all_passwords = self._storage_passwords.list(
-                count=-1, search="realm={}".format(self._realm)
+                count=-1, search=f"realm={self._realm}"
             )
         else:
             all_passwords = self._storage_passwords.list(count=-1, search="")
@@ -237,7 +255,7 @@ class CredentialManager:
         all_passwords = self._storage_passwords.list(count=-1)
 
         results = {}
-        ptn = re.compile(r"(.+){cred_sep}(\d+)".format(cred_sep=self.SEP))
+        ptn = re.compile(fr"(.+){self.SEP}(\d+)")
         for password in all_passwords:
             match = ptn.match(password.name)
             if match:

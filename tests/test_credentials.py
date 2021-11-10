@@ -1,6 +1,18 @@
-# SPDX-FileCopyrightText: 2020 2020
 #
-# SPDX-License-Identifier: Apache-2.0
+# Copyright 2021 Splunk Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 
 import hashlib
 import os.path as op
@@ -11,11 +23,10 @@ import pytest
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 
 import common
+from splunklib import binding, client
+from splunklib.data import record
 
 from solnlib import credentials
-from splunklib import binding
-from splunklib import client
-from splunklib.data import record
 
 
 def test_credential_manager(monkeypatch):
@@ -25,10 +36,10 @@ def test_credential_manager(monkeypatch):
         return list(credentials_store.values())
 
     def mock_storage_passwords_create(self, password, username, realm=None):
-        title = "{}:{}:".format(realm, username) if realm else ":{}:".format(username)
+        title = f"{realm}:{username}:" if realm else f":{username}:"
         password = client.StoragePassword(
             None,
-            "storage/passwords/{}".format(title),
+            f"storage/passwords/{title}",
             state=record(
                 {
                     "content": {
@@ -46,7 +57,7 @@ def test_credential_manager(monkeypatch):
         return password
 
     def mock_storage_passwords_delete(self, username, realm=None):
-        title = "{}:{}:".format(realm, username) if realm else ":{}:".format(username)
+        title = f"{realm}:{username}:" if realm else f":{username}:"
         if title in credentials_store:
             del credentials_store[title]
         else:

@@ -1,29 +1,27 @@
-# Copyright 2016 Splunk, Inc.
-# SPDX-FileCopyrightText: 2020 2020
 #
-# SPDX-License-Identifier: Apache-2.0
+# Copyright 2021 Splunk Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 
 """
 This module provides Splunk modular input event encapsulation.
 """
 
 import json
+from xml.etree import ElementTree as ET  # nosemgrep
 
-try:
-    import xml.etree.ElementTree as ET
-except ImportError:
-    import xml.etree.ElementTree as ET
-
-try:
-    unicode
-except NameError:
-    unicode = str
-
-try:
-    basestring
-except NameError:
-    basestring = str
-
+import defusedxml.ElementTree as defused_et
 
 __all__ = ["EventException", "XMLEvent", "HECEvent"]
 
@@ -80,7 +78,7 @@ class Event:
            >>>     host='localhost',
            >>>     source='Splunk',
            >>>     sourcetype='misc',
-           >>>     fields= {'Cloud':'AWS','region': 'us-west-1'}
+           >>>     fields= {'Cloud':'AWS','region': 'us-west-1'},
            >>>     stanza='test_scheme://test',
            >>>     unbroken=True,
            >>>     done=True)
@@ -154,7 +152,7 @@ class XMLEvent(Event):
             if value:
                 ET.SubElement(_event, node).text = value
 
-        if isinstance(self._data, (unicode, basestring)):
+        if isinstance(self._data, str):
             ET.SubElement(_event, "data").text = self._data
         else:
             ET.SubElement(_event, "data").text = json.dumps(self._data)
@@ -193,7 +191,9 @@ class XMLEvent(Event):
         for event in events:
             stream.append(event._to_xml())
 
-        return [ET.tostring(stream, encoding="utf-8", method="xml").decode("utf-8")]
+        return [
+            defused_et.tostring(stream, encoding="utf-8", method="xml").decode("utf-8")
+        ]
 
 
 class HECEvent(Event):

@@ -13,17 +13,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+header:
+  license:
+    spdx-id: Apache-2.0
+    copyright-owner: Splunk Inc.
 
-import os.path as op
-import sys
+  paths-ignore:
+    - ".github/"
+    - "README.md"
+    - "LICENSE"
+    - "*.lock"
+    - "tests/**"
+    - ".*"
+    - "examples/data"
 
-sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-from solnlib.splunkenv import get_splunkd_access_info
-
-owner = "nobody"
-app = "solnlib_demo"
-
-username = "admin"
-password = "Chang3d!"
-
-scheme, host, port = get_splunkd_access_info()
+  comment: on-failure
