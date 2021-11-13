@@ -15,7 +15,7 @@
 #
 
 """
-This module contains splunk server info related functionalities.
+This module contains Splunk server info related functionalities.
 """
 
 import json
@@ -26,32 +26,38 @@ from . import splunk_rest_client as rest_client
 from . import utils
 from .utils import retry
 
-__all__ = ["ServerInfo"]
+__all__ = ["ServerInfo", "ServerInfoException"]
 
 
 class ServerInfoException(Exception):
+    """Exception raised by ServerInfo class."""
+
     pass
 
 
 class ServerInfo:
-    """This class is a wrapper of splunk server info.
-
-    :param session_key: Splunk access token.
-    :type session_key: ``string``
-    :param scheme: (optional) The access scheme, default is None.
-    :type scheme: ``string``
-    :param host: (optional) The host name, default is None.
-    :type host: ``string``
-    :param port: (optional) The port number, default is None.
-    :type port: ``integer``
-    :param context: Other configurations for Splunk rest client.
-    :type context: ``dict``
-    """
+    """This class is a wrapper of Splunk server info."""
 
     SHC_MEMBER_ENDPOINT = "/services/shcluster/member/members"
     SHC_CAPTAIN_INFO_ENDPOINT = "/services/shcluster/captain/info"
 
-    def __init__(self, session_key, scheme=None, host=None, port=None, **context):
+    def __init__(
+        self,
+        session_key: str,
+        scheme: str = None,
+        host: str = None,
+        port: int = None,
+        **context: dict
+    ):
+        """Initializes ServerInfo.
+
+        Arguments:
+            session_key: Splunk access token.
+            scheme: The access scheme, default is None.
+            host: The host name, default is None.
+            port: The port number, default is None.
+            context: Other configurations for Splunk rest client.
+        """
         self._rest_client = rest_client.SplunkRestClient(
             session_key, "-", scheme=scheme, host=host, port=port, **context
         )
@@ -61,53 +67,39 @@ class ServerInfo:
         return self._rest_client.info
 
     @property
-    def server_name(self):
-        """Get server name.
-
-        :returns: Server name.
-        :rtype: ``string``
-        """
-
+    def server_name(self) -> str:
+        """Get server name."""
         return self._server_info()["serverName"]
 
     @property
-    def guid(self):
-        """Get guid for the server.
-
-        :returns: GUID.
-        :rtype: ``string``
-        """
-
+    def guid(self) -> str:
+        """Get guid for the server."""
         return self._server_info()["guid"]
 
     @property
-    def version(self):
-        """Get splunk server version.
-
-        :returns: Splunk server version.
-        :rtype: ``string``
-        """
-
+    def version(self) -> str:
+        """Get Splunk server version."""
         return self._server_info()["version"]
 
-    def is_captain(self):
-        """Check if this server is SHC captain. Note during a rolling start
-           of SH members, the captain may be changed from machine to machine.
-           To avoid the race condition, client may need do necessary sleep and
-           then poll is_captain_ready() == True and then check is_captain().
-           See is_captain_ready() for more details
+    def is_captain(self) -> bool:
+        """Check if this server is SHC captain.
 
-        :returns: True if this server is SHC captain else False.
-        :rtype: ``bool``
+        Note during a rolling start of SH members, the captain may be changed
+        from machine to machine. To avoid the race condition, client may need
+        do necessary sleep and then poll `is_captain_ready() == True` and then
+        check `is_captain()`. See `is_captain_ready()` for more details.
+
+        Returns:
+            True if this server is SHC captain else False.
         """
 
         return "shc_captain" in self._server_info()["server_roles"]
 
-    def is_cloud_instance(self):
+    def is_cloud_instance(self) -> bool:
         """Check if this server is a cloud instance.
 
-        :returns: True if this server is a cloud instance else False.
-        :rtype: ``bool``
+        Returns:
+            True if this server is a cloud instance else False.
         """
 
         try:
@@ -115,11 +107,11 @@ class ServerInfo:
         except KeyError:
             return False
 
-    def is_search_head(self):
+    def is_search_head(self) -> bool:
         """Check if this server is a search head.
 
-        :returns: True if this server is a search head else False.
-        :rtype: ``bool``
+        Returns:
+            True if this server is a search head else False.
         """
 
         server_info = self._server_info()
@@ -129,11 +121,11 @@ class ServerInfo:
 
         return False
 
-    def is_shc_member(self):
+    def is_shc_member(self) -> bool:
         """Check if this server is a SHC member.
 
-        :returns: True if this server is a SHC member else False.
-        :rtype: ``bool``
+        Returns:
+            True if this server is a SHC member else False.
         """
 
         server_info = self._server_info()
@@ -144,15 +136,15 @@ class ServerInfo:
         return False
 
     @retry(exceptions=[binding.HTTPError])
-    def get_shc_members(self):
+    def get_shc_members(self) -> list:
         """Get SHC members.
 
-        :returns: List of SHC members [(label, peer_scheme_host_port) ...]
-        :rtype: ``list``
+        Raises:
+            ServerInfoException: If this server has no SHC members.
 
-        :raises ServerInfoException: If this server has no SHC members.
+        Returns:
+            List of SHC members [(label, peer_scheme_host_port) ...].
         """
-
         try:
             content = self._rest_client.get(
                 self.SHC_MEMBER_ENDPOINT, output_mode="json"
@@ -173,17 +165,16 @@ class ServerInfo:
         return members
 
     @retry(exceptions=[binding.HTTPError])
-    def is_captain_ready(self):
+    def is_captain_ready(self) -> bool:
         """Check if captain is ready.
 
         Client usually first polls this function until captain is ready
         and then call is_captain to detect current captain machine
 
-        :returns: True/False
-        :rtype: ``bool``
+        Returns:
+            True if captain is ready else False.
 
-        Usage::
-
+        Examples:
             >>> serverinfo = solnlib.server_info.ServerInfo(session_key)
             >>> while 1:
             >>>    if serverinfo.is_captain_ready():
@@ -201,23 +192,14 @@ class ServerInfo:
         )
 
     @retry(exceptions=[binding.HTTPError])
-    def captain_info(self):
-        """Check if captain is ready.
+    def captain_info(self) -> dict:
+        """Get captain information.
 
-        :returns: captain info, like {
-            "elected_captain": 1463195590,
-            "id": "9CA04BAD-0C24-4703-8A88-E20345833508",
-            "initialized_flag": true,
-            "label": "my-shc04-sh",
-            "maintenance_mode": false,
-            "mgmt_uri": "https://my-shc04-sh:8089",
-            "min_peers_joined_flag": true,
-            "peer_scheme_host_port": "https://my-shc04-sh2:8089",
-            "rolling_restart_flag": false,
-            "service_ready_flag": true}
-        :rtype: ``dict``
+        Raises:
+            ServerInfoException: If there is SHC is not enabled.
 
-        :raises ServerInfoException: If there is SHC is not enabled.
+        Returns:
+            Captain information.
         """
 
         try:
