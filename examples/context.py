@@ -13,17 +13,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from urllib import parse
 
-import os.path as op
-import sys
-
-sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-from solnlib.splunkenv import get_splunkd_access_info
+import requests
 
 owner = "nobody"
 app = "solnlib_demo"
 
 username = "admin"
 password = "Chang3d!"
+scheme = "https"
+host = "localhost"
+port = 8089
 
-scheme, host, port = get_splunkd_access_info()
+
+def get_session_key():
+    response = requests.post(
+        f"{scheme}://{host}:{port}/services/auth/login?output_mode=json",
+        data=parse.urlencode({"username": username, "password": password}),
+        verify=False,
+    )
+    content = response.json()
+    return content["sessionKey"]
