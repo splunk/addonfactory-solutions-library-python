@@ -1,0 +1,30 @@
+site_name: Splunk Solutions SDK
+
+theme:
+  name: "material"
+  palette:
+    primary: "black"
+    accent: "orange"
+
+markdown_extensions:
+  - toc:
+      permalink: True
+  - smarty
+  - fenced_code
+  - sane_lists
+  - codehilite
+
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          rendering:
+            show_source: true
+            show_if_no_docstring: true
+
+nav:
+  - Home: index.md
+  - References:
+      - "server_info": server_info.md
