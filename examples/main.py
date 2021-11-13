@@ -50,26 +50,20 @@ def teardown_environment():
 
 
 def run_test():
+    import test__kvstore
     import test_acl
     import test_conf_manager
     import test_credentials
     import test_hec_config
     import test_hec_event_writer
-    import test_kvstore
-    import test_metadata
-    import test_server_info
     import test_splunkenv
     import test_time_parser
     import test_user_access
 
     print("check splunk environment...")
     test_splunkenv.test_splunkenv()
-    print("check splunk server info...")
-    test_server_info.test_server_info()
     print("test kvstore...")
-    test_kvstore.test_kvstore()
-    print("test metadata reader...")
-    test_metadata.test_metadata_reader()
+    test__kvstore.test_kvstore()
     print("test acl manager...")
     test_acl.test_acl_manager()
     print("test credential manager...")
