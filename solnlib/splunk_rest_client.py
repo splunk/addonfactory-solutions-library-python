@@ -170,31 +170,10 @@ def _request_handler(context):
 
 
 class SplunkRestClient(client.Service):
-    """Splunk rest client
+    """Splunk REST client.
 
     If any of scheme, host and port is None, will discover local
     splunkd access info automatically.
-
-    :param session_key: Splunk access token.
-    :type session_key: ``string``
-    :param app: App name of namespace.
-    :type app: ``string``
-    :param owner: (optional) Owner of namespace, default is `nobody`.
-    :type owner: ``string``
-    :param scheme: (optional) The access scheme, default is None.
-    :type scheme: ``string``
-    :param host: (optional) The host name, default is None.
-    :type host: ``string``
-    :param port: (optional) The port number, default is None.
-    :type port: ``integer``
-    :param context: Other configurations, it can contains `proxy_hostname`,
-        `proxy_port`, `proxy_username`, `proxy_password`, then proxy will
-        be accounted and setup, all REST APIs to Splunkd will be through
-        the proxy. If `context` contains `key_file`, `cert_file`, then
-        certification will be accounted and setup, all REST APIs to Splunkd
-        will use certification. If `context` contains `pool_connections`,
-        `pool_maxsize`, then HTTP Connection will be pooled
-    :type context: ``dict``
     """
 
     @check_css_params(
@@ -202,14 +181,32 @@ class SplunkRestClient(client.Service):
     )
     def __init__(
         self,
-        session_key,
-        app,
-        owner="nobody",
-        scheme=None,
-        host=None,
-        port=None,
-        **context,
+        session_key: str,
+        app: str,
+        owner: str = "nobody",
+        scheme: str = None,
+        host: str = None,
+        port: int = None,
+        **context: dict,
     ):
+        """
+        Initializes SplunkRestClient.
+
+        Arguments:
+            session_key: Splunk access token.
+            app: App name of namespace.
+            owner: Owner of namespace, default is `nobody`.
+            scheme: The access scheme, default is None.
+            host: The host name, default is None.
+            port: The port number, default is None.
+            context: Other configurations, it can contains `proxy_hostname`,
+                `proxy_port`, `proxy_username`, `proxy_password`, then proxy will
+                be accounted and setup, all REST APIs to Splunkd will be through
+                the proxy. If `context` contains `key_file`, `cert_file`, then
+                certification will be accounted and setup, all REST APIs to Splunkd
+                will use certification. If `context` contains `pool_connections`,
+                `pool_maxsize`, then HTTP Connection will be pooled.
+        """
         # Only do splunkd URI discovery in SPLUNK env (SPLUNK_HOME is set)
         if not all([scheme, host, port]) and os.environ.get("SPLUNK_HOME"):
             scheme, host, port = get_splunkd_access_info()

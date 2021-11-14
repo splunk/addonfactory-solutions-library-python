@@ -27,4 +27,5 @@ plugins:
 nav:
   - Home: index.md
   - References:
-      - "server_info": server_info.md
+      - "server_info.py": server_info.md
+      - "splunk_rest_client.py": splunk_rest_client.md
