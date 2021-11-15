@@ -134,7 +134,7 @@ class ObjectACL:
     def record(self) -> dict:
         """Get object acl record.
 
-        Returns: Object acl record, like::
+        Returns: Object acl record, like:
 
             {
                 '_key': 'test_collection-1234',
@@ -325,7 +325,7 @@ class ObjectACLManager:
             obj_type: Type of this object.
             obj_app: App of this object.
             obj_owner: Owner of this object.
-            obj_perms: Object perms, like::
+            obj_perms: Object perms, like:
 
                 {
                     'read': ['*'],
@@ -380,7 +380,7 @@ class ObjectACLManager:
             obj_type: Type of this object.
             obj_app: App of this object.
             obj_owner: Owner of this object.
-            obj_perms: Object perms, like::
+            obj_perms: Object perms, like:
 
                 {
                     'read': ['*'],
@@ -626,7 +626,7 @@ class AppCapabilityManager:
         """Register app capabilities.
 
         Arguments:
-            capabilities: App capabilities, example::
+            capabilities: App capabilities, example:
 
                 {
                     'object_type1': {
@@ -730,7 +730,7 @@ def check_user_access(
 
     Arguments:
         session_key: Splunk access token.
-        capabilities: App capabilities, example::
+        capabilities: App capabilities, example:
 
             {
                 'object_type1': {
