@@ -19,6 +19,7 @@ This module contains interfaces that support CRUD operations on ACL.
 """
 
 import json
+from typing import List
 
 from splunklib import binding
 
@@ -29,29 +30,15 @@ __all__ = ["ACLException", "ACLManager"]
 
 
 class ACLException(Exception):
+    """Exception raised by ACLManager."""
+
     pass
 
 
 class ACLManager:
     """ACL manager.
 
-    :param session_key: Splunk access token.
-    :type session_key: ``string``
-    :param app: App name of namespace.
-    :type app: ``string``
-    :param owner: (optional) Owner of namespace, default is `nobody`.
-    :type owner: ``string``
-    :param scheme: (optional) The access scheme, default is None.
-    :type scheme: ``string``
-    :param host: (optional) The host name, default is None.
-    :type host: ``string``
-    :param port: (optional) The port number, default is None.
-    :type port: ``integer``
-    :param context: Other configurations for Splunk rest client.
-    :type context: ``dict``
-
-    Usage::
-
+    Examples:
        >>> import solnlib.acl as sacl
        >>> saclm = sacl.ACLManager(session_key, 'Splunk_TA_test')
        >>> saclm.get('data/transforms/extractions')
@@ -61,14 +48,26 @@ class ACLManager:
 
     def __init__(
         self,
-        session_key,
-        app,
-        owner="nobody",
-        scheme=None,
-        host=None,
-        port=None,
-        **context
+        session_key: str,
+        app: str,
+        owner: str = "nobody",
+        scheme: str = None,
+        host: str = None,
+        port: int = None,
+        **context: dict
     ):
+        """
+        Initializes ACLManager.
+
+        Arguments:
+            session_key: Splunk access token.
+            app: App name of namespace.
+            owner: (optional) Owner of namespace, default is `nobody`.
+            scheme: (optional) The access scheme, default is None.
+            host: (optional) The host name, default is None.
+            port: (optional) The port number, default is None.
+            context: Other configurations for Splunk rest client.
+        """
         self._rest_client = rest_client.SplunkRestClient(
             session_key,
             app,
@@ -80,17 +79,19 @@ class ACLManager:
         )
 
     @retry(exceptions=[binding.HTTPError])
-    def get(self, path):
+    def get(self, path: str) -> dict:
         """Get ACL of  /servicesNS/{`owner`}/{`app`}/{`path`}.
 
-        :param path: Path of ACL relative to /servicesNS/{`owner`}/{`app`}
-        :type path: ``string``
-        :returns: A dict contains ACL.
-        :rtype: ``dict``
+        Arguments:
+            path: Path of ACL relative to /servicesNS/{`owner`}/{`app`}
 
-        :raises ACLException: If `path` is invalid.
+        Returns:
+            A dict contains ACL.
 
-        Usage::
+        Raises:
+            ACLException: If `path` is invalid.
+
+        Examples:
            >>> aclm = acl.ACLManager(session_key, 'Splunk_TA_test')
            >>> perms = aclm.get('data/transforms/extractions/_acl')
         """
@@ -106,33 +107,38 @@ class ACLManager:
         return json.loads(content)["entry"][0]["acl"]
 
     @retry(exceptions=[binding.HTTPError])
-    def update(self, path, owner=None, perms_read=None, perms_write=None):
+    def update(
+        self,
+        path: str,
+        owner: str = None,
+        perms_read: List = None,
+        perms_write: List = None,
+    ) -> dict:
         """Update ACL of /servicesNS/{`owner`}/{`app`}/{`path`}.
 
         If the ACL is per-entity (ends in /acl), owner can be reassigned. If
         the acl is endpoint-level (ends in _acl), owner will be ignored. The
         'sharing' setting is always retrieved from the current.
 
-        :param path: Path of ACL relative to /servicesNS/{owner}/{app}. MUST
-            end with /acl or /_acl indicating whether the permission is applied
-            at the per-entity level or endpoint level respectively.
-        :type path: ``string``
-        :param owner: (optional) New owner of ACL, default is `nobody`.
-        :type owner: ``string``
-        :param perms_read: (optional) List of roles (['*'] for all roles). If
-            unspecified we will POST with current (if available) perms.read,
-            default is None.
-        :type perms_read: ``list``
-        :param perms_write: (optional) List of roles (['*'] for all roles). If
-            unspecified we will POST with current (if available) perms.write,
-            default is None.
-        :type perms_write: ``list``
-        :returns: A dict contains ACL after update.
-        :rtype: ``dict``
+        Arguments:
+            path: Path of ACL relative to /servicesNS/{owner}/{app}. MUST
+                end with /acl or /_acl indicating whether the permission is applied
+                at the per-entity level or endpoint level respectively.
+            owner: (optional) New owner of ACL, default is `nobody`.
+            perms_read: (optional) List of roles (['*'] for all roles). If
+                unspecified we will POST with current (if available) perms.read,
+                default is None.
+            perms_write: (optional) List of roles (['*'] for all roles). If
+                unspecified we will POST with current (if available) perms.write,
+                default is None.
 
-        :raises ACLException: If `path` is invalid.
+        Returns:
+            A dict contains ACL after update.
 
-        Usage::
+        Raises:
+            ACLException: If `path` is invalid.
+
+        Examples:
            >>> aclm = acl.ACLManager(session_key, 'Splunk_TA_test')
            >>> perms = aclm.update('data/transforms/extractions/_acl',
                                    perms_read=['admin'], perms_write=['admin'])

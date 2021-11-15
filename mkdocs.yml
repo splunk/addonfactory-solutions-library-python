@@ -27,6 +27,7 @@ plugins:
 nav:
   - Home: index.md
   - References:
+      - "acl.py": acl.md
       - "credentials.py": credentials.md
       - "conf_manager.py": conf_manager.md
       - "log.py": log.md
