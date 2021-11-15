@@ -30,6 +30,8 @@ __all__ = ["TimeParser"]
 
 
 class InvalidTimeFormatException(Exception):
+    """Exception for invalid time format."""
+
     pass
 
 
@@ -38,19 +40,7 @@ class TimeParser:
 
     Use splunkd rest to parse datetime.
 
-    :param session_key: Splunk access token.
-    :type session_key: ``string``
-    :param scheme: (optional) The access scheme, default is None.
-    :type scheme: ``string``
-    :param host: (optional) The host name, default is None.
-    :type host: ``string``
-    :param port: (optional) The port number, default is None.
-    :type port: ``integer``
-    :param context: Other configurations for Splunk rest client.
-    :type context: ``dict``
-
-    Usage::
-
+    Examples:
        >>> from solnlib import time_parser
        >>> tp = time_parser.TimeParser(session_key)
        >>> tp.to_seconds('2011-07-06T21:54:23.000-07:00')
@@ -60,20 +50,37 @@ class TimeParser:
 
     URL = "/services/search/timeparser"
 
-    def __init__(self, session_key, scheme=None, host=None, port=None, **context):
+    def __init__(
+        self,
+        session_key: str,
+        scheme: str = None,
+        host: str = None,
+        port: int = None,
+        **context: dict
+    ):
+        """
+        Initializes TimeParser.
+
+        Arguments:
+            session_key: Splunk access token.
+            scheme: (optional) The access scheme, default is None.
+            host: (optional) The host name, default is None.
+            port: (optional) The port number, default is None.
+            context: Other configurations for Splunk rest client.
+        """
         self._rest_client = rest_client.SplunkRestClient(
             session_key, "-", scheme=scheme, host=host, port=port, **context
         )
 
     @retry(exceptions=[binding.HTTPError])
-    def to_seconds(self, time_str):
+    def to_seconds(self, time_str: str) -> float:
         """Parse `time_str` and convert to seconds since epoch.
 
-        :param time_str: ISO8601 format timestamp, example:
-            2011-07-06T21:54:23.000-07:00.
-        :type time_str: ``string``
-        :returns: Seconds since epoch.
-        :rtype: ``float``
+        Arguments:
+            time_str: ISO8601 format timestamp, example: 2011-07-06T21:54:23.000-07:00.
+
+        Returns:
+            Seconds since epoch.
         """
 
         try:
@@ -89,27 +96,27 @@ class TimeParser:
         seconds = json.loads(response)[time_str]
         return float(seconds)
 
-    def to_utc(self, time_str):
+    def to_utc(self, time_str: str) -> datetime.datetime:
         """Parse `time_str` and convert to UTC timestamp.
 
-        :param time_str: ISO8601 format timestamp, example:
-            2011-07-06T21:54:23.000-07:00.
-        :type time_str: ``string``
-        :returns: UTC timestamp.
-        :rtype: ``datetime.datetime``
+        Arguments:
+            time_str: ISO8601 format timestamp, example: 2011-07-06T21:54:23.000-07:00.
+
+        Returns:
+            UTC timestamp.
         """
 
         return datetime.datetime.utcfromtimestamp(self.to_seconds(time_str))
 
     @retry(exceptions=[binding.HTTPError])
-    def to_local(self, time_str):
+    def to_local(self, time_str: str) -> str:
         """Parse `time_str` and convert to local timestamp.
 
-        :param time_str: ISO8601 format timestamp, example:
-            2011-07-06T21:54:23.000-07:00.
-        :type time_str: ``string``
-        :returns: local timestamp in ISO8601 format.
-        :rtype: ``string``
+        Arguments:
+            time_str: ISO8601 format timestamp, example: 2011-07-06T21:54:23.000-07:00.
+
+        Returns:
+            Local timestamp in ISO8601 format.
         """
 
         try:
