@@ -24,17 +24,21 @@ from functools import wraps
 
 __all__ = ["resolve_hostname"]
 
+from typing import Optional, Union
 
-def resolve_hostname(addr):
+
+def resolve_hostname(addr: str) -> Optional[str]:
     """Try to resolve an IP to a host name and returns None
     on common failures.
 
-    :param addr: IP address to resolve.
-    :type addr: ``string``
-    :returns: Host name if success else None.
-    :rtype: ``string``
+    Arguments:
+        addr: IP address to resolve.
 
-    :raises ValueError: If `addr` is not a valid address
+    Returns:
+        Host name if success else None.
+
+    Raises:
+        ValueError: If `addr` is not a valid address.
     """
 
     if is_valid_ip(addr):
@@ -56,13 +60,14 @@ def resolve_hostname(addr):
         raise ValueError("Invalid ip address.")
 
 
-def is_valid_ip(addr):
+def is_valid_ip(addr: str) -> bool:
     """Validate an IPV4 address.
 
-    :param addr: IP address to validate.
-    :type addr: ``string``
-    :returns: True if is valid else False.
-    :rtype: ``bool``
+    Arguments:
+        addr: IP address to validate.
+
+    Returns:
+        True if is valid else False.
     """
 
     ip_rx = re.compile(
@@ -85,13 +90,14 @@ def is_valid_ip(addr):
         return False
 
 
-def is_valid_hostname(hostname):
+def is_valid_hostname(hostname: str) -> bool:
     """Validate a host name.
 
-    :param hostname: host name to validate.
-    :type hostname: ``string``
-    :returns: True if is valid else False
-    :rtype: ``bool``
+    Arguments:
+        hostname: host name to validate.
+
+    Returns:
+        True if is valid else False.
     """
 
     if len(hostname) > 255:
@@ -102,13 +108,14 @@ def is_valid_hostname(hostname):
     return all(allowed.match(x) for x in hostname.split("."))
 
 
-def is_valid_port(port):
+def is_valid_port(port: Union[str, int]) -> bool:
     """Validate a port.
 
-    :param port: port to validate.
-    :type port: ``(string, int)``
-    :returns: True if is valid else False
-    :rtype: ``bool``
+    Arguments:
+        port: port to validate.
+
+    Returns:
+        True if is valid else False.
     """
 
     try:
@@ -117,13 +124,14 @@ def is_valid_port(port):
         return False
 
 
-def is_valid_scheme(scheme):
+def is_valid_scheme(scheme: str) -> bool:
     """Validate a scheme.
 
-    :param scheme: scheme to validate.
-    :type scheme: ``string``
-    :returns: True if is valid else False
-    :rtype: ``bool``
+    Arguments:
+        scheme: scheme to validate.
+
+    Returns:
+        True if is valid else False.
     """
 
     return scheme.lower() in ("http", "https")
@@ -133,8 +141,11 @@ def check_css_params(**validators):
     """A decorator for validating arguments for function with specified
      validating function which returns True or False.
 
-    :param validators: argument and it's validation function
-    :raises ValueError: If validation fails.
+    Arguments:
+        validators: argument and it's validation function.
+
+    Raises:
+        ValueError: If validation fails.
     """
 
     def decorator(f):

@@ -33,5 +33,6 @@ nav:
       - "file_monitor.py": file_monitor.md
       - "hec_config.py": hec_config.md
       - "log.py": log.md
+      - "net_utils.py": net_utils.md
       - "server_info.py": server_info.md
       - "splunk_rest_client.py": splunk_rest_client.md
