@@ -42,3 +42,4 @@ nav:
       - "time_parser.py": time_parser.md
       - "timer_queue.py": timer_queue.md
       - "user_access.py": user_access.md
+      - "utils.py": utils.md
