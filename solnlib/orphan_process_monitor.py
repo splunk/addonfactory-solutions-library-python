@@ -21,6 +21,7 @@ Orphan process monitor.
 import os
 import threading
 import time
+from typing import Callable
 
 __all__ = ["OrphanProcessChecker", "OrphanProcessMonitor"]
 
@@ -31,39 +32,42 @@ class OrphanProcessChecker:
     Only work for Linux platform. On Windows platform, is_orphan
     is always False and there is no need to do this monitoring on
     Windows.
-
-    :param callback: (optional) Callback for orphan process.
-    :type callback: ``function``
     """
 
-    def __init__(self, callback=None):
+    def __init__(self, callback: Callable = None):
+        """
+        Initializes OrphanProcessChecker.
+
+        Arguments:
+            callback: (optional) Callback for orphan process.
+        """
         if os.name == "nt":
             self._ppid = 0
         else:
             self._ppid = os.getppid()
         self._callback = callback
 
-    def is_orphan(self):
+    def is_orphan(self) -> bool:
         """Check process is orphan.
 
         For windows platform just return False.
 
-        :returns: True for orphan process else False
-        :rtype: ``bool``
+        Returns:
+            True for orphan process else False.
         """
 
         if os.name == "nt":
             return False
         return self._ppid != os.getppid()
 
-    def check_orphan(self):
+    def check_orphan(self) -> bool:
         """Check if the process becomes orphan.
 
         If the process becomes orphan then call callback function
         to handle properly.
 
-        :returns: True for orphan process else False
-        :rtype: ``bool``
+        Returns:
+            True for orphan process else False.
         """
 
         res = self.is_orphan()
@@ -73,18 +77,20 @@ class OrphanProcessChecker:
 
 
 class OrphanProcessMonitor:
-    """Orpan process monitor.
+    """Orphan process monitor.
 
     Check if process become orphan in background thread per
-    iterval and call callback if process become orphan.
-
-    :param callback: Callback for orphan process monitor.
-    :type callback: ``function``
-    :param interval: (optional) Interval to monitor.
-    :type interval: ``integer``
+    interval and call callback if process become orphan.
     """
 
-    def __init__(self, callback, interval=1):
+    def __init__(self, callback: Callable, interval: int = 1):
+        """
+        Initializes OrphanProcessMonitor.
+
+        Arguments:
+            callback: Callback for orphan process monitor.
+            interval: (optional) Interval to monitor.
+        """
         self._checker = OrphanProcessChecker(callback)
         self._thr = threading.Thread(target=self._do_monitor)
         self._thr.daemon = True
