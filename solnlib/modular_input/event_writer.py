@@ -20,12 +20,14 @@ HECEventWriter) to write Splunk modular input events.
 """
 
 import logging
+import multiprocessing
 import sys
 import threading
 import time
 import traceback
 from abc import ABCMeta, abstractmethod
 from random import randint
+from typing import List, Union
 
 from splunklib import binding
 
@@ -47,46 +49,34 @@ class EventWriter(metaclass=ABCMeta):
     @abstractmethod
     def create_event(
         self,
-        data,
-        time=None,
-        index=None,
-        host=None,
-        source=None,
-        sourcetype=None,
-        fields=None,
-        stanza=None,
-        unbroken=False,
-        done=False,
-    ):
+        data: dict,
+        time: float = None,
+        index: str = None,
+        host: str = None,
+        source: str = None,
+        sourcetype: str = None,
+        fields: dict = None,
+        stanza: str = None,
+        unbroken: bool = False,
+        done: bool = False,
+    ) -> Union[XMLEvent, HECEvent]:
         """Create a new event.
 
-        :param data: Event data.
-        :type data: ``json object``
-        :param time: (optional) Event timestamp, default is None.
-        :type time: ``float``
-        :param index: (optional) The index event will be written to, default
-            is None
-        :type index: ``string``
-        :param host: (optional) Event host, default is None.
-        :type host: ``string``
-        :param source: (optional) Event source, default is None.
-        :type source: ``string``
-        :param sourcetype: (optional) Event sourcetype, default is None.
-        :type sourcetype: ``string``
-        :param fields: (optional) Event fields, default is None.
-        :type fields: ``json object``
-        :param stanza: (optional) Event stanza name, default is None.
-        :type stanza: ``string``
-        :param unbroken: (optional) Event unbroken flag, default is False.
-            It is only meaningful when for XMLEvent when using ClassicEventWriter.
-        :type unbroken: ``bool``
-        :param done: (optional) The last unbroken event, default is False.
-            It is only meaningful when for XMLEvent when using ClassicEventWriter.
-        :returns: ``bool``
-        :returns: A new event object.
-        :rtype: ``(XMLEvent, HECEvent)``
+        Arguments:
+            data: Event data.
+            time: (optional) Event timestamp, default is None.
+            index: (optional) The index event will be written to, default is None.
+            host: (optional) Event host, default is None.
+            source: (optional) Event source, default is None.
+            sourcetype: (optional) Event sourcetype, default is None.
+            fields: (optional) Event fields, default is None.
+            stanza: (optional) Event stanza name, default is None.
+            unbroken: (optional) Event unbroken flag, default is False.
+                It is only meaningful when for XMLEvent when using ClassicEventWriter.
+            done: (optional) The last unbroken event, default is False.
+                It is only meaningful when for XMLEvent when using ClassicEventWriter.
 
-        Usage::
+        Examples:
            >>> ew = event_writer.HECEventWriter(...)
            >>> event = ew.create_event(
            >>>     data='This is a test data.',
@@ -104,13 +94,13 @@ class EventWriter(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def write_events(self, events):
+    def write_events(self, events: List):
         """Write events.
 
-        :param events: List of events to write.
-        :type events: ``list``
+        Arguments:
+            events: List of events to write.
 
-        Usage::
+        Examples:
            >>> from solnlib.modular_input import event_writer
            >>> ew = event_writer.EventWriter(...)
            >>> ew.write_events([event1, event2])
@@ -124,13 +114,7 @@ class ClassicEventWriter(EventWriter):
 
     Use sys.stdout as the output.
 
-    :param lock: (optional) lock to exclusively access stdout.
-        by default, it is None and it will use threading safe lock.
-        if user would like to make the lock multiple-process safe, user should
-        pass in multiprocessing.Lock() instead
-    :type lock: ``theading.Lock or multiprocessing.Lock``
-
-    Usage::
+    Examples:
         >>> from solnlib.modular_input import event_writer
         >>> ew = event_writer.ClassicEventWriter()
         >>> ew.write_events([event1, event2])
@@ -138,7 +122,16 @@ class ClassicEventWriter(EventWriter):
 
     description = "ClassicEventWriter"
 
-    def __init__(self, lock=None):
+    def __init__(self, lock: Union[threading.Lock, multiprocessing.Lock] = None):
+        """
+        Initializes ClassicEventWriter.
+
+        Arguments:
+            lock: (optional) lock to exclusively access stdout.
+                by default, it is None and it will use threading safe lock.
+                if user would like to make the lock multiple-process safe, user should
+                pass in multiprocessing.Lock() instead
+        """
         if lock is None:
             self._lock = threading.Lock()
         else:
@@ -146,15 +139,16 @@ class ClassicEventWriter(EventWriter):
 
     def create_event(
         self,
-        data,
-        time=None,
-        index=None,
-        host=None,
-        source=None,
-        sourcetype=None,
-        stanza=None,
-        unbroken=False,
-        done=False,
+        data: dict,
+        time: float = None,
+        index: str = None,
+        host: str = None,
+        source: str = None,
+        sourcetype: str = None,
+        fields: dict = None,
+        stanza: str = None,
+        unbroken: bool = False,
+        done: bool = False,
     ):
         """Create a new XMLEvent object."""
 
@@ -183,28 +177,11 @@ class ClassicEventWriter(EventWriter):
 
 
 class HECEventWriter(EventWriter):
-    """Classic event writer.
+    """HEC event writer.
 
     Use Splunk HEC as the output.
 
-    :param hec_input_name: Splunk HEC input name.
-    :type hec_input_name: ``string``
-    :param session_key: Splunk access token.
-    :type session_key: ``string``
-    :param scheme: (optional) The access scheme, default is None.
-    :type scheme: ``string``
-    :param host: (optional) The host name, default is None.
-    :type host: ``string``
-    :param port: (optional) The port number, default is None.
-    :type port: ``integer``
-    :param hec_uri: (optional) If hec_uri and hec_token are provided, they will
-       higher precedence than hec_input_name
-    :type hec_token: ``string``
-    :type custom_logger: Python logger-like object
-    :param context: Other configurations for Splunk rest client.
-    :type context: ``dict``
-
-    Usage::
+    Examples:
         >>> from solnlib.modular_input import event_writer
         >>> ew = event_writer.HECEventWriter(hec_input_name, session_key)
         >>> ew.write_events([event1, event2])
@@ -222,16 +199,31 @@ class HECEventWriter(EventWriter):
 
     def __init__(
         self,
-        hec_input_name,
-        session_key,
-        scheme=None,
-        host=None,
-        port=None,
-        hec_uri=None,
-        hec_token=None,
-        logger=None,
-        **context
+        hec_input_name: str,
+        session_key: str,
+        scheme: str = None,
+        host: str = None,
+        port: int = None,
+        hec_uri: str = None,
+        hec_token: str = None,
+        logger: logging.Logger = None,
+        **context: dict
     ):
+        """
+        Initializes HECEventWriter.
+
+        Arguments:
+            hec_input_name: Splunk HEC input name.
+            session_key: Splunk access token.
+            scheme: (optional) The access scheme, default is None.
+            host: (optional) The host name, default is None.
+            port: (optional) The port number, default is None.
+            hec_uri: (optional) If hec_uri and hec_token are provided, they will
+                higher precedence than hec_input_name.
+            hec_token: (optional) HEC token.
+            logger: Logger object.
+            context: Other configurations for Splunk rest client.
+        """
         super().__init__()
         self._session_key = session_key
         if logger:
@@ -260,17 +252,20 @@ class HECEventWriter(EventWriter):
         )
 
     @staticmethod
-    def create_from_token(hec_uri, hec_token, **context):
+    def create_from_token(
+        hec_uri: str, hec_token: str, **context: dict
+    ) -> "HECEventWriter":
         """Given HEC URI and HEC token, create HECEventWriter object.
         This function simplifies the standalone mode HECEventWriter usage
-        (not in a modinput)
+        (not in a modinput).
 
-        :param hec_uri: Http Event Collector URI, like https://localhost:8088
-        :type hec_uri: ``string``
-        :param hec_token: Http Event Collector token
-        :type hec_token: ``string``
-        :param context: Other configurations.
-        :type context: ``dict``
+        Arguments:
+            hec_uri: HTTP Event Collector URI, like https://localhost:8088.
+            hec_token: HTTP Event Collector token.
+            context: Other configurations.
+
+        Returns:
+            Created HECEventWriter.
         """
 
         return HECEventWriter(
@@ -285,21 +280,23 @@ class HECEventWriter(EventWriter):
         )
 
     @staticmethod
-    def create_from_input(hec_input_name, splunkd_uri, session_key, **context):
+    def create_from_input(
+        hec_input_name: str, splunkd_uri: str, session_key: str, **context: dict
+    ) -> "HECEventWriter":
         """Given HEC input stanza name, splunkd URI and splunkd session key,
         create HECEventWriter object. HEC URI and token etc will be discovered
         from HEC input stanza. When hitting HEC event limit, the underlying
         code will increase the HEC event limit automatically by calling
-        corresponding REST API against splunkd_uri by using session_key
+        corresponding REST API against splunkd_uri by using session_key.
 
-        :param hec_input_name: Splunk HEC input name.
-        :type hec_input_name: ``string``
-        :param splunkd_uri: Splunkd URI, like https://localhost:8089
-        :type splunkd_uri: ``string``
-        :param session_key: Splunkd access token.
-        :type session_key: ``string``
-        :param context: Other configurations.
-        :type context: ``dict``
+        Arguments:
+            hec_input_name: Splunk HEC input name.
+            splunkd_uri: Splunkd URI, like https://localhost:8089
+            session_key: Splunkd access token.
+            context: Other configurations.
+
+        Returns:
+            Created HECEventWriter.
         """
 
         scheme, host, port = utils.extract_http_scheme_host_port(splunkd_uri)
@@ -309,23 +306,26 @@ class HECEventWriter(EventWriter):
 
     @staticmethod
     def create_from_token_with_session_key(
-        splunkd_uri, session_key, hec_uri, hec_token, **context
-    ):
+        splunkd_uri: str,
+        session_key: str,
+        hec_uri: str,
+        hec_token: str,
+        **context: dict
+    ) -> "HECEventWriter":
         """Given Splunkd URI, Splunkd session key, HEC URI and HEC token,
         create HECEventWriter object. When hitting HEC event limit, the event
         writer will increase the HEC event limit automatically by calling
-        corresponding REST API against splunkd_uri by using session_key
+        corresponding REST API against splunkd_uri by using session_key.
 
-        :param splunkd_uri: Splunkd URI, like https://localhost:8089
-        :type splunkd_uri: ``string``
-        :param session_key: Splunkd access token.
-        :type session_key: ``string``
-        :param hec_uri: Http Event Collector URI, like https://localhost:8088
-        :type hec_uri: ``string``
-        :param hec_token: Http Event Collector token
-        :type hec_token: ``string``
-        :param context: Other configurations.
-        :type context: ``dict``
+        Arguments:
+            splunkd_uri: Splunkd URI, like https://localhost:8089.
+            session_key: Splunkd access token.
+            hec_uri: Http Event Collector URI, like https://localhost:8088.
+            hec_token: Http Event Collector token.
+            context: Other configurations.
+
+        Returns:
+            Created HECEventWriter.
         """
 
         scheme, host, port = utils.extract_http_scheme_host_port(splunkd_uri)
@@ -383,18 +383,36 @@ class HECEventWriter(EventWriter):
 
     def create_event(
         self,
-        data,
-        time=None,
-        index=None,
-        host=None,
-        source=None,
-        sourcetype=None,
-        fields=None,
-        stanza=None,
-        unbroken=False,
-        done=False,
-    ):
-        """Create a new HECEvent object."""
+        data: dict,
+        time: float = None,
+        index: str = None,
+        host: str = None,
+        source: str = None,
+        sourcetype: str = None,
+        fields: dict = None,
+        stanza: str = None,
+        unbroken: bool = False,
+        done: bool = False,
+    ) -> HECEvent:
+        """Create a new HECEvent object.
+
+        Arguments:
+            data: Event data.
+            time: (optional) Event timestamp, default is None.
+            index: (optional) The index event will be written to, default is None.
+            host: (optional) Event host, default is None.
+            source: (optional) Event source, default is None.
+            sourcetype: (optional) Event sourcetype, default is None.
+            fields: (optional) Event fields, default is None.
+            stanza: (optional) Event stanza name, default is None.
+            unbroken: (optional) Event unbroken flag, default is False.
+                It is only meaningful when for XMLEvent when using ClassicEventWriter.
+            done: (optional) The last unbroken event, default is False.
+                It is only meaningful when for XMLEvent when using ClassicEventWriter.
+
+        Returns:
+            Created HECEvent.
+        """
 
         return HECEvent(
             data,
@@ -406,12 +424,18 @@ class HECEventWriter(EventWriter):
             fields=fields,
         )
 
-    def write_events(self, events, retries=WRITE_EVENT_RETRIES, event_field="event"):
+    def write_events(
+        self,
+        events: List,
+        retries: int = WRITE_EVENT_RETRIES,
+        event_field: str = "event",
+    ):
         """Write events to index in bulk.
-        :type events: list of Events
-        :param events: Event type objects to write.
-        :type retries: int
-        :param retries: number of retries for writing events to index
+
+        Arguments:
+            events: List of events.
+            retries: Number of retries for writing events to index.
+            event_field: Event field.
         """
         if not events:
             return
