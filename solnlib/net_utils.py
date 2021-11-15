@@ -148,7 +148,7 @@ def check_css_params(**validators):
     def decorator(f):
         @wraps(f)
         def wrapper(*args, **kwargs):
-            arg_spec = inspect.getargspec(f)
+            arg_spec = inspect.getfullargspec(f)
             actual_args = dict(list(zip(arg_spec.args, args)) + list(kwargs.items()))
             dfs = arg_spec.defaults
             optional = dict(list(zip(arg_spec.args[-len(dfs) :], dfs))) if dfs else {}

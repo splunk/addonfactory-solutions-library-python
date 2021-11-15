@@ -57,10 +57,10 @@ class ConfFile:
         session_key: str,
         app: str,
         owner: str = "nobody",
-        realm: str = None,
         scheme: str = None,
         host: str = None,
         port: int = None,
+        realm: str = None,
         **context: dict,
     ):
         """Initializes ConfFile.
@@ -71,10 +71,10 @@ class ConfFile:
             session_key: Splunk access token.
             app: App name of namespace.
             owner: (optional) Owner of namespace, default is `nobody`.
-            realm: (optional) Realm of credential, default is None.
             scheme: (optional) The access scheme, default is None.
             host: (optional) The host name, default is None.
             port: (optional) The port number, default is None.
+            realm: (optional) Realm of credential, default is None.
             context: Other configurations for Splunk rest client.
         """
         self._name = name
@@ -379,10 +379,10 @@ class ConfManager:
             session_key: Splunk access token.
             app: App name of namespace.
             owner: (optional) Owner of namespace, default is `nobody`.
-            realm: (optional) Realm of credential, default is None.
             scheme: (optional) The access scheme, default is None.
             host: (optional) The host name, default is None.
             port: (optional) The port number, default is None.
+            realm: (optional) Realm of credential, default is None.
             context: Other configurations for Splunk rest client.
         """
         self._session_key = session_key
