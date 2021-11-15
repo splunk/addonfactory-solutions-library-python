@@ -24,6 +24,7 @@ import socket
 import subprocess
 from configparser import ConfigParser
 from io import StringIO
+from typing import List, Optional, Tuple, Union
 
 from . import utils
 
@@ -65,11 +66,11 @@ def _splunk_etc():
     return os.path.normpath(result)
 
 
-def _get_shared_storage():
+def _get_shared_storage() -> Optional[str]:
     """Get splunk shared storage name.
 
-    :returns: Splunk shared storage name.
-    :rtype: ``string``
+    Returns:
+        Splunk shared storage name.
     """
 
     try:
@@ -92,7 +93,7 @@ def _verify_path_prefix(path, start):
     return len(path_drive) == len(start_drive)
 
 
-def make_splunkhome_path(parts):
+def make_splunkhome_path(parts: Union[List, Tuple]) -> str:
     """Construct absolute path by $SPLUNK_HOME and `parts`.
 
     Concatenate $SPLUNK_HOME and `parts` to an absolute path.
@@ -100,12 +101,14 @@ def make_splunkhome_path(parts):
     the return path will be $SPLUNK_HOME/etc/apps/Splunk_TA_test.
     Note: this function assumed SPLUNK_HOME is in environment varialbes.
 
-    :param parts: Path parts.
-    :type parts: ``list, tuple``
-    :returns: Absolute path.
-    :rtype: ``string``
+    Arguments:
+        parts: Path parts.
 
-    :raises ValueError: Escape from intended parent directories.
+    Returns:
+        Absolute path.
+
+    Raises:
+        ValueError: Escape from intended parent directories.
     """
 
     relpath = os.path.normpath(os.path.join(*parts))
@@ -145,23 +148,23 @@ def make_splunkhome_path(parts):
     return fullpath
 
 
-def get_splunk_host_info():
+def get_splunk_host_info() -> Tuple:
     """Get splunk host info.
 
-    :returns: Tuple of (server_name, host_name).
-    :rtype: ``tuple``
+    Returns:
+        Tuple of (server_name, host_name).
     """
 
     server_name = get_conf_key_value("server", "general", "serverName")
     host_name = socket.gethostname()
-    return (server_name, host_name)
+    return server_name, host_name
 
 
-def get_splunk_bin():
+def get_splunk_bin() -> str:
     """Get absolute path of splunk CLI.
 
-    :returns: absolute path of splunk CLI
-    :rtype: ``string``
+    Returns:
+        Absolute path of splunk CLI.
     """
 
     if os.name == "nt":
@@ -171,11 +174,11 @@ def get_splunk_bin():
     return make_splunkhome_path(("bin", splunk_bin))
 
 
-def get_splunkd_access_info():
+def get_splunkd_access_info() -> Tuple:
     """Get splunkd server access info.
 
-    :returns: Tuple of (scheme, host, port).
-    :rtype: ``tuple``
+    Returns:
+        Tuple of (scheme, host, port).
     """
 
     if utils.is_true(get_conf_key_value("server", "sslConfig", "enableSplunkdSSL")):
@@ -196,11 +199,11 @@ def get_splunkd_access_info():
     return (scheme, host, port)
 
 
-def get_splunkd_uri():
+def get_splunkd_uri() -> str:
     """Get splunkd uri.
 
-    :returns: Splunkd uri.
-    :rtype: ``string``
+    Returns:
+        Splunkd uri.
     """
 
     if os.environ.get("SPLUNKD_URI"):
@@ -210,51 +213,53 @@ def get_splunkd_uri():
     return f"{scheme}://{host}:{port}"
 
 
-def get_conf_key_value(conf_name, stanza, key):
+def get_conf_key_value(conf_name: str, stanza: str, key: str) -> Tuple[str, List, dict]:
     """Get value of `key` of `stanza` in `conf_name`.
 
-    :param conf_name: Config file.
-    :type conf_name: ``string``
-    :param stanza: Stanza name.
-    :type stanza: ``string``
-    :param key: Key name.
-    :type key: ``string``
-    :returns: Config value.
-    :rtype: ``(string, list, dict)``
+    Arguments:
+        conf_name: Config file.
+        stanza: Stanza name.
+        key: Key name.
 
-    :raises KeyError: If `stanza` or `key` doesn't exist.
+    Returns:
+        Config value.
+
+    Raises:
+        KeyError: If `stanza` or `key` doesn't exist.
     """
 
     stanzas = get_conf_stanzas(conf_name)
     return stanzas[stanza][key]
 
 
-def get_conf_stanza(conf_name, stanza):
+def get_conf_stanza(conf_name: str, stanza: str) -> dict:
     """Get `stanza` in `conf_name`.
 
-    :param conf_name: Config file.
-    :type conf_name: ``string``
-    :param stanza: Stanza name.
-    :type stanza: ``string``
-    :returns: Config stanza.
-    :rtype: ``dict``
+    Arguments:
+        conf_name: Config file.
+        stanza: Stanza name.
 
-    :raises KeyError: If stanza doesn't exist.
+    Returns:
+        Config stanza.
+
+    Raises:
+         KeyError: If stanza doesn't exist.
     """
 
     stanzas = get_conf_stanzas(conf_name)
     return stanzas[stanza]
 
 
-def get_conf_stanzas(conf_name):
+def get_conf_stanzas(conf_name: str) -> dict:
     """Get stanzas of `conf_name`
 
-    :param conf_name: Config file.
-    :type conf_name: ``string``
-    :returns: Config stanzas.
-    :rtype: ``dict``
+    Arguments:
+        conf_name: Config file.
 
-    Usage::
+    Returns:
+        Config stanzas.
+
+    Examples:
        >>> stanzas = get_conf_stanzas('server')
        >>> return: {'serverName': 'testServer', 'sessionTimeout': '1h', ...}
     """

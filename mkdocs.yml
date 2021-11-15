@@ -38,3 +38,4 @@ nav:
       - "pattern.py": pattern.md
       - "server_info.py": server_info.md
       - "splunk_rest_client.py": splunk_rest_client.md
+      - "splunkenv.py": splunkenv.md
