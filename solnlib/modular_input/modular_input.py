@@ -22,6 +22,7 @@ import logging
 import sys
 import traceback
 from abc import ABCMeta, abstractmethod
+from typing import Callable, List
 from urllib import parse as urlparse
 from xml.etree import ElementTree as ET  # nosemgrep
 
@@ -40,6 +41,8 @@ __all__ = ["ModularInputException", "ModularInput"]
 
 
 class ModularInputException(Exception):
+    """Exception for ModularInput class."""
+
     pass
 
 
@@ -56,7 +59,7 @@ class ModularInput(metaclass=ABCMeta):
     you must override the corresponding 'kvstore_checkpointer_collection_name'
     and 'hec_input_name'.
 
-    Usage::
+    Examples:
 
        >>> Class TestModularInput(ModularInput):
        >>>     app = 'TestApp'
@@ -84,13 +87,13 @@ class ModularInput(metaclass=ABCMeta):
        >>>     md.execute()
     """
 
-    # App name, must be overriden
+    # App name, must be overridden
     app = None
-    # Modular input name, must be overriden
+    # Modular input name, must be overridden
     name = None
-    # Modular input scheme title, must be overriden
+    # Modular input scheme title, must be overridden
     title = None
-    # Modular input scheme description, must be overriden
+    # Modular input scheme description, must be overridden
     description = None
     # Modular input scheme use external validation, default is False
     use_external_validation = False
@@ -98,12 +101,12 @@ class ModularInput(metaclass=ABCMeta):
     use_single_instance = False
     # Use kvstore as checkpointer, default is True
     use_kvstore_checkpointer = True
-    # Collection name of kvstore checkpointer, must be overriden if
+    # Collection name of kvstore checkpointer, must be overridden if
     # use_kvstore_checkpointer is True
     kvstore_checkpointer_collection_name = None
     # Use hec event writer
     use_hec_event_writer = True
-    # Input name of Splunk HEC, must be overriden if use_hec_event_writer
+    # Input name of Splunk HEC, must be overridden if use_hec_event_writer
     # is True
     hec_input_name = None
 
@@ -161,15 +164,15 @@ class ModularInput(metaclass=ABCMeta):
                 )
 
     @property
-    def checkpointer(self):
+    def checkpointer(self) -> checkpointer.Checkpointer:
         """Get checkpointer object.
 
         The checkpointer returned depends on use_kvstore_checkpointer flag,
         if use_kvstore_checkpointer is true will return an KVStoreCheckpointer
         object else an FileCheckpointer object.
 
-        :returns: An checkpointer object.
-        :rtype: ``Checkpointer object``
+        Returns:
+            A checkpointer object.
         """
 
         if self._checkpointer is not None:
@@ -202,15 +205,15 @@ class ModularInput(metaclass=ABCMeta):
             return checkpointer.FileCheckpointer(self._checkpoint_dir)
 
     @property
-    def event_writer(self):
+    def event_writer(self) -> event_writer.EventWriter:
         """Get event writer object.
 
         The event writer returned depends on use_hec_event_writer flag,
         if use_hec_event_writer is true will return an HECEventWriter
         object else an ClassicEventWriter object.
 
-        :returns: Event writer object.
-        :rtype: ``EventWriter object``
+        Returns:
+            Event writer object.
         """
 
         if self._event_writer is not None:
@@ -278,21 +281,27 @@ class ModularInput(metaclass=ABCMeta):
 
         return defused_et.tostring(scheme.to_xml(), encoding="unicode")
 
-    def extra_arguments(self):
+    def extra_arguments(self) -> List:
         """Extra arguments for modular input.
 
         Default implementation is returning an empty list.
 
-        :returns: List of arguments like: [{'name': 'arg1',
-                                            'title': 'arg1 title',
-                                            'description': 'arg1 description',
-                                            'validation': 'arg1 validation statement',
-                                            'data_type': Argument.data_type_string,
-                                            'required_on_edit': False,
-                                            'required_on_create': False},
-                                            {...},
-                                            {...}]
-        :rtype: ``list``
+        Returns:
+            List of arguments like::
+
+                [
+                    {
+                        'name': 'arg1',
+                        'title': 'arg1 title',
+                        'description': 'arg1 description',
+                        'validation': 'arg1 validation statement',
+                        'data_type': Argument.data_type_string,
+                        'required_on_edit': False,
+                        'required_on_create': False
+                    },
+                    {...},
+                    {...}
+                ]
         """
 
         return []
@@ -307,37 +316,46 @@ class ModularInput(metaclass=ABCMeta):
         the validation is assumed to succeed. Otherwise any errors thrown will
         be turned into a string and logged back to Splunk.
 
-        :param parameters: The parameters of input passed by splunkd.
+        Arguments:
+            parameters: The parameters of input passed by splunkd.
 
-        :raises Exception: If validation is failed.
+        Raises:
+            Exception: If validation is failed.
         """
 
         pass
 
     @abstractmethod
-    def do_run(self, inputs):
+    def do_run(self, inputs: dict):
         """Runs this modular input
 
-        :param inputs: Command line arguments passed to this modular input.
-            For single instance mode, inputs like: {
-            'stanza_name1': {'arg1': 'arg1_value', 'arg2': 'arg2_value', ...}
-            'stanza_name2': {'arg1': 'arg1_value', 'arg2': 'arg2_value', ...}
-            'stanza_name3': {'arg1': 'arg1_value', 'arg2': 'arg2_value', ...}
-            }.
-            For multile instance mode, inputs like: {
-            'stanza_name1': {'arg1': 'arg1_value', 'arg2': 'arg2_value', ...}
-            }.
-        :type inputs: ``dict``
+        Arguments:
+            inputs: Command line arguments passed to this modular input.
+                For single instance mode, inputs like::
+
+                    {
+                    'stanza_name1': {'arg1': 'arg1_value', 'arg2': 'arg2_value', ...}
+                    'stanza_name2': {'arg1': 'arg1_value', 'arg2': 'arg2_value', ...}
+                    'stanza_name3': {'arg1': 'arg1_value', 'arg2': 'arg2_value', ...}
+                    }.
+
+                For multiple instance mode, inputs like::
+
+                    {
+                    'stanza_name1': {'arg1': 'arg1_value', 'arg2': 'arg2_value', ...}
+                    }.
         """
 
         pass
 
-    def register_teardown_handler(self, handler, *args):
+    def register_teardown_handler(self, handler: Callable, *args):
         """Register teardown signal handler.
 
-        :param handler: Teardown signal handler.
+        Arguments:
+            handler: Teardown signal handler.
+            args: Arguments to the handler.
 
-        Usage::
+        Examples:
            >>> mi = ModularInput(...)
            >>> def teardown_handler(arg1, arg2, ...):
            >>>     ...
@@ -349,12 +367,14 @@ class ModularInput(metaclass=ABCMeta):
 
         utils.handle_teardown_signals(_teardown_handler)
 
-    def register_orphan_handler(self, handler, *args):
+    def register_orphan_handler(self, handler: Callable, *args):
         """Register orphan process handler.
 
-        :param handler: Orphan process handler.
+        Arguments:
+            handler: Teardown signal handler.
+            args: Arguments to the handler.
 
-        Usage::
+        Examples:
            >>> mi = ModularInput(...)
            >>> def orphan_handler(arg1, arg2, ...):
            >>>     ...
@@ -368,23 +388,24 @@ class ModularInput(metaclass=ABCMeta):
             self._orphan_monitor = OrphanProcessMonitor(_orphan_handler)
             self._orphan_monitor.start()
 
-    def get_validation_definition(self):
+    def get_validation_definition(self) -> dict:
         """Get validation definition.
 
         This method can be overwritten to get validation definition from
         other input instead `stdin`.
 
-        :returns: A dict object must contains `metadata` and `parameters`,
-            example: {
-            'metadata': {
-            'session_key': 'iCKPS0cvmpyeJk...sdaf',
-            'server_host': 'test-test.com',
-            'server_uri': 'https://127.0.0.1:8089',
-            'checkpoint_dir': '/tmp'
-            },
-            parameters: {'args1': value1, 'args2': value2}
-            }
-        :rtype: ``dict``
+        Returns:
+            A dict object must contains `metadata` and `parameters`::
+
+                example: {
+                    'metadata': {
+                    'session_key': 'iCKPS0cvmpyeJk...sdaf',
+                    'server_host': 'test-test.com',
+                    'server_uri': 'https://127.0.0.1:8089',
+                    'checkpoint_dir': '/tmp'
+                    },
+                    parameters: {'args1': value1, 'args2': value2}
+                }
         """
 
         validation_definition = ValidationDefinition.parse(sys.stdin)
@@ -393,26 +414,27 @@ class ModularInput(metaclass=ABCMeta):
             "parameters": validation_definition.parameters,
         }
 
-    def get_input_definition(self):
+    def get_input_definition(self) -> dict:
         """Get input definition.
 
         This method can be overwritten to get input definition from
         other input instead `stdin`.
 
-        :returns: A dict object must contains `metadata` and `inputs`,
-            example: {
-            'metadata': {
-            'session_key': 'iCKPS0cvmpyeJk...sdaf',
-            'server_host': 'test-test.com',
-            'server_uri': 'https://127.0.0.1:8089',
-            'checkpoint_dir': '/tmp'
-            },
-            inputs: {
-            'stanza1': {'arg1': value1, 'arg2': value2},
-            'stanza2': {'arg1': value1, 'arg2': value2}
-            }
-            }
-        :rtype: ``dict``
+        Returns:
+            A dict object must contains `metadata` and `inputs`::
+
+                example: {
+                    'metadata': {
+                    'session_key': 'iCKPS0cvmpyeJk...sdaf',
+                    'server_host': 'test-test.com',
+                    'server_uri': 'https://127.0.0.1:8089',
+                    'checkpoint_dir': '/tmp'
+                    },
+                    inputs: {
+                    'stanza1': {'arg1': value1, 'arg2': value2},
+                    'stanza2': {'arg1': value1, 'arg2': value2}
+                    }
+                }
         """
 
         input_definition = InputDefinition.parse(sys.stdin)
@@ -424,7 +446,7 @@ class ModularInput(metaclass=ABCMeta):
     def execute(self):
         """Modular input entry.
 
-        Usage::
+        Examples:
            >>> Class TestModularInput(ModularInput):
            >>>         ... .. .
            >>>

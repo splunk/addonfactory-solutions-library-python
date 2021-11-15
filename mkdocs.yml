@@ -31,6 +31,7 @@ nav:
           - "checkpointer.py": modular_input/checkpointer.md
           - "event.py": modular_input/event.md
           - "event_writer.py": modular_input/event_writer.md
+          - "modular_input.py": modular_input/modular_input.md
       - "acl.py": acl.md
       - "credentials.py": credentials.md
       - "conf_manager.py": conf_manager.md
