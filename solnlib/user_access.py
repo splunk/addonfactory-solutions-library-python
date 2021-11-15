@@ -20,6 +20,7 @@ Splunk user access control related utilities.
 
 import json
 import re
+from typing import List
 
 from splunklib import binding
 
@@ -51,24 +52,7 @@ class ObjectACLException(Exception):
 class ObjectACL:
     """Object ACL record.
 
-    :param obj_collection: Collection where object currently stored.
-    :type obj_collection: ``string``
-    :param obj_id: ID of this object.
-    :type obj_id: ``string``
-    :param obj_app: App of this object.
-    :param obj_type: ``string``
-    :param obj_owner: Owner of this object.
-    :param obj_owner: ``string``
-    :param obj_perms: Object perms, like: {
-        'read': ['*'],
-        'write': ['admin'],
-        'delete': ['admin']}.
-    :type obj_perms: ``dict``
-    :param obj_shared_by_inclusion: Flag of object is shared by inclusion.
-    :type obj_shared_by_inclusion: ``bool``
-
-    Usage::
-
+    Examples:
        >>> from solnlib import user_access
        >>> obj_acl = user_access.ObjectACL(
        >>>    'test_collection',
@@ -94,14 +78,26 @@ class ObjectACL:
 
     def __init__(
         self,
-        obj_collection,
-        obj_id,
-        obj_type,
-        obj_app,
-        obj_owner,
-        obj_perms,
-        obj_shared_by_inclusion,
+        obj_collection: str,
+        obj_id: str,
+        obj_type: str,
+        obj_app: str,
+        obj_owner: str,
+        obj_perms: dict,
+        obj_shared_by_inclusion: bool,
     ):
+        """
+        Initializes ObjectACL.
+
+        Arguments:
+            obj_collection: Collection where object currently stored.
+            obj_id: ID of this object.
+            obj_type: Type of this object.
+            obj_app: App of this object.
+            obj_owner: Owner of this object.
+            obj_perms: Object perms, like: {'read': ['*'], 'write': ['admin'], 'delete': ['admin']}.
+            obj_shared_by_inclusion: Flag of object is shared by inclusion.
+        """
         self.obj_collection = obj_collection
         self.obj_id = obj_id
         self.obj_type = obj_type
@@ -138,19 +134,21 @@ class ObjectACL:
         self._obj_perms = obj_perms
 
     @property
-    def record(self):
+    def record(self) -> dict:
         """Get object acl record.
 
-        :returns: Object acl record, like: {
-            '_key': 'test_collection-1234',
-            'obj_collection': 'test_collection',
-            'obj_id': '1234',
-            'obj_type': 'test_object',
-            'obj_app': 'Splunk_TA_test',
-            'obj_owner': 'admin',
-            'obj_perms': {'read': ['*'], 'write': ['admin'], 'delete': ['admin']},
-            'obj_shared_by_inclusion': True}
-        :rtype: ``dict``
+        Returns: Object acl record, like::
+
+            {
+                '_key': 'test_collection-1234',
+                'obj_collection': 'test_collection',
+                'obj_id': '1234',
+                'obj_type': 'test_object',
+                'obj_app': 'Splunk_TA_test',
+                'obj_owner': 'admin',
+                'obj_perms': {'read': ['*'], 'write': ['admin'], 'delete': ['admin']},
+                'obj_shared_by_inclusion': True
+            }
         """
 
         return {
@@ -165,15 +163,15 @@ class ObjectACL:
         }
 
     @staticmethod
-    def generate_key(obj_collection, obj_id):
+    def generate_key(obj_collection: str, obj_id: str) -> str:
         """Generate object acl record key.
 
-        :param obj_collection: Collection where object currently stored.
-        :type obj_collection: ``string``
-        :param obj_id: ID of this object.
-        :type obj_id: ``string``
-        :returns: Object acl record key.
-        :rtype: ``string``
+        Arguments:
+            obj_collection: Collection where object currently stored.
+            obj_id: ID of this object.
+
+        Returns:
+            Object acl record key.
         """
 
         return "{obj_collection}_{obj_id}".format(
@@ -181,13 +179,14 @@ class ObjectACL:
         )
 
     @staticmethod
-    def parse(obj_acl_record):
+    def parse(obj_acl_record: dict) -> "ObjectACL":
         """Parse object acl record and construct a new `ObjectACL` object from it.
 
-        :param obj_acl_record: Object acl record.
-        :type obj_acl: ``dict``
-        :returns: New `ObjectACL` object.
-        :rtype: `ObjectACL`
+        Arguments:
+            obj_acl_record: Object acl record.
+
+        Returns:
+            New `ObjectACL` object.
         """
 
         return ObjectACL(
@@ -200,11 +199,11 @@ class ObjectACL:
             obj_acl_record[ObjectACL.OBJ_SHARED_BY_INCLUSION_KEY],
         )
 
-    def merge(self, obj_acl):
+    def merge(self, obj_acl: "ObjectACL"):
         """Merge current object perms with perms of `obj_acl`.
 
-        :param obj_acl: Object acl to merge.
-        :type obj_acl: ``ObjectACL``
+        Arguments:
+            obj_acl: Object acl to merge.
         """
 
         for perm_key in self._obj_perms:
@@ -246,37 +245,21 @@ def _get_collection_data(
 
 
 class ObjectACLManagerException(Exception):
+    """Exception for ObjectACLManager."""
+
     pass
 
 
 class ObjectACLNotExistException(Exception):
+    """Exception for the situation when ACL does not exist."""
+
     pass
 
 
 class ObjectACLManager:
     """Object ACL manager.
 
-    :param collection_name: Collection name to store object ACL info.
-    :type collection_name: ``string``
-    :param session_key: Splunk access token.
-    :type session_key: ``string``
-    :param app: App name of namespace.
-    :type app: ``string``
-    :param owner: (optional) Owner of namespace, default is `nobody`.
-    :type owner: ``string``
-    :param scheme: (optional) The access scheme, default is None.
-    :type scheme: ``string``
-    :param host: (optional) The host name, default is None.
-    :type host: ``string``
-    :param port: (optional) The port number, default is None.
-    :type port: ``integer``
-    :param context: Other configurations for Splunk rest client.
-    :type context: ``dict``
-
-    :raises ObjectACLManagerException: If init ObjectACLManager failed.
-
-    Usage::
-
+    Examples:
        >>> from solnlib import user_access
        >>> oaclm = user_access.ObjectACLManager(session_key,
                                                 'Splunk_TA_test')
@@ -284,15 +267,31 @@ class ObjectACLManager:
 
     def __init__(
         self,
-        collection_name,
-        session_key,
-        app,
-        owner="nobody",
-        scheme=None,
-        host=None,
-        port=None,
-        **context,
+        collection_name: str,
+        session_key: str,
+        app: str,
+        owner: str = "nobody",
+        scheme: str = None,
+        host: str = None,
+        port: int = None,
+        **context: dict,
     ):
+        """
+        Initializes ObjectACLManager.
+
+        Arguments:
+            collection_name: Collection name to store object ACL info.
+            session_key: Splunk access token.
+            app: App name of namespace.
+            owner: (optional) Owner of namespace, default is `nobody`.
+            scheme: (optional) The access scheme, default is None.
+            host: (optional) The host name, default is None.
+            port: (optional) The port number, default is None.
+            context: Other configurations for Splunk rest client.
+
+        Raises:
+            ObjectACLManagerException: If init ObjectACLManager failed.
+        """
         collection_name = "{app}_{collection_name}".format(
             app=app, collection_name=collection_name
         )
@@ -308,14 +307,14 @@ class ObjectACLManager:
     @retry(exceptions=[binding.HTTPError])
     def update_acl(
         self,
-        obj_collection,
-        obj_id,
-        obj_type,
-        obj_app,
-        obj_owner,
-        obj_perms,
-        obj_shared_by_inclusion=True,
-        replace_existing=True,
+        obj_collection: str,
+        obj_id: str,
+        obj_type: str,
+        obj_app: str,
+        obj_owner: str,
+        obj_perms: dict,
+        obj_shared_by_inclusion: bool = True,
+        replace_existing: bool = True,
     ):
         """Update acl info of object.
 
@@ -323,26 +322,24 @@ class ObjectACLManager:
         then replace existing acl info else merge new object acl info with the
         old one and replace the old acl info with merged acl info.
 
-        :param obj_collection: Collection where object currently stored.
-        :type obj_collection: ``string``
-        :param obj_id: ID of this object.
-        :type obj_id: ``string``
-        :param obj_app: App of this object.
-        :param obj_type: ``string``
-        :param obj_owner: Owner of this object.
-        :param obj_owner: ``string``
-        :param obj_perms: Object perms, like: {
-            'read': ['*'],
-            'write': ['admin'],
-            'delete': ['admin']}.
-        :type obj_perms: ``dict``
-        :param obj_shared_by_inclusion: (optional) Flag of object is shared by
-            inclusion, default is True.
-        :type obj_shared_by_inclusion: ``bool``
-        :param replace_existing: (optional) Replace existing acl info flag, True
-            indicates replace old acl info with new one else merge with old acl
-            info, default is True.
-        :type replace_existing: ``bool``
+        Arguments:
+            obj_collection: Collection where object currently stored.
+            obj_id: ID of this object.
+            obj_type: Type of this object.
+            obj_app: App of this object.
+            obj_owner: Owner of this object.
+            obj_perms: Object perms, like::
+
+                {
+                    'read': ['*'],
+                    'write': ['admin'],
+                    'delete': ['admin']
+                }.
+            obj_shared_by_inclusion: (optional) Flag of object is shared by
+                inclusion, default is True.
+            replace_existing: (optional) Replace existing acl info flag, True
+                indicates replace old acl info with new one else merge with old
+                acl info, default is True.
         """
 
         obj_acl = ObjectACL(
@@ -369,37 +366,35 @@ class ObjectACLManager:
     @retry(exceptions=[binding.HTTPError])
     def update_acls(
         self,
-        obj_collection,
-        obj_ids,
-        obj_type,
-        obj_app,
-        obj_owner,
-        obj_perms,
-        obj_shared_by_inclusion=True,
-        replace_existing=True,
+        obj_collection: str,
+        obj_ids: List[str],
+        obj_type: str,
+        obj_app: str,
+        obj_owner: str,
+        obj_perms: dict,
+        obj_shared_by_inclusion: bool = True,
+        replace_existing: bool = True,
     ):
         """Batch update object acl info to all provided `obj_ids`.
 
-        :param obj_collection: Collection where objects currently stored.
-        :type obj_collection: ``string``
-        :param obj_id: IDs list of objects.
-        :type obj_id: ``list``
-        :param obj_app: App of this object.
-        :param obj_type: ``string``
-        :param obj_owner: Owner of this object.
-        :param obj_owner: ``string``
-        :param obj_perms: Object perms, like: {
-            'read': ['*'],
-            'write': ['admin'],
-            'delete': ['admin']}.
-        :type obj_perms: ``dict``
-        :param obj_shared_by_inclusion: (optional) Flag of object is shared by
-            inclusion, default is True.
-        :type obj_shared_by_inclusion: ``bool``
-        :param replace_existing: (optional) Replace existing acl info flag, True
-            indicates replace old acl info with new one else merge with old acl
-            info, default is True.
-        :type replace_existing: ``bool``
+        Arguments:
+            obj_collection: Collection where objects currently stored.
+            obj_ids: IDs list of objects.
+            obj_type: Type of this object.
+            obj_app: App of this object.
+            obj_owner: Owner of this object.
+            obj_perms: Object perms, like::
+
+                {
+                    'read': ['*'],
+                    'write': ['admin'],
+                    'delete': ['admin']
+                }.
+            obj_shared_by_inclusion: (optional) Flag of object is shared by
+                inclusion, default is True.
+            replace_existing: (optional) Replace existing acl info flag, True
+                indicates replace old acl info with new one else merge with old acl
+                info, default is True.
         """
 
         obj_acl_records = []
@@ -428,21 +423,22 @@ class ObjectACLManager:
         self._collection_data.batch_save(*obj_acl_records)
 
     @retry(exceptions=[binding.HTTPError])
-    def get_acl(self, obj_collection, obj_id):
+    def get_acl(self, obj_collection: str, obj_id: str) -> "ObjectACL":
         """Get acl info.
 
         Query object acl info with parameter of the combination of
         `obj_collection` and `obj_id` from `self.collection_name` and
         return it.
 
-        :param obj_collection: Collection where object currently stored.
-        :type obj_collection: ``string``
-        :param obj_id: ID of this object.
-        :type obj_id: ``string``
-        :returns: Object acl info if success else None.
-        :rtype: ``ObjectACL``
+        Arguments:
+            obj_collection: Collection where object currently stored.
+            obj_id: ID of this object.
 
-        :raises ObjectACLNotExistException: If object ACL info does not exist.
+        Returns:
+            Object acl info if success else None.
+
+        Raises:
+            ObjectACLNotExistException: If object ACL info does not exist.
         """
 
         key = ObjectACL.generate_key(obj_collection, obj_id)
@@ -461,18 +457,18 @@ class ObjectACLManager:
         return ObjectACL.parse(obj_acl)
 
     @retry(exceptions=[binding.HTTPError])
-    def get_acls(self, obj_collection, obj_ids):
+    def get_acls(self, obj_collection: str, obj_ids: List[str]) -> List[ObjectACL]:
         """Batch get acl info.
 
         Query objects acl info with parameter of the combination of
         `obj_collection` and `obj_ids` from KVStore and return them.
 
-        :param obj_collection: Collection where object currently stored.
-        :type obj_collection: ``string``
-        :param obj_ids: IDs of objects.
-        :type obj_ids: ``list``
-        :returns: List of `ObjectACL` instances.
-        :rtype: ``list``
+        Arguments:
+            obj_collection: Collection where object currently stored.
+            obj_ids: IDs of objects.
+
+        Returns:
+            List of `ObjectACL` instances.
         """
 
         query = json.dumps(
@@ -488,18 +484,18 @@ class ObjectACLManager:
         return [ObjectACL.parse(obj_acl) for obj_acl in obj_acls]
 
     @retry(exceptions=[binding.HTTPError])
-    def delete_acl(self, obj_collection, obj_id):
+    def delete_acl(self, obj_collection: str, obj_id: str):
         """Delete acl info.
 
         Query object acl info with parameter of the combination of
         `obj_collection` and `obj_ids` from KVStore and delete it.
 
-        :param obj_collection: Collection where object currently stored.
-        :type obj_collection: ``string``
-        :param obj_id: ID of this object.
-        :type obj_id: ``string``
+        Arguments:
+            obj_collection: Collection where object currently stored.
+            obj_id: ID of this object.
 
-        :raises ObjectACLNotExistException: If object ACL info does not exist.
+        Raises:
+            ObjectACLNotExistException: If object ACL info does not exist.
         """
 
         key = ObjectACL.generate_key(obj_collection, obj_id)
@@ -516,16 +512,15 @@ class ObjectACLManager:
             )
 
     @retry(exceptions=[binding.HTTPError])
-    def delete_acls(self, obj_collection, obj_ids):
+    def delete_acls(self, obj_collection: str, obj_ids: List[str]):
         """Batch delete acl info.
 
         Query objects acl info with parameter of the combination of
         `obj_collection` and `obj_ids` from KVStore and delete them.
 
-        :param obj_collection: Collection where object currently stored.
-        :type obj_collection: ``string``
-        :param obj_ids: IDs of objects.
-        :type obj_id: ``list``
+        Arguments:
+            obj_collection: Collection where object currently stored.
+            obj_ids: IDs of objects.
         """
 
         query = json.dumps(
@@ -539,19 +534,19 @@ class ObjectACLManager:
         self._collection_data.delete(query=query)
 
     @retry(exceptions=[binding.HTTPError])
-    def get_accessible_object_ids(self, user, operation, obj_collection, obj_ids):
+    def get_accessible_object_ids(
+        self, user: str, operation: str, obj_collection: str, obj_ids: List[str]
+    ) -> List[str]:
         """Get accessible IDs of objects from `obj_acls`.
 
-        :param user: User name of current `operation`.
-        :type user: ``string``
-        :param operation: User operation, possible option: (read/write/delete).
-        :type operation: ``string``
-        :param obj_collection: Collection where object currently stored.
-        :type obj_collection: ``string``
-        :param obj_ids: IDs of objects.
-        :type obj_id: ``list``
-        :returns: List of IDs of accessible objects.
-        :rtype: ``list``
+        Arguments:
+            user: User name of current `operation`.
+            operation: User operation, possible option: (read/write/delete).
+            obj_collection: Collection where object currently stored.
+            obj_ids: IDs of objects.
+
+        Returns:
+            List of IDs of accessible objects.
         """
 
         obj_acls = self.get_acls(obj_collection, obj_ids)
@@ -565,37 +560,22 @@ class ObjectACLManager:
 
 
 class AppCapabilityManagerException(Exception):
+    """Exception for AppCapabilityManager."""
+
     pass
 
 
 class AppCapabilityNotExistException(Exception):
+    """Exception for the situation when AppCapability does not exist
+    for a specific app."""
+
     pass
 
 
 class AppCapabilityManager:
     """App capability manager.
 
-    :param collection_name: Collection name to store capabilities.
-    :type collection_name: ``string``
-    :param session_key: Splunk access token.
-    :type session_key: ``string``
-    :param app: App name of namespace.
-    :type app: ``string``
-    :param owner: (optional) Owner of namespace, default is `nobody`.
-    :type owner: ``string``
-    :param scheme: (optional) The access scheme, default is None.
-    :type scheme: ``string``
-    :param host: (optional) The host name, default is None.
-    :type host: ``string``
-    :param port: (optional) The port number, default is None.
-    :type port: ``integer``
-    :param context: Other configurations for Splunk rest client.
-    :type context: ``dict``
-
-    :raises AppCapabilityManagerException: If init AppCapabilityManager failed.
-
-    Usage::
-
+    Examples:
        >>> from solnlib import user_access
        >>> acm = user_access.AppCapabilityManager('test_collection',
                                                   session_key,
@@ -606,15 +586,31 @@ class AppCapabilityManager:
 
     def __init__(
         self,
-        collection_name,
-        session_key,
-        app,
-        owner="nobody",
-        scheme=None,
-        host=None,
-        port=None,
-        **context,
+        collection_name: str,
+        session_key: str,
+        app: str,
+        owner: str = "nobody",
+        scheme: str = None,
+        host: str = None,
+        port: int = None,
+        **context: dict,
     ):
+        """
+        Initializes AppCapabilityManager.
+
+        Arguments:
+            collection_name: Collection name to store capabilities.
+            session_key: Splunk access token.
+            app: App name of namespace.
+            owner: (optional) Owner of namespace, default is `nobody`.
+            scheme: (optional) The access scheme, default is None.
+            host: (optional) The host name, default is None.
+            port: (optional) The port number, default is None.
+            context: Other configurations for Splunk rest client.
+
+        Raises:
+            AppCapabilityManagerException: If init AppCapabilityManager failed.
+        """
         self._app = app
 
         collection_name = "{app}_{collection_name}".format(
@@ -630,20 +626,24 @@ class AppCapabilityManager:
             )
 
     @retry(exceptions=[binding.HTTPError])
-    def register_capabilities(self, capabilities):
+    def register_capabilities(self, capabilities: dict):
         """Register app capabilities.
 
-        :param capabilities: App capabilities, example: {
-            'object_type1': {
-            'read': 'read_app_object_type1',
-            'write': 'write_app_object_type1',
-            'delete': 'delete_app_object_type1'},
-            'object_type2': {
-            'read': 'read_app_object_type2',
-            'write': 'write_app_object_type2',
-            'delete': 'delete_app_object_type2'},
-            ...}
-        :type capabilities: ``dict``
+        Arguments:
+            capabilities: App capabilities, example::
+
+                {
+                    'object_type1': {
+                        'read': 'read_app_object_type1',
+                        'write': 'write_app_object_type1',
+                        'delete': 'delete_app_object_type1'},
+                        'object_type2': {
+                        'read': 'read_app_object_type2',
+                        'write': 'write_app_object_type2',
+                        'delete': 'delete_app_object_type2'
+                    },
+                    ...
+                }
         """
 
         record = {"_key": self._app, "capabilities": capabilities}
@@ -653,8 +653,8 @@ class AppCapabilityManager:
     def unregister_capabilities(self):
         """Unregister app capabilities.
 
-        :raises AppCapabilityNotExistException: If app capabilities are
-            not registered.
+        Raises:
+            AppCapabilityNotExistException: If app capabilities are not registered.
         """
 
         try:
@@ -668,12 +668,11 @@ class AppCapabilityManager:
             )
 
     @retry(exceptions=[binding.HTTPError])
-    def capabilities_are_registered(self):
+    def capabilities_are_registered(self) -> bool:
         """Check if app capabilities are registered.
 
-        :returns: True if app capabilities are registered else
-            False.
-        :rtype: ``bool``
+        Returns:
+            True if app capabilities are registered else False.
         """
 
         try:
@@ -687,14 +686,14 @@ class AppCapabilityManager:
         return True
 
     @retry(exceptions=[binding.HTTPError])
-    def get_capabilities(self):
+    def get_capabilities(self) -> dict:
         """Get app capabilities.
 
-        :returns: App capabilities.
-        :rtype: ``dict``
+        Returns:
+            App capabilities.
 
-        :raises AppCapabilityNotExistException: If app capabilities are
-            not registered.
+        Raises:
+             AppCapabilityNotExistException: If app capabilities are not registered.
         """
 
         try:
@@ -711,18 +710,20 @@ class AppCapabilityManager:
 
 
 class UserAccessException(Exception):
+    """Exception for the situation when there is user access exception."""
+
     pass
 
 
 def check_user_access(
-    session_key,
-    capabilities,
-    obj_type,
-    operation,
-    scheme=None,
-    host=None,
-    port=None,
-    **context,
+    session_key: str,
+    capabilities: dict,
+    obj_type: str,
+    operation: str,
+    scheme: str = None,
+    host: str = None,
+    port: int = None,
+    **context: dict,
 ):
     """User access checker.
 
@@ -731,35 +732,33 @@ def check_user_access(
     is contained, if user capabilities include the extracted capability user
     access is ok else fail.
 
-    :param session_key: Splunk access token.
-    :type session_key: ``string``
-    :param capabilities: App capabilities, example: {
-        'object_type1': {
-        'read': 'read_app_object_type1',
-        'write': 'write_app_object_type1',
-        'delete': 'delete_app_object_type1'},
-        'object_type2': {
-        'read': 'read_app_object_type2',
-        'write': 'write_app_object_type2',
-        'delete': 'delete_app_object_type2'},
-        ...}
-    :type capabilities: ``dict``
-    :param obj_type: Object type.
-    :type obj_type: ``string``
-    :param operation: User operation, possible option: (read/write/delete).
-    :type operation: ``string``
-    :param scheme: (optional) The access scheme, default is None.
-    :type scheme: ``string``
-    :param host: (optional) The host name, default is None.
-    :type host: ``string``
-    :param port: (optional) The port number, default is None.
-    :type port: ``integer``
-    :param context: Other configurations for Splunk rest client.
-    :type context: ``dict``
+    Arguments:
+        session_key: Splunk access token.
+        capabilities: App capabilities, example::
 
-    :raises UserAccessException: If user access permission is denied.
+            {
+                'object_type1': {
+                    'read': 'read_app_object_type1',
+                    'write': 'write_app_object_type1',
+                    'delete': 'delete_app_object_type1'},
+                    'object_type2': {
+                    'read': 'read_app_object_type2',
+                    'write': 'write_app_object_type2',
+                    'delete': 'delete_app_object_type2'
+                },
+                ...
+            }
+        obj_type: Object type.
+        operation: User operation, possible option: (read/write/delete).
+        scheme: (optional) The access scheme, default is None.
+        host: (optional) The host name, default is None.
+        port: (optional) The port number, default is None.
+        context: Other configurations for Splunk rest client.
 
-    Usage::
+    Raises:
+        UserAccessException: If user access permission is denied.
+
+    Examples:
        >>> from solnlib.user_access import check_user_access
        >>> def fun():
        >>>     check_user_access(
@@ -787,30 +786,35 @@ def check_user_access(
 
 
 class InvalidSessionKeyException(Exception):
+    """Exception when Splunk session key is invalid."""
+
     pass
 
 
 @retry(exceptions=[binding.HTTPError])
-def get_current_username(session_key, scheme=None, host=None, port=None, **context):
+def get_current_username(
+    session_key: str,
+    scheme: str = None,
+    host: str = None,
+    port: int = None,
+    **context: dict,
+) -> str:
     """Get current user name from `session_key`.
 
-    :param session_key: Splunk access token.
-    :type session_key: ``string``
-    :param scheme: (optional) The access scheme, default is None.
-    :type scheme: ``string``
-    :param host: (optional) The host name, default is None.
-    :type host: ``string``
-    :param port: (optional) The port number, default is None.
-    :type port: ``integer``
-    :param context: Other configurations for Splunk rest client.
-    :type context: ``dict``
-    :returns: Current user name.
-    :rtype: ``string``
+    Arguments:
+        session_key: Splunk access token.
+        scheme: (optional) The access scheme, default is None.
+        host: (optional) The host name, default is None.
+        port: (optional) The port number, default is None.
+        context: Other configurations for Splunk rest client.
 
-    :raises InvalidSessionKeyException: If `session_key` is invalid.
+    Returns:
+        Current user name.
 
-    Usage::
+    Raises:
+        InvalidSessionKeyException: If `session_key` is invalid.
 
+    Examples:
        >>> from solnlib import user_access
        >>> user_name = user_access.get_current_username(session_key)
     """
@@ -832,34 +836,36 @@ def get_current_username(session_key, scheme=None, host=None, port=None, **conte
 
 
 class UserNotExistException(Exception):
+    """Exception when user does not exist."""
+
     pass
 
 
 @retry(exceptions=[binding.HTTPError])
 def get_user_capabilities(
-    session_key, username, scheme=None, host=None, port=None, **context
-):
+    session_key: str,
+    username: str,
+    scheme: str = None,
+    host: str = None,
+    port: int = None,
+    **context: dict,
+) -> List[dict]:
     """Get user capabilities.
 
-    :param session_key: Splunk access token.
-    :type session_key: ``string``
-    :param username: User name of capabilities to get.
-    :type username: ``string``
-    :param scheme: (optional) The access scheme, default is None.
-    :type scheme: ``string``
-    :param host: (optional) The host name, default is None.
-    :type host: ``string``
-    :param port: (optional) The port number, default is None.
-    :type port: ``integer``
-    :param context: Other configurations for Splunk rest client.
-    :type context: ``dict``
-    :returns: User capabilities.
-    :rtype: ``list``
+    Arguments:
+        session_key: Splunk access token.
+        scheme: (optional) The access scheme, default is None.
+        host: (optional) The host name, default is None.
+        port: (optional) The port number, default is None.
+        context: Other configurations for Splunk rest client.
 
-    :raises UserNotExistException: If `username` does not exist.
+    Returns:
+        User capabilities.
 
-    Usage::
+    Raises:
+        UserNotExistException: If `username` does not exist.
 
+    Examples:
        >>> from solnlib import user_access
        >>> user_capabilities = user_access.get_user_capabilities(
        >>>     session_key, 'test_user')
@@ -881,31 +887,32 @@ def get_user_capabilities(
 
 
 def user_is_capable(
-    session_key, username, capability, scheme=None, host=None, port=None, **context
-):
+    session_key: str,
+    username: str,
+    capability: str,
+    scheme: str = None,
+    host: str = None,
+    port: int = None,
+    **context: dict,
+) -> bool:
     """Check if user is capable for given `capability`.
 
-    :param session_key: Splunk access token.
-    :type session_key: ``string``
-    :param username: (optional) User name of roles to get.
-    :type username: ``string``
-    :param capability: The capability we wish to check for.
-    :type capability: ``string``
-    :param scheme: (optional) The access scheme, default is None.
-    :type scheme: ``string``
-    :param host: (optional) The host name, default is None.
-    :type host: ``string``
-    :param port: (optional) The port number, default is None.
-    :type port: ``integer``
-    :param context: Other configurations for Splunk rest client.
-    :type context: ``dict``
-    :returns: True if user is capable else False.
-    :rtype: ``bool``
+    Arguments:
+        session_key: Splunk access token.
+        username: (optional) User name of roles to get.
+        capability: The capability we wish to check for.
+        scheme: (optional) The access scheme, default is None.
+        host: (optional) The host name, default is None.
+        port: (optional) The port number, default is None.
+        context: Other configurations for Splunk rest client.
 
-    :raises UserNotExistException: If `username` does not exist.
+    Returns:
+        True if user is capable else False.
 
-    Usage::
+    Raises:
+        UserNotExistException: If `username` does not exist.
 
+    Examples:
        >>> from solnlib import user_access
        >>> is_capable = user_access.user_is_capable(
        >>>     session_key, 'test_user', 'object_read_capability')
@@ -918,28 +925,26 @@ def user_is_capable(
 
 
 @retry(exceptions=[binding.HTTPError])
-def get_user_roles(session_key, username, scheme=None, host=None, port=None, **context):
+def get_user_roles(
+    session_key: str, username: str, scheme=None, host=None, port=None, **context
+) -> List:
     """Get user roles.
 
-    :param session_key: Splunk access token.
-    :type session_key: ``string``
-    :param username: (optional) User name of roles to get.
-    :type username: ``string``
-    :param scheme: (optional) The access scheme, default is None.
-    :type scheme: ``string``
-    :param host: (optional) The host name, default is None.
-    :type host: ``string``
-    :param port: (optional) The port number, default is None.
-    :type port: ``integer``
-    :param context: Other configurations for Splunk rest client.
-    :type context: ``dict``
-    :returns: User roles.
-    :rtype: ``list``
+    Arguments:
+        session_key: Splunk access token.
+        username: (optional) User name of roles to get.
+        scheme: (optional) The access scheme, default is None.
+        host: (optional) The host name, default is None.
+        port: (optional) The port number, default is None.
+        context: Other configurations for Splunk rest client.
 
-    :raises UserNotExistException: If `username` does not exist.
+    Returns:
+        User roles.
 
-    Usage::
+    Raises:
+        UserNotExistException: If `username` does not exist.
 
+    Examples:
        >>> from solnlib import user_access
        >>> user_roles = user_access.get_user_roles(session_key, 'test_user')
     """
