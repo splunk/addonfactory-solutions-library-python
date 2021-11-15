@@ -39,3 +39,4 @@ nav:
       - "server_info.py": server_info.md
       - "splunk_rest_client.py": splunk_rest_client.md
       - "splunkenv.py": splunkenv.md
+      - "time_parser.py": time_parser.md
