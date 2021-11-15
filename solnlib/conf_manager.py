@@ -180,12 +180,22 @@ class ConfFile:
     def get(self, stanza_name: str, only_current_app: bool = False) -> dict:
         """Get stanza from configuration file.
 
+        Result is like:
+
+            {
+                'disabled': '0',
+                'eai:appName': 'solnlib_demo',
+                'eai:userName': 'nobody',
+                'k1': '1',
+                'k2': '2'
+            }
+
         Arguments:
             stanza_name: Stanza name.
             only_current_app: Only include current app.
 
         Returns:
-            Stanza in dict format.
+            Stanza.
 
         Raises:
             ConfStanzaNotExistException: If stanza does not exist.
@@ -229,11 +239,24 @@ class ConfFile:
     def get_all(self, only_current_app: bool = False) -> dict:
         """Get all stanzas from configuration file.
 
+        Result is like:
+
+            {
+                'test':
+                    {
+                        'disabled': '0',
+                        'eai:appName': 'solnlib_demo',
+                        'eai:userName': 'nobody',
+                        'k1': '1',
+                        'k2': '2'
+                    }
+            }
+
         Arguments:
             only_current_app: Only include current app.
 
         Returns:
-            Dict of stanzas in format of key: stanza data.
+            Dict of stanzas.
 
         Examples:
            >>> from solnlib import conf_manager

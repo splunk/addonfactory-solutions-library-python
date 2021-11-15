@@ -58,7 +58,14 @@ class HECConfig:
         """Get http data input global settings.
 
         Returns:
-            HTTP global settings.
+            HTTP global settings, for example:
+
+                {
+                    'enableSSL': 1,
+                    'disabled': 0,
+                    'useDeploymentServer': 0,
+                    'port': 8088
+                }
         """
 
         return self._do_get_input(self.input_type).content
