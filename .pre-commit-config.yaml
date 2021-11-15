@@ -12,6 +12,11 @@ repos:
     rev: 5.9.3
     hooks:
     -   id: isort
+-   repo: https://github.com/myint/docformatter
+    rev: v1.4
+    hooks:
+      - id: docformatter
+        args: [--in-place]
 -   repo: local
     hooks:
       - id: actionlint

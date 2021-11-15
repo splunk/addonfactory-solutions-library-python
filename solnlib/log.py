@@ -14,9 +14,7 @@
 # limitations under the License.
 #
 
-"""
-This module provides log functionalities.
-"""
+"""This module provides log functionalities."""
 
 import logging
 import logging.handlers

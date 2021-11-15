@@ -14,11 +14,9 @@
 # limitations under the License.
 #
 
-"""
-This module contains file monitoring class that can be used to check files
+"""This module contains file monitoring class that can be used to check files
 change periodically and call callback function to handle properly when
-detecting files change.
-"""
+detecting files change."""
 import logging
 import os.path as op
 import threading
@@ -33,8 +31,7 @@ class FileChangesChecker:
     """Files change checker."""
 
     def __init__(self, callback: Callable, files: List):
-        """
-        Initializes FileChangesChecker.
+        """Initializes FileChangesChecker.
 
         Arguments:
             callback: Callback function for files change.
@@ -93,8 +90,7 @@ class FileMonitor:
     """
 
     def __init__(self, callback: Callable, files: List, interval: int = 1):
-        """
-        Initializes FileMonitor.
+        """Initializes FileMonitor.
 
         Arguments:
             callback: Callback for handling files change.

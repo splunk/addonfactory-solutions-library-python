@@ -14,9 +14,7 @@
 # limitations under the License.
 #
 
-"""
-This module provides Splunk modular input event encapsulation.
-"""
+"""This module provides Splunk modular input event encapsulation."""
 
 import json
 from typing import List
@@ -156,8 +154,7 @@ class XMLEvent(Event):
 
     @classmethod
     def format_events(cls, events: List) -> List:
-        """
-        Format events to list of string.
+        """Format events to list of string.
 
         Arguments:
             events: List of events to format.
@@ -223,8 +220,7 @@ class HECEvent(Event):
 
     @classmethod
     def format_events(cls, events: List, event_field: str = "event") -> List:
-        """
-        Format events to list of string.
+        """Format events to list of string.
 
         Arguments:
             events: List of events to format.

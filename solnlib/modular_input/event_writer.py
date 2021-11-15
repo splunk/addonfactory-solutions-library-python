@@ -14,10 +14,8 @@
 # limitations under the License.
 #
 
-"""
-This module provides two kinds of event writers (ClassicEventWriter,
-HECEventWriter) to write Splunk modular input events.
-"""
+"""This module provides two kinds of event writers (ClassicEventWriter,
+HECEventWriter) to write Splunk modular input events."""
 
 import logging
 import multiprocessing
@@ -123,8 +121,7 @@ class ClassicEventWriter(EventWriter):
     description = "ClassicEventWriter"
 
     def __init__(self, lock: Union[threading.Lock, multiprocessing.Lock] = None):
-        """
-        Initializes ClassicEventWriter.
+        """Initializes ClassicEventWriter.
 
         Arguments:
             lock: (optional) lock to exclusively access stdout.
@@ -209,8 +206,7 @@ class HECEventWriter(EventWriter):
         logger: logging.Logger = None,
         **context: dict
     ):
-        """
-        Initializes HECEventWriter.
+        """Initializes HECEventWriter.
 
         Arguments:
             hec_input_name: Splunk HEC input name.
@@ -255,9 +251,9 @@ class HECEventWriter(EventWriter):
     def create_from_token(
         hec_uri: str, hec_token: str, **context: dict
     ) -> "HECEventWriter":
-        """Given HEC URI and HEC token, create HECEventWriter object.
-        This function simplifies the standalone mode HECEventWriter usage
-        (not in a modinput).
+        """Given HEC URI and HEC token, create HECEventWriter object. This
+        function simplifies the standalone mode HECEventWriter usage (not in a
+        modinput).
 
         Arguments:
             hec_uri: HTTP Event Collector URI, like https://localhost:8088.
