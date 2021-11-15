@@ -14,9 +14,7 @@
 # limitations under the License.
 #
 
-"""
-Splunk platform related utilities.
-"""
+"""Splunk platform related utilities."""
 
 import os
 import os.path as op

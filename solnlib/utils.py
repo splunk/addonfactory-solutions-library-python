@@ -14,9 +14,7 @@
 # limitations under the License.
 #
 
-"""
-Common utilities.
-"""
+"""Common utilities."""
 
 import datetime
 import logging
@@ -141,8 +139,8 @@ def retry(
     default_return: Any = None,
     exceptions: List = None,
 ):
-    """A decorator to run function with max `retries` times
-    if there is exception.
+    """A decorator to run function with max `retries` times if there is
+    exception.
 
     Arguments:
         retries: (optional) Max retries times, default is 3.

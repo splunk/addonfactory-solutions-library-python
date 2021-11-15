@@ -14,10 +14,8 @@
 # limitations under the License.
 #
 
-"""
-This module provides two kinds of checkpointer: KVStoreCheckpointer,
-FileCheckpointer for modular input to save checkpoint.
-"""
+"""This module provides two kinds of checkpointer: KVStoreCheckpointer,
+FileCheckpointer for modular input to save checkpoint."""
 
 import base64
 import json
@@ -151,8 +149,7 @@ class KVStoreCheckpointer(Checkpointer):
         port: int = None,
         **context: dict
     ):
-        """
-        Initializes KVStoreCheckpointer.
+        """Initializes KVStoreCheckpointer.
 
         Arguments:
             collection_name: Collection name of kvstore checkpointer.
@@ -165,7 +162,8 @@ class KVStoreCheckpointer(Checkpointer):
             context: Other configurations for Splunk rest client.
 
         Raises:
-            CheckpointerException: If init kvstore checkpointer failed."""
+            CheckpointerException: If init kvstore checkpointer failed.
+        """
         try:
             self._collection_data = self._get_collection_data(
                 collection_name, session_key, app, owner, scheme, host, port, **context

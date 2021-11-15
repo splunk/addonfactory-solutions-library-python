@@ -14,9 +14,7 @@
 # limitations under the License.
 #
 
-"""
-Net utilities.
-"""
+"""Net utilities."""
 import inspect
 import re
 import socket
@@ -28,8 +26,7 @@ from typing import Optional, Union
 
 
 def resolve_hostname(addr: str) -> Optional[str]:
-    """Try to resolve an IP to a host name and returns None
-    on common failures.
+    """Try to resolve an IP to a host name and returns None on common failures.
 
     Arguments:
         addr: IP address to resolve.
@@ -139,7 +136,7 @@ def is_valid_scheme(scheme: str) -> bool:
 
 def check_css_params(**validators):
     """A decorator for validating arguments for function with specified
-     validating function which returns True or False.
+    validating function which returns True or False.
 
     Arguments:
         validators: argument and it's validation function.

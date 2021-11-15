@@ -14,9 +14,8 @@
 # limitations under the License.
 #
 
-"""
-A simple thread safe timer queue implementation which has O(logn) time complexity.
-"""
+"""A simple thread safe timer queue implementation which has O(logn) time
+complexity."""
 import logging
 import queue as Queue
 import threading
@@ -36,8 +35,7 @@ class Timer:
     _lock = threading.Lock()
 
     def __init__(self, callback: Callable, when: int, interval: int, ident: int = None):
-        """
-        Initializes Timer.
+        """Initializes Timer.
 
         Arguments:
             callback: Arbitrary callable object.
@@ -86,9 +84,7 @@ TEARDOWN_SENTINEL = None
 
 
 class TimerQueueStruct:
-    """
-    The underlying data structure for TimerQueue
-    """
+    """The underlying data structure for TimerQueue."""
 
     def __init__(self):
         self._timers = sc.SortedSet()

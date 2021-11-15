@@ -14,9 +14,7 @@
 # limitations under the License.
 #
 
-"""
-Splunk modular input.
-"""
+"""Splunk modular input."""
 
 from splunklib.modularinput.argument import Argument
 

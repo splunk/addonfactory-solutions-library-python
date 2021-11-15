@@ -14,9 +14,7 @@
 # limitations under the License.
 #
 
-"""
-This module contains Splunk server info related functionalities.
-"""
+"""This module contains Splunk server info related functionalities."""
 
 import json
 

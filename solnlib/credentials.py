@@ -14,9 +14,7 @@
 # limitations under the License.
 #
 
-"""
-This module contains Splunk credential related interfaces.
-"""
+"""This module contains Splunk credential related interfaces."""
 
 import json
 import re
@@ -86,8 +84,7 @@ class CredentialManager:
         port: int = None,
         **context: dict,
     ):
-        """
-        Initializes CredentialsManager.
+        """Initializes CredentialsManager.
 
         Arguments:
             session_key: Splunk access token.

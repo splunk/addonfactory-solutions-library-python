@@ -14,9 +14,7 @@
 # limitations under the License.
 #
 
-"""
-Splunk user access control related utilities.
-"""
+"""Splunk user access control related utilities."""
 
 import json
 import re
@@ -86,8 +84,7 @@ class ObjectACL:
         obj_perms: dict,
         obj_shared_by_inclusion: bool,
     ):
-        """
-        Initializes ObjectACL.
+        """Initializes ObjectACL.
 
         Arguments:
             obj_collection: Collection where object currently stored.
@@ -180,7 +177,8 @@ class ObjectACL:
 
     @staticmethod
     def parse(obj_acl_record: dict) -> "ObjectACL":
-        """Parse object acl record and construct a new `ObjectACL` object from it.
+        """Parse object acl record and construct a new `ObjectACL` object from
+        it.
 
         Arguments:
             obj_acl_record: Object acl record.
@@ -276,8 +274,7 @@ class ObjectACLManager:
         port: int = None,
         **context: dict,
     ):
-        """
-        Initializes ObjectACLManager.
+        """Initializes ObjectACLManager.
 
         Arguments:
             collection_name: Collection name to store object ACL info.
@@ -566,8 +563,8 @@ class AppCapabilityManagerException(Exception):
 
 
 class AppCapabilityNotExistException(Exception):
-    """Exception for the situation when AppCapability does not exist
-    for a specific app."""
+    """Exception for the situation when AppCapability does not exist for a
+    specific app."""
 
     pass
 
@@ -595,8 +592,7 @@ class AppCapabilityManager:
         port: int = None,
         **context: dict,
     ):
-        """
-        Initializes AppCapabilityManager.
+        """Initializes AppCapabilityManager.
 
         Arguments:
             collection_name: Collection name to store capabilities.

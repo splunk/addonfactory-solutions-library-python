@@ -14,10 +14,11 @@
 # limitations under the License.
 #
 
-"""
-This module proxy all REST call to splunklib SDK, it handles proxy, certs etc
-in this centralized location. All clients should use SplunkRestProxy to do REST
-call instead of calling splunklib SDK directly in business logic code.
+"""This module proxy all REST call to splunklib SDK, it handles proxy, certs
+etc in this centralized location.
+
+All clients should use SplunkRestProxy to do REST call instead of
+calling splunklib SDK directly in business logic code.
 """
 
 import logging
@@ -172,8 +173,8 @@ def _request_handler(context):
 class SplunkRestClient(client.Service):
     """Splunk REST client.
 
-    If any of scheme, host and port is None, will discover local
-    splunkd access info automatically.
+    If any of scheme, host and port is None, will discover local splunkd
+    access info automatically.
     """
 
     @check_css_params(
@@ -189,8 +190,7 @@ class SplunkRestClient(client.Service):
         port: int = None,
         **context: dict,
     ):
-        """
-        Initializes SplunkRestClient.
+        """Initializes SplunkRestClient.
 
         Arguments:
             session_key: Splunk access token.

@@ -14,9 +14,7 @@
 # limitations under the License.
 #
 
-"""
-Orphan process monitor.
-"""
+"""Orphan process monitor."""
 
 import os
 import threading
@@ -29,14 +27,12 @@ __all__ = ["OrphanProcessChecker", "OrphanProcessMonitor"]
 class OrphanProcessChecker:
     """Orphan process checker.
 
-    Only work for Linux platform. On Windows platform, is_orphan
-    is always False and there is no need to do this monitoring on
-    Windows.
+    Only work for Linux platform. On Windows platform, is_orphan is
+    always False and there is no need to do this monitoring on Windows.
     """
 
     def __init__(self, callback: Callable = None):
-        """
-        Initializes OrphanProcessChecker.
+        """Initializes OrphanProcessChecker.
 
         Arguments:
             callback: (optional) Callback for orphan process.
@@ -79,13 +75,12 @@ class OrphanProcessChecker:
 class OrphanProcessMonitor:
     """Orphan process monitor.
 
-    Check if process become orphan in background thread per
-    interval and call callback if process become orphan.
+    Check if process become orphan in background thread per interval and
+    call callback if process become orphan.
     """
 
     def __init__(self, callback: Callable, interval: int = 1):
-        """
-        Initializes OrphanProcessMonitor.
+        """Initializes OrphanProcessMonitor.
 
         Arguments:
             callback: Callback for orphan process monitor.
@@ -98,9 +93,7 @@ class OrphanProcessMonitor:
         self._interval = interval
 
     def start(self):
-        """
-        Start orphan process monitor.
-        """
+        """Start orphan process monitor."""
 
         if self._started:
             return
@@ -109,9 +102,7 @@ class OrphanProcessMonitor:
         self._thr.start()
 
     def stop(self):
-        """
-        Stop orphan process monitor.
-        """
+        """Stop orphan process monitor."""
 
         joinable = self._started
         self._started = False

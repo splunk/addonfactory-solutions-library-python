@@ -14,9 +14,7 @@
 # limitations under the License.
 #
 
-"""
-This module contains interfaces that support CRUD operations on ACL.
-"""
+"""This module contains interfaces that support CRUD operations on ACL."""
 
 import json
 from typing import List
@@ -56,8 +54,7 @@ class ACLManager:
         port: int = None,
         **context: dict
     ):
-        """
-        Initializes ACLManager.
+        """Initializes ACLManager.
 
         Arguments:
             session_key: Splunk access token.

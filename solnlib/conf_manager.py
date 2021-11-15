@@ -14,11 +14,9 @@
 # limitations under the License.
 #
 
-"""
-This module contains simple interfaces for Splunk config file management,
+"""This module contains simple interfaces for Splunk config file management,
 you can update/get/delete stanzas and encrypt/decrypt some fields of stanza
-automatically.
-"""
+automatically."""
 
 import json
 import logging
@@ -65,8 +63,7 @@ class ConfFile:
         port: int = None,
         **context: dict,
     ):
-        """
-        Initializes ConfFile.
+        """Initializes ConfFile.
 
         Arguments:
             name: Configuration file name.
@@ -376,8 +373,7 @@ class ConfManager:
         realm: str = None,
         **context: dict,
     ):
-        """
-        Initializes ConfManager.
+        """Initializes ConfManager.
 
         Arguments:
             session_key: Splunk access token.

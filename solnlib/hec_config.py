@@ -35,8 +35,7 @@ class HECConfig:
         port: int = None,
         **context: dict
     ):
-        """
-        Initializes HECConfig.
+        """Initializes HECConfig.
 
         Arguments:
             session_key: Splunk access token.

@@ -14,9 +14,7 @@
 # limitations under the License.
 #
 
-"""
-This module provides a base class of Splunk modular input.
-"""
+"""This module provides a base class of Splunk modular input."""
 
 import logging
 import sys
@@ -327,7 +325,7 @@ class ModularInput(metaclass=ABCMeta):
 
     @abstractmethod
     def do_run(self, inputs: dict):
-        """Runs this modular input
+        """Runs this modular input.
 
         Arguments:
             inputs: Command line arguments passed to this modular input.
@@ -337,13 +335,13 @@ class ModularInput(metaclass=ABCMeta):
                     'stanza_name1': {'arg1': 'arg1_value', 'arg2': 'arg2_value', ...}
                     'stanza_name2': {'arg1': 'arg1_value', 'arg2': 'arg2_value', ...}
                     'stanza_name3': {'arg1': 'arg1_value', 'arg2': 'arg2_value', ...}
-                    }.
+                    }
 
                 For multiple instance mode, inputs like::
 
                     {
                     'stanza_name1': {'arg1': 'arg1_value', 'arg2': 'arg2_value', ...}
-                    }.
+                    }
         """
 
         pass

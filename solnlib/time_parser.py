@@ -14,9 +14,7 @@
 # limitations under the License.
 #
 
-"""
-This module provides interfaces to parse and convert timestamp.
-"""
+"""This module provides interfaces to parse and convert timestamp."""
 
 import datetime
 import json
@@ -58,8 +56,7 @@ class TimeParser:
         port: int = None,
         **context: dict
     ):
-        """
-        Initializes TimeParser.
+        """Initializes TimeParser.
 
         Arguments:
             session_key: Splunk access token.

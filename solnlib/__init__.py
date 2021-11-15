@@ -14,9 +14,7 @@
 # limitations under the License.
 #
 
-"""
-The Splunk Software Development Kit for Solutions.
-"""
+"""The Splunk Software Development Kit for Solutions."""
 
 from . import (
     acl,
