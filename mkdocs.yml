@@ -41,3 +41,4 @@ nav:
       - "splunkenv.py": splunkenv.md
       - "time_parser.py": time_parser.md
       - "timer_queue.py": timer_queue.md
+      - "user_access.py": user_access.md
