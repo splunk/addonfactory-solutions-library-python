@@ -23,10 +23,9 @@ __all__ = ["Singleton"]
 
 class Singleton(type):
     """
-    Singleton meta class
+    Singleton meta class.
 
-    Usage:
-
+    Examples:
        >>> class Test(object):
        >>>     __metaclass__ = Singleton
        >>>
