@@ -27,5 +27,6 @@ header:
     - ".*"
     - "examples/data"
     - "mkdocs.yml"
+    - "docs/"
 
   comment: on-failure
