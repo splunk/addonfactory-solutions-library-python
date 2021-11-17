@@ -64,20 +64,6 @@ def test_is_true(monkeypatch):
         assert not utils.is_true(val)
 
 
-def test_escape_json_control_chars(monkeypatch):
-    str1 = r"hello\nworld"
-    escaped_str1 = r"hello\\nworld"
-    assert escaped_str1 == utils.escape_json_control_chars(str1)
-
-    str1 = r"hello\rworld"
-    escaped_str1 = r"hello\\rworld"
-    assert escaped_str1 == utils.escape_json_control_chars(str1)
-
-    str1 = r"hello\r\nworld"
-    escaped_str1 = r"hello\\r\\nworld"
-    assert escaped_str1 == utils.escape_json_control_chars(str1)
-
-
 def test_retry(monkeypatch):
     def _old_func():
         raise ValueError("Exception for test.")
