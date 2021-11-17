@@ -27,17 +27,9 @@ import context
 from splunklib import binding, client
 from splunklib.binding import HTTPError
 
-from solnlib.credentials import get_session_key
-
 
 def test_kvstore():
-    session_key = get_session_key(
-        context.username,
-        context.password,
-        scheme=context.scheme,
-        host=context.host,
-        port=context.port,
-    )
+    session_key = context.get_session_key()
     kvstore = client.Service(
         scheme=context.scheme,
         host=context.host,

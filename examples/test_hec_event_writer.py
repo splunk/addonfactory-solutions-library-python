@@ -20,18 +20,11 @@ import sys
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 import context
 
-from solnlib import credentials
 from solnlib.modular_input import event_writer as hew
 
 
 def test_hec_event_writer():
-    session_key = credentials.get_session_key(
-        context.username,
-        context.password,
-        scheme=context.scheme,
-        host=context.host,
-        port=context.port,
-    )
+    session_key = context.get_session_key()
 
     ew = hew.HECEventWriter("test", session_key)
     m1 = {}

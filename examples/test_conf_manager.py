@@ -22,18 +22,11 @@ import pytest
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 import context
 
-from solnlib import conf_manager, credentials
+from solnlib import conf_manager
 
 
 def test_conf_manager():
-    session_key = credentials.get_session_key(
-        context.username,
-        context.password,
-        scheme=context.scheme,
-        host=context.host,
-        port=context.port,
-    )
-
+    session_key = context.get_session_key()
     cfm = conf_manager.ConfManager(
         session_key,
         context.app,

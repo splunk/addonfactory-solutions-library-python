@@ -20,17 +20,11 @@ import sys
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 import context
 
-from solnlib import credentials, hec_config
+from solnlib import hec_config
 
 
 def test_hec_config():
-    session_key = credentials.get_session_key(
-        context.username,
-        context.password,
-        scheme=context.scheme,
-        host=context.host,
-        port=context.port,
-    )
+    session_key = context.get_session_key()
     config = hec_config.HECConfig(session_key)
     stanza = {
         "index": "main",

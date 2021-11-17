@@ -21,18 +21,10 @@ sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 import context
 
 from solnlib import acl
-from solnlib.credentials import get_session_key
 
 
 def test_acl_manager():
-    session_key = get_session_key(
-        context.username,
-        context.password,
-        scheme=context.scheme,
-        host=context.host,
-        port=context.port,
-    )
-
+    session_key = context.get_session_key()
     aclm = acl.ACLManager(
         session_key,
         context.app,
