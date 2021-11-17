@@ -31,7 +31,6 @@ __all__ = [
     "datetime_to_seconds",
     "is_true",
     "is_false",
-    "escape_json_control_chars",
     "retry",
     "extract_http_scheme_host_port",
 ]
@@ -99,38 +98,6 @@ def is_false(val: Union[str, int]) -> bool:
     if value in ("0", "FALSE", "F", "N", "NO", "NONE", ""):
         return True
     return False
-
-
-def escape_json_control_chars(json_str: str) -> str:
-    """Escape json control chars in `json_str`.
-
-    Arguments:
-        json_str: Json string to escape.
-
-    Returns:
-        Escaped string.
-    """
-
-    control_chars = ((r"\n", "\\\\n"), (r"\r", "\\\\r"), (r"\r\n", "\\\\r\\\\n"))
-    for ch, replace in control_chars:
-        json_str = json_str.replace(ch, replace)
-    return json_str
-
-
-def unescape_json_control_chars(json_str: str) -> str:
-    """Unescape json control chars in `json_str`.
-
-    Arguments:
-        json_str: Json string to unescape.
-
-    Returns:
-        Unescaped string.
-    """
-
-    control_chars = (("\\\\n", r"\n"), ("\\\\r", r"\r"), ("\\\\r\\\\n", r"\r\n"))
-    for ch, replace in control_chars:
-        json_str = json_str.replace(ch, replace)
-    return json_str
 
 
 def retry(
