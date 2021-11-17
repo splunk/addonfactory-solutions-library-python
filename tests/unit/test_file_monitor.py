@@ -15,11 +15,8 @@
 #
 
 import os
-import os.path as op
-import sys
 import time
 
-sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 from solnlib import file_monitor
 
 _monitor_file = "./.test_monitor_file"

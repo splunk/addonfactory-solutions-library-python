@@ -21,7 +21,6 @@ import sys
 
 import common
 
-sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 from solnlib.modular_input import Argument, checkpointer
 from solnlib.modular_input.modular_input import ModularInput
 

@@ -29,12 +29,7 @@ from urllib.parse import quote
 
 from splunklib import binding, client
 
-from .net_utils import (
-    check_css_params,
-    is_valid_hostname,
-    is_valid_port,
-    is_valid_scheme,
-)
+from .net_utils import validate_scheme_host_port
 from .splunkenv import get_splunkd_access_info
 
 __all__ = ["SplunkRestClient"]
@@ -151,7 +146,7 @@ def _request_handler(context):
                 cert=cert,
                 **kwargs,
             )
-        except Exception as e:
+        except Exception:
             logging.error(
                 "Failed to issue http request=%s to url=%s, error=%s",
                 method,
@@ -171,15 +166,8 @@ def _request_handler(context):
 
 
 class SplunkRestClient(client.Service):
-    """Splunk REST client.
+    """Splunk REST client."""
 
-    If any of scheme, host and port is None, will discover local splunkd
-    access info automatically.
-    """
-
-    @check_css_params(
-        scheme=is_valid_scheme, host=is_valid_hostname, port=is_valid_port
-    )
     def __init__(
         self,
         session_key: str,
@@ -192,6 +180,12 @@ class SplunkRestClient(client.Service):
     ):
         """Initializes SplunkRestClient.
 
+        Arguments `scheme`, `host` and `port` are optional in the Splunk
+        environment (when environment variable SPLUNK_HOME is set). In this
+        situation `get_splunkd_access_info` will be used to set `scheme`,
+        `host` and `port`. In case of using `SplunkRestClient` outside of
+        Splunk environment - `scheme`, `host` and `port` should be provided.
+
         Arguments:
             session_key: Splunk access token.
             app: App name of namespace.
@@ -199,17 +193,27 @@ class SplunkRestClient(client.Service):
             scheme: The access scheme, default is None.
             host: The host name, default is None.
             port: The port number, default is None.
-            context: Other configurations, it can contains `proxy_hostname`,
+            context: Other configurations, it can contain `proxy_hostname`,
                 `proxy_port`, `proxy_username`, `proxy_password`, then proxy will
-                be accounted and setup, all REST APIs to Splunkd will be through
+                be accounted and setup, all REST APIs to splunkd will be through
                 the proxy. If `context` contains `key_file`, `cert_file`, then
-                certification will be accounted and setup, all REST APIs to Splunkd
+                certification will be accounted and setup, all REST APIs to splunkd
                 will use certification. If `context` contains `pool_connections`,
-                `pool_maxsize`, then HTTP Connection will be pooled.
+                `pool_maxsize`, then HTTP connection will be pooled.
+
+        Raises:
+            ValueError: if scheme, host or port are invalid.
         """
-        # Only do splunkd URI discovery in SPLUNK env (SPLUNK_HOME is set)
+        # Only do splunkd URI discovery in SPLUNK env (SPLUNK_HOME is set).
         if not all([scheme, host, port]) and os.environ.get("SPLUNK_HOME"):
             scheme, host, port = get_splunkd_access_info()
+        if os.environ.get("SPLUNK_HOME") is None:
+            if not all([scheme, host, port]):
+                raise ValueError(
+                    "scheme, host, port should be provided outside of Splunk environment"
+                )
+
+        validate_scheme_host_port(scheme, host, port)
 
         handler = _request_handler(context)
         super().__init__(

@@ -199,11 +199,12 @@ class TimerQueue:
     that the timers are just a simple functions which inject themselvies to
     a task queue and then they are picked up by a threading/process pool to
     execute, as shows below:
-    Timers --enqueue---> TimerQueue --------expiration-----------
-                                                                |
-                                                                |
-                                                               \|/
-    Threading/Process Pool <---- TaskQueue <--enqueue-- Timers' callback (nonblocking)
+
+        Timers --enqueue---> TimerQueue --------expiration-----------
+                                                                    |
+                                                                    |
+                                                                   \|/
+        Threading/Process Pool <---- TaskQueue <--enqueue-- Timers' callback (nonblocking)
 
     Examples:
            >>> from solnlib import timer_queue

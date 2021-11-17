@@ -15,12 +15,9 @@
 #
 
 import os
-import os.path as op
 import random
-import sys
 import time
 
-sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 from solnlib import orphan_process_monitor as opm
 
 

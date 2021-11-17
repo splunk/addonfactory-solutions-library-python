@@ -17,11 +17,8 @@
 import os
 import os.path as op
 import shutil
-import sys
 
 import common
-
-sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 from splunklib import binding, client
 
 from solnlib.modular_input import FileCheckpointer, KVStoreCheckpointer

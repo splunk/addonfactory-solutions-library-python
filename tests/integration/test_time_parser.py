@@ -23,18 +23,11 @@ import pytest
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 import context
 
-from solnlib import credentials, time_parser
+from solnlib import time_parser
 
 
 def test_time_parser():
-    session_key = credentials.get_session_key(
-        context.username,
-        context.password,
-        scheme=context.scheme,
-        host=context.host,
-        port=context.port,
-    )
-
+    session_key = context.get_session_key()
     tp = time_parser.TimeParser(session_key)
 
     assert tp.to_seconds("2011-07-06T21:54:23.000-07:00") == 1310014463.0
