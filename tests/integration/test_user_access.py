@@ -22,18 +22,11 @@ import pytest
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 import context
 
-from solnlib import credentials, user_access
+from solnlib import user_access
 
 
 def test_object_acl_manager():
-    session_key = credentials.get_session_key(
-        context.username,
-        context.password,
-        scheme=context.scheme,
-        host=context.host,
-        port=context.port,
-    )
-
+    session_key = context.get_session_key()
     oaclm = user_access.ObjectACLManager(
         "object_acls_collection",
         session_key,
@@ -91,14 +84,7 @@ def test_object_acl_manager():
 
 
 def test_app_capability_manager():
-    session_key = credentials.get_session_key(
-        context.username,
-        context.password,
-        scheme=context.scheme,
-        host=context.host,
-        port=context.port,
-    )
-
+    session_key = context.get_session_key()
     acm = user_access.AppCapabilityManager(
         "app_capabilities_collection",
         session_key,
@@ -129,14 +115,7 @@ def test_app_capability_manager():
 
 
 def test_check_user_access():
-    session_key = credentials.get_session_key(
-        context.username,
-        context.password,
-        scheme=context.scheme,
-        host=context.host,
-        port=context.port,
-    )
-
+    session_key = context.get_session_key()
     app_capabilities = {
         "object_type1": {
             "read": "read_app_object_type1",
@@ -157,14 +136,7 @@ def test_check_user_access():
 
 
 def test_get_current_username():
-    session_key = credentials.get_session_key(
-        context.username,
-        context.password,
-        scheme=context.scheme,
-        host=context.host,
-        port=context.port,
-    )
-
+    session_key = context.get_session_key()
     assert (
         user_access.get_current_username(
             session_key, scheme=context.scheme, host=context.host, port=context.port
@@ -174,14 +146,7 @@ def test_get_current_username():
 
 
 def test_get_user_capabilities():
-    session_key = credentials.get_session_key(
-        context.username,
-        context.password,
-        scheme=context.scheme,
-        host=context.host,
-        port=context.port,
-    )
-
+    session_key = context.get_session_key()
     user_access.get_user_capabilities(
         session_key,
         context.username,
@@ -192,14 +157,7 @@ def test_get_user_capabilities():
 
 
 def test_user_is_capable():
-    session_key = credentials.get_session_key(
-        context.username,
-        context.password,
-        scheme=context.scheme,
-        host=context.host,
-        port=context.port,
-    )
-
+    session_key = context.get_session_key()
     assert not user_access.user_is_capable(
         session_key,
         context.username,
@@ -211,14 +169,7 @@ def test_user_is_capable():
 
 
 def test_get_user_roles():
-    session_key = credentials.get_session_key(
-        context.username,
-        context.password,
-        scheme=context.scheme,
-        host=context.host,
-        port=context.port,
-    )
-
+    session_key = context.get_session_key()
     user_access.get_user_roles(
         session_key,
         context.username,

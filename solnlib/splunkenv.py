@@ -172,14 +172,14 @@ def get_splunk_bin() -> str:
     return make_splunkhome_path(("bin", splunk_bin))
 
 
-def get_splunkd_access_info() -> Tuple:
+def get_splunkd_access_info() -> Tuple[str, str, int]:
     """Get splunkd server access info.
 
     Returns:
         Tuple of (scheme, host, port).
     """
 
-    if utils.is_true(get_conf_key_value("server", "sslConfig", "enableSplunkdSSL")):
+    if get_conf_key_value("server", "sslConfig", "enableSplunkdSSL") == "true":
         scheme = "https"
     else:
         scheme = "http"
@@ -194,7 +194,7 @@ def get_splunkd_access_info() -> Tuple:
         port_idx = bindip.rfind(":")
         host = bindip[:port_idx] if port_idx > 0 else bindip
 
-    return (scheme, host, port)
+    return scheme, host, port
 
 
 def get_splunkd_uri() -> str:
@@ -211,7 +211,7 @@ def get_splunkd_uri() -> str:
     return f"{scheme}://{host}:{port}"
 
 
-def get_conf_key_value(conf_name: str, stanza: str, key: str) -> Tuple[str, List, dict]:
+def get_conf_key_value(conf_name: str, stanza: str, key: str) -> Union[str, List, dict]:
     """Get value of `key` of `stanza` in `conf_name`.
 
     Arguments:

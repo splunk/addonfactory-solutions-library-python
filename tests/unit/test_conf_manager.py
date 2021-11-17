@@ -15,13 +15,9 @@
 #
 
 import hashlib
-import os.path as op
-import sys
 
 import common
 import pytest
-
-sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 from splunklib import binding, client
 from splunklib.data import record
 

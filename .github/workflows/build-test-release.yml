@@ -127,14 +127,6 @@ jobs:
           source "$HOME/.poetry/env"
           poetry install
           poetry build
-      - uses: actions/upload-artifact@v2.2.4
-        with:
-          name: dist
-          path: dist
-      - uses: actions/upload-artifact@v2.2.4
-        with:
-          name: output
-          path: output
 
   run-unit-tests:
     name: test-unit
@@ -153,12 +145,12 @@ jobs:
           # shellcheck disable=SC1090
           source "$HOME/.poetry/env"
           poetry install
-          poetry run pytest --junitxml=test-results/results.xml --cov=solnlib --cov-report=html tests
-      - uses: actions/upload-artifact@v2.2.4
+          poetry run pytest --junitxml=test-results/results.xml --cov=solnlib --cov-report=html tests/unit
+      - uses: actions/upload-artifact@v2
         with:
           name: unit tests test-results
           path: test-results
-      - uses: actions/upload-artifact@v2.2.4
+      - uses: actions/upload-artifact@v2
         with:
           name: unit tests htmlcov report
           path: htmlcov
@@ -195,7 +187,7 @@ jobs:
           export SPLUNK_HOME=/opt/splunk
           wget -qO /tmp/splunk.tgz "${SPLUNK_BUILD_URL}"
           sudo tar -C /opt -zxf /tmp/splunk.tgz
-          sudo cp -r examples/data/solnlib_demo $SPLUNK_HOME/etc/apps
+          sudo cp -r tests/integration/data/solnlib_demo $SPLUNK_HOME/etc/apps
           sudo cp -r solnlib $SPLUNK_HOME/etc/apps/solnlib_demo/bin/
           sudo mkdir -p $SPLUNK_HOME/etc/apps/Splunk_TA_test/default/
           sudo chown -R "$USER":"$USER" /opt/splunk
@@ -211,7 +203,7 @@ jobs:
           # shellcheck disable=SC1090
           source "$HOME/.poetry/env"
           poetry install
-          SPLUNK_HOME=/opt/splunk/ poetry run pytest --junitxml=test-results/results.xml -v examples
+          SPLUNK_HOME=/opt/splunk/ poetry run pytest --junitxml=test-results/results.xml -v tests/integration
       - uses: actions/upload-artifact@v2.2.4
         with:
           name: test-splunk test-results

@@ -22,12 +22,7 @@ import re
 from splunklib import binding
 
 from . import splunk_rest_client as rest_client
-from .net_utils import (
-    check_css_params,
-    is_valid_hostname,
-    is_valid_port,
-    is_valid_scheme,
-)
+from .net_utils import validate_scheme_host_port
 from .splunkenv import get_splunkd_access_info
 from .utils import retry
 
@@ -294,7 +289,6 @@ class CredentialManager:
 
 
 @retry(exceptions=[binding.HTTPError])
-@check_css_params(scheme=is_valid_scheme, host=is_valid_hostname, port=is_valid_port)
 def get_session_key(
     username: str,
     password: str,
@@ -318,10 +312,12 @@ def get_session_key(
 
     Raises:
         CredentialException: If username/password are invalid.
+        ValueError: if scheme, host or port are invalid.
 
     Examples:
        >>> credentials.get_session_key('user', 'password')
     """
+    validate_scheme_host_port(scheme, host, port)
 
     if any([scheme is None, host is None, port is None]):
         scheme, host, port = get_splunkd_access_info()

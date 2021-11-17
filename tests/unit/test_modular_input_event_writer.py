@@ -15,7 +15,6 @@
 #
 
 import json
-import os.path as op
 import sys
 
 import common

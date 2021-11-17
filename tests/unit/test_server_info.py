@@ -13,60 +13,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
-import os.path as op
-import sys
-
 import common
-
-sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 from splunklib import binding
 
 from solnlib import server_info
 
 
 class TestServerInfo:
-    def test_server_name(self, monkeypatch):
-        common.mock_splunkhome(monkeypatch)
-        common.mock_serverinfo(monkeypatch)
-
-        si = server_info.ServerInfo(common.SESSION_KEY)
-        assert si.server_name == "unittestServer"
-
     def test_version(self, monkeypatch):
         common.mock_splunkhome(monkeypatch)
         common.mock_serverinfo(monkeypatch)
 
         si = server_info.ServerInfo(common.SESSION_KEY)
         assert si.version == "6.3.1511.2"
-
-    def test_is_captain(self, monkeypatch):
-        common.mock_splunkhome(monkeypatch)
-        common.mock_serverinfo(monkeypatch)
-
-        si = server_info.ServerInfo(common.SESSION_KEY)
-        assert si.is_captain()
-
-    def test_is_cloud_instance(self, monkeypatch):
-        common.mock_splunkhome(monkeypatch)
-        common.mock_serverinfo(monkeypatch)
-
-        si = server_info.ServerInfo(common.SESSION_KEY)
-        assert not si.is_cloud_instance()
-
-    def test_is_search_head(self, monkeypatch):
-        common.mock_splunkhome(monkeypatch)
-        common.mock_serverinfo(monkeypatch)
-
-        si = server_info.ServerInfo(common.SESSION_KEY)
-        assert si.is_search_head()
-
-    def test_is_shc_member(self, monkeypatch):
-        common.mock_splunkhome(monkeypatch)
-        common.mock_serverinfo(monkeypatch)
-
-        si = server_info.ServerInfo(common.SESSION_KEY)
-        assert si.is_shc_member()
 
     def test_get_shc_members(self, monkeypatch):
         def _mock_get(self, path_segment, owner=None, app=None, sharing=None, **query):

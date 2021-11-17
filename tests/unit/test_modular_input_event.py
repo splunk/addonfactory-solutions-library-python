@@ -15,8 +15,6 @@
 #
 
 import json
-import os.path as op
-import sys
 
 from solnlib.modular_input import HECEvent, XMLEvent
 

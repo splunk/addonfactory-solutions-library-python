@@ -20,7 +20,6 @@ import sys
 
 import pytest
 
-sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 from solnlib import net_utils
 
 
@@ -58,9 +57,11 @@ def test_is_valid_hostname():
     assert not net_utils.is_valid_hostname("")
     assert not net_utils.is_valid_hostname("localhost:8000")
     assert not net_utils.is_valid_hostname("http://localhost:8000")
+    assert not net_utils.is_valid_hostname("a" * 999)
 
 
 def test_is_valid_port():
+    assert not net_utils.is_valid_port("0.0")
     assert not net_utils.is_valid_port(0)
     assert not net_utils.is_valid_port("0")
     assert net_utils.is_valid_port("1")
@@ -83,25 +84,11 @@ def test_is_valid_scheme():
     assert not net_utils.is_valid_scheme("non-http")
 
 
-def test_check_css_params():
-    @net_utils.check_css_params(
-        a1=lambda x: x > 0,
-        a2=lambda x: x is not None,
-        a3=lambda x: x is None,
-        a4=lambda x: x % 2 == 0,
-    )
-    def test_func(a1, a2=None, *args, **kwargs):
-        pass
-
+def test_validate_scheme_host_port():
+    net_utils.validate_scheme_host_port("http", "localhost", 8080)
     with pytest.raises(ValueError):
-        test_func(0)
-    test_func(1)
-    test_func(1, None)
-    test_func(1, 2)
-    test_func(1, 100, None, 1)
+        net_utils.validate_scheme_host_port("scheme", "localhost:8000", 8080)
     with pytest.raises(ValueError):
-        test_func(1, 100, a3=1)
-    test_func(1, 100, a3=None)
+        net_utils.validate_scheme_host_port("http", "localhost:8000", 8080)
     with pytest.raises(ValueError):
-        test_func(1, 100, a3=None, a4=1)
-    test_func(1, 100, a3=None, a4=2)
+        net_utils.validate_scheme_host_port("http", "localhost", 99999)

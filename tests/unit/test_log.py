@@ -17,13 +17,10 @@
 import logging
 import multiprocessing
 import os
-import os.path as op
 import shutil
-import sys
 import threading
 import time
 
-sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 from solnlib import log
 
 reset_root_log_path = os.path.join(".", ".root_log")

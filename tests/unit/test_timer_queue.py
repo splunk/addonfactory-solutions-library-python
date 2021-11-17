@@ -16,12 +16,9 @@
 
 import math
 import numbers
-import os.path as op
 import random
-import sys
 import time
 
-sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 from solnlib import timer_queue
 
 n = 100

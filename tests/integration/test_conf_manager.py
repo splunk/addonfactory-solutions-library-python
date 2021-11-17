@@ -17,23 +17,17 @@
 import os.path as op
 import sys
 
+import pytest
+
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 import context
 
-from solnlib import acl
-from solnlib.credentials import get_session_key
+from solnlib import conf_manager
 
 
-def test_acl_manager():
-    session_key = get_session_key(
-        context.username,
-        context.password,
-        scheme=context.scheme,
-        host=context.host,
-        port=context.port,
-    )
-
-    aclm = acl.ACLManager(
+def test_conf_manager():
+    session_key = context.get_session_key()
+    cfm = conf_manager.ConfManager(
         session_key,
         context.app,
         owner=context.owner,
@@ -41,14 +35,21 @@ def test_acl_manager():
         host=context.host,
         port=context.port,
     )
-    origin_perms = aclm.get("storage/collections/config/sessions/acl")
 
-    perms = aclm.update(
-        "storage/collections/config/sessions/acl",
-        perms_read=["admin"],
-        perms_write=["admin"],
-    )
+    try:
+        conf = cfm.get_conf("test")
+    except conf_manager.ConfManagerException:
+        conf = cfm.create_conf("test")
 
-    origin_perms["perms"]["read"] = ["admin"]
-    origin_perms["perms"]["write"] = ["admin"]
-    assert origin_perms == perms
+    assert not conf.stanza_exist("test_stanza")
+    conf.update("test_stanza", {"k1": 1, "k2": 2}, ["k1"])
+    assert conf.get("test_stanza")["k1"] == 1
+    assert int(conf.get("test_stanza")["k2"]) == 2
+    assert conf.get("test_stanza")["eai:appName"] == "solnlib_demo"
+    assert len(conf.get_all()) == 1
+    conf.delete("test_stanza")
+    with pytest.raises(conf_manager.ConfStanzaNotExistException):
+        conf.get("test_stanza")
+    with pytest.raises(conf_manager.ConfStanzaNotExistException):
+        conf.delete("test_stanza")
+    conf.reload()

@@ -15,12 +15,10 @@
 #
 
 """Net utilities."""
-import inspect
 import re
 import socket
-from functools import wraps
 
-__all__ = ["resolve_hostname"]
+__all__ = ["resolve_hostname", "validate_scheme_host_port"]
 
 from typing import Optional, Union
 
@@ -134,35 +132,20 @@ def is_valid_scheme(scheme: str) -> bool:
     return scheme.lower() in ("http", "https")
 
 
-def check_css_params(**validators):
-    """A decorator for validating arguments for function with specified
-    validating function which returns True or False.
+def validate_scheme_host_port(scheme: str, host: str, port: Union[str, int]):
+    """Validates scheme, host and port.
 
     Arguments:
-        validators: argument and it's validation function.
+        scheme: scheme to validate.
+        host: hostname to validate.
+        port: port to validate.
 
     Raises:
-        ValueError: If validation fails.
+        ValueError: if scheme, host or port are invalid.
     """
-
-    def decorator(f):
-        @wraps(f)
-        def wrapper(*args, **kwargs):
-            arg_spec = inspect.getfullargspec(f)
-            actual_args = dict(list(zip(arg_spec.args, args)) + list(kwargs.items()))
-            dfs = arg_spec.defaults
-            optional = dict(list(zip(arg_spec.args[-len(dfs) :], dfs))) if dfs else {}
-
-            for arg, func in list(validators.items()):
-                if arg not in actual_args:
-                    continue
-                value = actual_args[arg]
-                if arg in optional and optional[arg] == value:
-                    continue
-                if not func(value):
-                    raise ValueError(f"Illegal argument: {arg}={value}")
-            return f(*args, **kwargs)
-
-        return wrapper
-
-    return decorator
+    if scheme is not None and not is_valid_scheme(scheme):
+        raise ValueError("Invalid scheme")
+    if host is not None and not is_valid_hostname(host):
+        raise ValueError("Invalid host")
+    if port is not None and not is_valid_port(port):
+        raise ValueError("Invalid port")

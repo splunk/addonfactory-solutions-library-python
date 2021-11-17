@@ -20,26 +20,28 @@ import sys
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 import context
 
-from solnlib import credentials
-from solnlib.modular_input import event_writer as hew
+from solnlib import acl
 
 
-def test_hec_event_writer():
-    session_key = credentials.get_session_key(
-        context.username,
-        context.password,
+def test_acl_manager():
+    session_key = context.get_session_key()
+
+    aclm = acl.ACLManager(
+        session_key,
+        context.app,
+        owner=context.owner,
         scheme=context.scheme,
         host=context.host,
         port=context.port,
     )
+    origin_perms = aclm.get("storage/collections/config/sessions/acl")
 
-    ew = hew.HECEventWriter("test", session_key)
-    m1 = {}
-    for i in range(100):
-        m1[i] = "test1 data %s" % i
-    e1 = ew.create_event(m1, index="main", host="testing", sourcetype="hec")
-    m2 = {}
-    for i in range(100):
-        m2[i] = "test2 data %s" % i
-    e2 = ew.create_event(m2, index="main", host="testing", sourcetype="hec")
-    ew.write_events([e1, e2])
+    perms = aclm.update(
+        "storage/collections/config/sessions/acl",
+        perms_read=["admin"],
+        perms_write=["admin"],
+    )
+
+    origin_perms["perms"]["read"] = ["admin"]
+    origin_perms["perms"]["write"] = ["admin"]
+    assert origin_perms == perms
