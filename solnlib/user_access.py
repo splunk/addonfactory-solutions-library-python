@@ -17,13 +17,13 @@
 """Splunk user access control related utilities."""
 
 import json
-import re
-from typing import List
+from typing import List, Optional
 
 from splunklib import binding
 
-from . import splunk_rest_client as rest_client
-from .utils import retry
+from solnlib import _utils
+from solnlib import splunk_rest_client as rest_client
+from solnlib import utils
 
 __all__ = [
     "ObjectACLException",
@@ -217,31 +217,6 @@ class ObjectACL:
         return json.dumps(self.record)
 
 
-@retry(exceptions=[binding.HTTPError])
-def _get_collection_data(
-    collection_name, session_key, app, owner, scheme, host, port, **context
-):
-    kvstore = rest_client.SplunkRestClient(
-        session_key, app, owner=owner, scheme=scheme, host=host, port=port, **context
-    ).kvstore
-
-    collection_name = re.sub(r"[^\w]+", "_", collection_name)
-    try:
-        kvstore.get(name=collection_name)
-    except binding.HTTPError as e:
-        if e.status != 404:
-            raise
-
-        kvstore.create(collection_name)
-
-    collections = kvstore.list(search=collection_name)
-    for collection in collections:
-        if collection.name == collection_name:
-            return collection.data
-    else:
-        raise KeyError("Get collection data: %s failed." % collection_name)
-
-
 class ObjectACLManagerException(Exception):
     """Exception for ObjectACLManager."""
 
@@ -268,10 +243,10 @@ class ObjectACLManager:
         collection_name: str,
         session_key: str,
         app: str,
-        owner: str = "nobody",
-        scheme: str = None,
-        host: str = None,
-        port: int = None,
+        owner: Optional[str] = "nobody",
+        scheme: Optional[str] = None,
+        host: Optional[str] = None,
+        port: Optional[int] = None,
         **context: dict,
     ):
         """Initializes ObjectACLManager.
@@ -293,15 +268,23 @@ class ObjectACLManager:
             app=app, collection_name=collection_name
         )
         try:
-            self._collection_data = _get_collection_data(
-                collection_name, session_key, app, owner, scheme, host, port, **context
+            self._collection_data = _utils.get_collection_data(
+                collection_name,
+                session_key,
+                app,
+                owner,
+                scheme,
+                host,
+                port,
+                None,
+                **context,
             )
         except KeyError:
             raise ObjectACLManagerException(
-                "Get object acl collection: %s fail." % collection_name
+                f"Get object acl collection: {collection_name} fail."
             )
 
-    @retry(exceptions=[binding.HTTPError])
+    @utils.retry(exceptions=[binding.HTTPError])
     def update_acl(
         self,
         obj_collection: str,
@@ -360,7 +343,7 @@ class ObjectACLManager:
 
         self._collection_data.batch_save(obj_acl.record)
 
-    @retry(exceptions=[binding.HTTPError])
+    @utils.retry(exceptions=[binding.HTTPError])
     def update_acls(
         self,
         obj_collection: str,
@@ -419,7 +402,7 @@ class ObjectACLManager:
 
         self._collection_data.batch_save(*obj_acl_records)
 
-    @retry(exceptions=[binding.HTTPError])
+    @utils.retry(exceptions=[binding.HTTPError])
     def get_acl(self, obj_collection: str, obj_id: str) -> "ObjectACL":
         """Get acl info.
 
@@ -453,7 +436,7 @@ class ObjectACLManager:
 
         return ObjectACL.parse(obj_acl)
 
-    @retry(exceptions=[binding.HTTPError])
+    @utils.retry(exceptions=[binding.HTTPError])
     def get_acls(self, obj_collection: str, obj_ids: List[str]) -> List[ObjectACL]:
         """Batch get acl info.
 
@@ -480,7 +463,7 @@ class ObjectACLManager:
 
         return [ObjectACL.parse(obj_acl) for obj_acl in obj_acls]
 
-    @retry(exceptions=[binding.HTTPError])
+    @utils.retry(exceptions=[binding.HTTPError])
     def delete_acl(self, obj_collection: str, obj_id: str):
         """Delete acl info.
 
@@ -508,7 +491,7 @@ class ObjectACLManager:
                 )
             )
 
-    @retry(exceptions=[binding.HTTPError])
+    @utils.retry(exceptions=[binding.HTTPError])
     def delete_acls(self, obj_collection: str, obj_ids: List[str]):
         """Batch delete acl info.
 
@@ -530,7 +513,7 @@ class ObjectACLManager:
         )
         self._collection_data.delete(query=query)
 
-    @retry(exceptions=[binding.HTTPError])
+    @utils.retry(exceptions=[binding.HTTPError])
     def get_accessible_object_ids(
         self, user: str, operation: str, obj_collection: str, obj_ids: List[str]
     ) -> List[str]:
@@ -609,19 +592,25 @@ class AppCapabilityManager:
         """
         self._app = app
 
-        collection_name = "{app}_{collection_name}".format(
-            app=app, collection_name=collection_name
-        )
+        collection_name = f"{app}_{collection_name}"
         try:
-            self._collection_data = _get_collection_data(
-                collection_name, session_key, app, owner, scheme, host, port, **context
+            self._collection_data = _utils.get_collection_data(
+                collection_name,
+                session_key,
+                app,
+                owner,
+                scheme,
+                host,
+                port,
+                None,
+                **context,
             )
         except KeyError:
             raise AppCapabilityManagerException(
-                "Get app capabilities collection: %s failed." % collection_name
+                f"Get app capabilities collection: {collection_name} failed."
             )
 
-    @retry(exceptions=[binding.HTTPError])
+    @utils.retry(exceptions=[binding.HTTPError])
     def register_capabilities(self, capabilities: dict):
         """Register app capabilities.
 
@@ -645,7 +634,7 @@ class AppCapabilityManager:
         record = {"_key": self._app, "capabilities": capabilities}
         self._collection_data.batch_save(record)
 
-    @retry(exceptions=[binding.HTTPError])
+    @utils.retry(exceptions=[binding.HTTPError])
     def unregister_capabilities(self):
         """Unregister app capabilities.
 
@@ -663,7 +652,7 @@ class AppCapabilityManager:
                 "App capabilities for %s have not been registered." % self._app
             )
 
-    @retry(exceptions=[binding.HTTPError])
+    @utils.retry(exceptions=[binding.HTTPError])
     def capabilities_are_registered(self) -> bool:
         """Check if app capabilities are registered.
 
@@ -681,7 +670,7 @@ class AppCapabilityManager:
 
         return True
 
-    @retry(exceptions=[binding.HTTPError])
+    @utils.retry(exceptions=[binding.HTTPError])
     def get_capabilities(self) -> dict:
         """Get app capabilities.
 
@@ -787,7 +776,7 @@ class InvalidSessionKeyException(Exception):
     pass
 
 
-@retry(exceptions=[binding.HTTPError])
+@utils.retry(exceptions=[binding.HTTPError])
 def get_current_username(
     session_key: str,
     scheme: str = None,
@@ -837,7 +826,7 @@ class UserNotExistException(Exception):
     pass
 
 
-@retry(exceptions=[binding.HTTPError])
+@utils.retry(exceptions=[binding.HTTPError])
 def get_user_capabilities(
     session_key: str,
     username: str,
@@ -920,7 +909,7 @@ def user_is_capable(
     return capability in capabilities
 
 
-@retry(exceptions=[binding.HTTPError])
+@utils.retry(exceptions=[binding.HTTPError])
 def get_user_roles(
     session_key: str, username: str, scheme=None, host=None, port=None, **context
 ) -> List:

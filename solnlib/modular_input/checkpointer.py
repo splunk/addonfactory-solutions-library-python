@@ -22,15 +22,13 @@ import json
 import logging
 import os
 import os.path as op
-import re
 import traceback
 from abc import ABCMeta, abstractmethod
-from typing import List
+from typing import Any, List, Optional
 
 from splunklib import binding
 
-from .. import splunk_rest_client as rest_client
-from ..utils import retry
+from solnlib import _utils, utils
 
 __all__ = ["CheckpointerException", "KVStoreCheckpointer", "FileCheckpointer"]
 
@@ -143,11 +141,11 @@ class KVStoreCheckpointer(Checkpointer):
         collection_name: str,
         session_key: str,
         app: str,
-        owner: str = "nobody",
-        scheme: str = None,
-        host: str = None,
-        port: int = None,
-        **context: dict
+        owner: Optional[str] = "nobody",
+        scheme: Optional[str] = None,
+        host: Optional[str] = None,
+        port: Optional[int] = None,
+        **context: Any
     ):
         """Initializes KVStoreCheckpointer.
 
@@ -162,65 +160,39 @@ class KVStoreCheckpointer(Checkpointer):
             context: Other configurations for Splunk rest client.
 
         Raises:
-            CheckpointerException: If init kvstore checkpointer failed.
+            CheckpointerException: If init KV Store checkpointer failed.
         """
         try:
-            self._collection_data = self._get_collection_data(
-                collection_name, session_key, app, owner, scheme, host, port, **context
+            if not context.get("pool_connections"):
+                context["pool_connections"] = 5
+            if not context.get("pool_maxsize"):
+                context["pool_maxsize"] = 5
+            self._collection_data = _utils.get_collection_data(
+                collection_name,
+                session_key,
+                app,
+                owner,
+                scheme,
+                host,
+                port,
+                {"state": "string"},
+                **context,
             )
         except KeyError:
             raise CheckpointerException("Get kvstore checkpointer failed.")
 
-    @retry(exceptions=[binding.HTTPError])
-    def _get_collection_data(
-        self, collection_name, session_key, app, owner, scheme, host, port, **context
-    ):
-
-        if not context.get("pool_connections"):
-            context["pool_connections"] = 5
-
-        if not context.get("pool_maxsize"):
-            context["pool_maxsize"] = 5
-
-        kvstore = rest_client.SplunkRestClient(
-            session_key,
-            app,
-            owner=owner,
-            scheme=scheme,
-            host=host,
-            port=port,
-            **context
-        ).kvstore
-
-        collection_name = re.sub(r"[^\w]+", "_", collection_name)
-        try:
-            kvstore.get(name=collection_name)
-        except binding.HTTPError as e:
-            if e.status != 404:
-                raise
-
-            fields = {"state": "string"}
-            kvstore.create(collection_name, fields=fields)
-
-        collections = kvstore.list(search=collection_name)
-        for collection in collections:
-            if collection.name == collection_name:
-                return collection.data
-        else:
-            raise KeyError("Get collection data: %s failed." % collection_name)
-
-    @retry(exceptions=[binding.HTTPError])
+    @utils.retry(exceptions=[binding.HTTPError])
     def update(self, key, state):
         record = {"_key": key, "state": json.dumps(state)}
         self._collection_data.batch_save(record)
 
-    @retry(exceptions=[binding.HTTPError])
+    @utils.retry(exceptions=[binding.HTTPError])
     def batch_update(self, states):
         for state in states:
             state["state"] = json.dumps(state["state"])
         self._collection_data.batch_save(*states)
 
-    @retry(exceptions=[binding.HTTPError])
+    @utils.retry(exceptions=[binding.HTTPError])
     def get(self, key):
         try:
             record = self._collection_data.query_by_id(key)
@@ -233,7 +205,7 @@ class KVStoreCheckpointer(Checkpointer):
 
         return json.loads(record["state"])
 
-    @retry(exceptions=[binding.HTTPError])
+    @utils.retry(exceptions=[binding.HTTPError])
     def delete(self, key):
         try:
             self._collection_data.delete_by_id(key)
