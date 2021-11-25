@@ -136,17 +136,5 @@ def test_extract_http_scheme_host_port(monkeypatch):
     assert scheme == "http" and host == "localhost" and port == 8089
 
     invalid = "localhost:8089"
-    try:
-        scheme, host, port = utils.extract_http_scheme_host_port(invalid)
-    except ValueError:
-        pass
-    else:
-        assert 0
-
-    invalid = None
-    try:
-        scheme, host, port = utils.extract_http_scheme_host_port(invalid)
-    except Exception:
-        pass
-    else:
-        assert 0
+    with pytest.raises(ValueError):
+        _, _, _ = utils.extract_http_scheme_host_port(invalid)
