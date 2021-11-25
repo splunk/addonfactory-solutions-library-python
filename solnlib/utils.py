@@ -164,12 +164,7 @@ def extract_http_scheme_host_port(http_url: str) -> Tuple:
         ValueError: If `http_url` is not in http(s)://hostname:port format.
     """
 
-    try:
-        http_info = urlparse.urlparse(http_url)
-    except Exception:
-        raise ValueError(str(http_url) + " is not in http(s)://hostname:port format")
-
+    http_info = urlparse.urlparse(http_url)
     if not http_info.scheme or not http_info.hostname or not http_info.port:
         raise ValueError(http_url + " is not in http(s)://hostname:port format")
-
     return http_info.scheme, http_info.hostname, http_info.port
