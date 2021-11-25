@@ -18,6 +18,7 @@
 
 import datetime
 import json
+from typing import Any
 
 from splunklib import binding
 
@@ -54,7 +55,7 @@ class TimeParser:
         scheme: str = None,
         host: str = None,
         port: int = None,
-        **context: dict
+        **context: Any,
     ):
         """Initializes TimeParser.
 
@@ -64,6 +65,9 @@ class TimeParser:
             host: (optional) The host name, default is None.
             port: (optional) The port number, default is None.
             context: Other configurations for Splunk rest client.
+
+        Raises:
+            ValueError: if scheme, host or port are invalid.
         """
         self._rest_client = rest_client.SplunkRestClient(
             session_key, "-", scheme=scheme, host=host, port=port, **context
@@ -75,6 +79,12 @@ class TimeParser:
 
         Arguments:
             time_str: ISO8601 format timestamp, example: 2011-07-06T21:54:23.000-07:00.
+
+        Raises:
+            binding.HTTPError: rest client returns an exception (everything
+                else than 400 code).
+            InvalidTimeFormatException: when time format is invalid (rest
+                client returns 400 code).
 
         Returns:
             Seconds since epoch.
@@ -88,7 +98,7 @@ class TimeParser:
             if e.status != 400:
                 raise
 
-            raise InvalidTimeFormatException("Invalid time format: %s." % time_str)
+            raise InvalidTimeFormatException(f"Invalid time format: {time_str}.")
 
         seconds = json.loads(response)[time_str]
         return float(seconds)
@@ -98,6 +108,12 @@ class TimeParser:
 
         Arguments:
             time_str: ISO8601 format timestamp, example: 2011-07-06T21:54:23.000-07:00.
+
+        Raises:
+            binding.HTTPError: rest client returns an exception (everything
+                else than 400 code).
+            InvalidTimeFormatException: when time format is invalid (rest
+                client returns 400 code).
 
         Returns:
             UTC timestamp.
@@ -112,6 +128,12 @@ class TimeParser:
         Arguments:
             time_str: ISO8601 format timestamp, example: 2011-07-06T21:54:23.000-07:00.
 
+        Raises:
+            binding.HTTPError: rest client returns an exception (everything
+                else than 400 code).
+            InvalidTimeFormatException: when time format is invalid (rest
+                client returns 400 code).
+
         Returns:
             Local timestamp in ISO8601 format.
         """
@@ -124,6 +146,6 @@ class TimeParser:
             if e.status != 400:
                 raise
 
-            raise InvalidTimeFormatException("Invalid time format: %s." % time_str)
+            raise InvalidTimeFormatException(f"Invalid time format: {time_str}.")
 
         return json.loads(response)[time_str]
