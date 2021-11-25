@@ -20,7 +20,7 @@ from solnlib import server_info
 
 
 def test_server_info_methods():
-    # This test does not check for guid, version and SHC related methods.
+    # This test does not check for SHC related methods.
     session_key = context.get_session_key()
     si = server_info.ServerInfo(session_key, context.scheme, context.host, context.port)
     assert "custom-servername" == si.server_name
@@ -34,6 +34,10 @@ def test_server_info_methods():
         si.is_captain_ready()
     assert si.is_captain() is False
     assert si.is_cloud_instance() is False
+    assert "custom-servername" == si.to_dict()["serverName"]
+    # Just call those properties.
+    assert si.version
+    assert si.guid
 
 
 def test_from_server_uri():
