@@ -14,9 +14,7 @@
 # limitations under the License.
 #
 
-import os.path as op
 import socket
-import sys
 
 import pytest
 
@@ -32,7 +30,7 @@ def test_resolve_hostname(monkeypatch):
 
     def mock_gethostbyaddr(addr):
         if addr == resolvable_ip:
-            return ("unittestServer", None, None)
+            return "unittestServer", None, None
         elif addr == unresolvable_ip1:
             raise socket.gaierror()
         elif addr == unresolvable_ip2:
@@ -44,6 +42,8 @@ def test_resolve_hostname(monkeypatch):
 
     with pytest.raises(ValueError):
         net_utils.resolve_hostname(invalid_ip)
+    with pytest.raises(ValueError):
+        assert net_utils.resolve_hostname(1234567)
     assert net_utils.resolve_hostname(resolvable_ip)
     assert net_utils.resolve_hostname(unresolvable_ip1) is None
     assert net_utils.resolve_hostname(unresolvable_ip2) is None
@@ -52,6 +52,7 @@ def test_resolve_hostname(monkeypatch):
 
 def test_is_valid_hostname():
     assert net_utils.is_valid_hostname("splunk")
+    assert net_utils.is_valid_hostname("splunk.")
     assert net_utils.is_valid_hostname("splunk.com")
     assert net_utils.is_valid_hostname("localhost")
     assert not net_utils.is_valid_hostname("")
