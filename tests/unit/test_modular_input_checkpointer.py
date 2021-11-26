@@ -17,13 +17,26 @@
 import os
 import os.path as op
 import shutil
+from unittest import mock
 
 import common
+import pytest
 from splunklib import binding, client
 
-from solnlib.modular_input import FileCheckpointer, KVStoreCheckpointer
+from solnlib.modular_input import (
+    CheckpointerException,
+    FileCheckpointer,
+    KVStoreCheckpointer,
+)
 
 cur_dir = op.dirname(op.abspath(__file__))
+
+
+@mock.patch("solnlib._utils.get_collection_data")
+def test_kvstore_checkpointer_when_(mock_get_collection_data):
+    mock_get_collection_data.side_effect = KeyError
+    with pytest.raises(CheckpointerException):
+        _ = KVStoreCheckpointer("collection_name", "session_name", "app")
 
 
 def test_kvstore_checkpointer(monkeypatch):

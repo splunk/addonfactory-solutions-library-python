@@ -18,7 +18,7 @@
 import re
 from typing import Any, Dict, Optional, Union
 
-from splunklib import binding
+from splunklib import binding, client
 
 from solnlib import splunk_rest_client
 from solnlib.utils import retry
@@ -35,7 +35,7 @@ def get_collection_data(
     port: Optional[Union[str, int]] = None,
     fields: Optional[Dict] = None,
     **context: Any,
-):
+) -> client.KVStoreCollectionData:
     """Get collection data, if there is no such collection - creates one.
 
     Arguments:
@@ -46,12 +46,16 @@ def get_collection_data(
         scheme: The access scheme, default is None.
         host: The host name, default is None.
         port: The port number, default is None.
+        fields: Fields used to initialize the collection if it's missing.
         context: Other configurations for Splunk rest client.
 
     Raises:
         binding.HTTPError: HTTP error different from 404, for example 503 when
             KV Store is initializing and not ready to serve requests.
         KeyError: KV Store did not get collection_name.
+
+    Returns:
+        KV Store collections data instance.
     """
     kvstore = splunk_rest_client.SplunkRestClient(
         session_key, app, owner=owner, scheme=scheme, host=host, port=port, **context
