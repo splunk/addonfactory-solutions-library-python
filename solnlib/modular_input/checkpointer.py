@@ -56,8 +56,6 @@ class Checkpointer(metaclass=ABCMeta):
            >>> ck.update('checkpoint_name2', 'checkpoint_value2')
         """
 
-        pass
-
     @abstractmethod
     def batch_update(self, states: List):
         """Batch update checkpoint.
@@ -83,8 +81,6 @@ class Checkpointer(metaclass=ABCMeta):
                                 {...}])
         """
 
-        pass
-
     @abstractmethod
     def get(self, key: str) -> dict:
         """Get checkpoint.
@@ -103,8 +99,6 @@ class Checkpointer(metaclass=ABCMeta):
            >>> returns: {'k1': 'v1', 'k2': 'v2'}
         """
 
-        pass
-
     @abstractmethod
     def delete(self, key: str):
         """Delete checkpoint.
@@ -118,8 +112,6 @@ class Checkpointer(metaclass=ABCMeta):
                                                      'Splunk_TA_test')
            >>> ck.delete('checkpoint_name1')
         """
-
-        pass
 
 
 class KVStoreCheckpointer(Checkpointer):
@@ -160,6 +152,8 @@ class KVStoreCheckpointer(Checkpointer):
             context: Other configurations for Splunk rest client.
 
         Raises:
+            binding.HTTPError: HTTP error different from 404, for example 503
+                when KV Store is initializing and not ready to serve requests.
             CheckpointerException: If init KV Store checkpointer failed.
         """
         try:
@@ -193,7 +187,7 @@ class KVStoreCheckpointer(Checkpointer):
         self._collection_data.batch_save(*states)
 
     @utils.retry(exceptions=[binding.HTTPError])
-    def get(self, key):
+    def get(self, key: str):
         try:
             record = self._collection_data.query_by_id(key)
         except binding.HTTPError as e:
@@ -206,7 +200,7 @@ class KVStoreCheckpointer(Checkpointer):
         return json.loads(record["state"])
 
     @utils.retry(exceptions=[binding.HTTPError])
-    def delete(self, key):
+    def delete(self, key: str):
         try:
             self._collection_data.delete_by_id(key)
         except binding.HTTPError as e:
