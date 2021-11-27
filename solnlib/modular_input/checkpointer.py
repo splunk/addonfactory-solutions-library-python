@@ -24,7 +24,7 @@ import os
 import os.path as op
 import traceback
 from abc import ABCMeta, abstractmethod
-from typing import Any, List, Optional
+from typing import Any, Dict, Iterable, List, Optional
 
 from splunklib import binding
 
@@ -41,77 +41,21 @@ class Checkpointer(metaclass=ABCMeta):
     """Base class of checkpointer."""
 
     @abstractmethod
-    def update(self, key: str, state: dict):
-        """Update checkpoint.
-
-        Arguments:
-            key: Checkpoint key.
-            state: Checkpoint state.
-
-        Examples:
-           >>> from solnlib.modular_input import checkpointer
-           >>> ck = checkpointer.KVStoreCheckpointer(session_key,
-                                                     'Splunk_TA_test')
-           >>> ck.update('checkpoint_name1', {'k1': 'v1', 'k2': 'v2'})
-           >>> ck.update('checkpoint_name2', 'checkpoint_value2')
-        """
+    def update(self, key: str, state: Any):
+        """Updates document with an id that equals to `key` and `state` as
+        document data."""
 
     @abstractmethod
-    def batch_update(self, states: List):
-        """Batch update checkpoint.
-
-        Arguments:
-            states: List of checkpoint. Each state in the list is a
-                json object which should contain '_key' and 'state' keys.
-                For instance::
-
-                    {
-                        '_key': ckpt key which is a string,
-                        'state': ckpt which is a json object
-                    }
-
-        Examples:
-           >>> from solnlib.modular_input import checkpointer
-           >>> ck = checkpointer.KVStoreCheckpointer(session_key,
-                                                     'Splunk_TA_test')
-           >>> ck.batch_update([{'_key': 'checkpoint_name1',
-                                 'state': {'k1': 'v1', 'k2': 'v2'}},
-                                {'_key': 'checkpoint_name2',
-                                 'state': 'checkpoint_value2'},
-                                {...}])
-        """
+    def batch_update(self, states: Iterable[Dict[str, Any]]):
+        """Updates multiple documents."""
 
     @abstractmethod
     def get(self, key: str) -> dict:
-        """Get checkpoint.
-
-        Arguments:
-            key: Checkpoint key.
-
-        Returns:
-            Checkpoint state if exists else None.
-
-        Examples:
-           >>> from solnlib.modular_input import checkpointer
-           >>> ck = checkpointer.KVStoreCheckpointer(session_key,
-                                                     'Splunk_TA_test')
-           >>> ck.get('checkpoint_name1')
-           >>> returns: {'k1': 'v1', 'k2': 'v2'}
-        """
+        """Gets document with an id that equals to `key`."""
 
     @abstractmethod
     def delete(self, key: str):
-        """Delete checkpoint.
-
-        Arguments:
-            key: Checkpoint key.
-
-        Examples:
-           >>> from solnlib.modular_input import checkpointer
-           >>> ck = checkpointer.KVStoreCheckpointer(session_key,
-                                                     'Splunk_TA_test')
-           >>> ck.delete('checkpoint_name1')
-        """
+        """Deletes document with an id that equals to `key`."""
 
 
 class KVStoreCheckpointer(Checkpointer):
@@ -119,13 +63,19 @@ class KVStoreCheckpointer(Checkpointer):
 
     Use KVStore to save modular input checkpoint.
 
+    More information about KV Store in Splunk is
+    [here](https://dev.splunk.com/enterprise/docs/developapps/manageknowledge/kvstore/aboutkvstorecollections).
+
     Examples:
         >>> from solnlib.modular_input import checkpointer
-        >>> ck = checkpoint.KVStoreCheckpointer('TestKVStoreCheckpointer',
-                                                session_key,
-                                                'Splunk_TA_test')
-        >>> ck.update(...)
-        >>> ck.get(...)
+        >>> checkpoint = checkpointer.KVStoreCheckpointer(
+                "unique_addon_checkpoints",
+                "session_key",
+                "unique_addon"
+            )
+        >>> checkpoint.update("input_1", {"timestamp": 1638043093})
+        >>> checkpoint.get("input_1")
+        >>> # returns {"timestamp": 1638043093}
     """
 
     def __init__(
@@ -137,7 +87,7 @@ class KVStoreCheckpointer(Checkpointer):
         scheme: Optional[str] = None,
         host: Optional[str] = None,
         port: Optional[int] = None,
-        **context: Any
+        **context: Any,
     ):
         """Initializes KVStoreCheckpointer.
 
@@ -173,39 +123,82 @@ class KVStoreCheckpointer(Checkpointer):
                 **context,
             )
         except KeyError:
-            raise CheckpointerException("Get kvstore checkpointer failed.")
+            raise CheckpointerException("Get KV Store checkpointer failed.")
 
     @utils.retry(exceptions=[binding.HTTPError])
-    def update(self, key, state):
+    def update(self, key: str, state: Any) -> None:
+        """Updates document with an id that equals to `key` and `state` as
+        document data.
+
+        Arguments:
+            key: `id` of the document to update.
+            state: Document data to update. It can be integer, string,
+                or a dict, or anything that can be an argument to `json.dumps`.
+
+        Raises:
+            binding.HTTPError: when an error occurred in Splunk, for example,
+                when Splunk is restarting and KV Store is not yet initialized.
+        """
         record = {"_key": key, "state": json.dumps(state)}
         self._collection_data.batch_save(record)
 
     @utils.retry(exceptions=[binding.HTTPError])
-    def batch_update(self, states):
+    def batch_update(self, states: Iterable[Dict[str, Any]]) -> None:
+        """Updates multiple documents.
+
+        Arguments:
+            states: Iterable that contains documents to update. Document should
+                be a dict with at least "state" key.
+
+        Raises:
+            binding.HTTPError: when an error occurred in Splunk, for example,
+                when Splunk is restarting and KV Store is not yet initialized.
+        """
         for state in states:
             state["state"] = json.dumps(state["state"])
         self._collection_data.batch_save(*states)
 
     @utils.retry(exceptions=[binding.HTTPError])
-    def get(self, key: str):
+    def get(self, key: str) -> Optional[Any]:
+        """Gets document with an id that equals to `key`.
+
+        Arguments:
+            key: `id` of the document to get.
+
+        Raises:
+            binding.HTTPError: When an error occurred in Splunk (not 404 code),
+                can be 503 code, when Splunk is restarting and KV Store is not
+                yet initialized.
+
+        Returns:
+            Document data under `key` or `None` in case of no data.
+        """
         try:
             record = self._collection_data.query_by_id(key)
         except binding.HTTPError as e:
             if e.status != 404:
-                logging.error("Get checkpoint failed: %s.", traceback.format_exc())
+                logging.error(f"Get checkpoint failed: {traceback.format_exc()}.")
                 raise
-
             return None
-
         return json.loads(record["state"])
 
     @utils.retry(exceptions=[binding.HTTPError])
-    def delete(self, key: str):
+    def delete(self, key: str) -> None:
+        """Deletes document with an id that equals to `key`.
+
+        Arguments:
+            key: `id` of the document to delete.
+
+        Raises:
+            binding.HTTPError: When an error occurred in Splunk (not 404 code),
+                can be 503 code, when Splunk is restarting and KV Store is not
+                yet initialized.
+        """
         try:
             self._collection_data.delete_by_id(key)
         except binding.HTTPError as e:
             if e.status != 404:
-                logging.error("Delete checkpoint failed: %s.", traceback.format_exc())
+                logging.error(f"Delete checkpoint failed: {traceback.format_exc()}.")
                 raise
 
 
