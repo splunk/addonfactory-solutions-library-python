@@ -24,7 +24,7 @@ import os
 import os.path as op
 import traceback
 from abc import ABCMeta, abstractmethod
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, Optional
 
 from splunklib import binding
 
