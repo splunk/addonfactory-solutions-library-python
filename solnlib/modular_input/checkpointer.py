@@ -23,6 +23,7 @@ import logging
 import os
 import os.path as op
 import traceback
+import warnings
 from abc import ABCMeta, abstractmethod
 from typing import Any, Dict, Iterable, Optional
 
@@ -220,6 +221,10 @@ class FileCheckpointer(Checkpointer):
         Arguments:
             checkpoint_dir: Checkpoint directory.
         """
+        warnings.warn(
+            "FileCheckpointer is deprecated, please use KVStoreCheckpointer",
+            stacklevel=2,
+        )
         self._checkpoint_dir = checkpoint_dir
 
     def encode_key(self, key):
