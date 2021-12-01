@@ -15,61 +15,139 @@
 #
 
 import os
+import tempfile
 import time
+from unittest import mock
 
 from solnlib import file_monitor
 
-_monitor_file = "./.test_monitor_file"
-
-
-def setup_module(module):
-    with open(_monitor_file, "w") as fp:
-        fp.write("abc")
-
-
-def teardown_module(module):
-    os.remove(_monitor_file)
-
 
 class TestFileChangesChecker:
-    def test_check_changes(self, monkeypatch):
-        self._called = False
+    def test_check_changes(self):
+        with tempfile.NamedTemporaryFile() as tmpfile:
+            self._called = False
 
-        def _callback_when_file_changes(changed):
-            self._called = True
+            def _callback_when_file_changes(changed):
+                self._called = True
 
-        checker = file_monitor.FileChangesChecker(
-            _callback_when_file_changes, [_monitor_file]
-        )
-        res = checker.check_changes()
-        assert res is False
-        assert self._called is False
+            checker = file_monitor.FileChangesChecker(
+                _callback_when_file_changes, [tmpfile.name]
+            )
+            res = checker.check_changes()
+            assert res is False
+            assert self._called is False
 
-        time.sleep(1)
-        with open(_monitor_file, "a") as fp:
-            fp.write("efg")
-        res = checker.check_changes()
-        assert res is True
-        assert self._called is True
+            time.sleep(1)
+            with open(tmpfile.name, "a") as fp:
+                fp.write("some changes")
+            res = checker.check_changes()
+            assert res is True
+            assert self._called is True
+
+    @mock.patch("os.path.getmtime")
+    def test_check_changes_when_os_errors(self, mock_os_path_getmtime):
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            file_1 = os.path.join(tmpdirname, "file_1")
+            file_2 = os.path.join(tmpdirname, "file_2")
+            with open(file_1, "w") as f1:
+                f1.write("content 1")
+            with open(file_2, "w") as f2:
+                f2.write("content 2")
+
+            mock_os_path_getmtime.side_effect = [
+                OSError,
+                OSError,
+            ]
+            checker = file_monitor.FileChangesChecker(
+                lambda _: _,
+                [
+                    file_1,
+                    file_2,
+                ],
+            )
+            assert {file_1: None, file_2: None} == checker.file_mtimes
+
+    @mock.patch("os.path.getmtime")
+    def test_check_changes_when_os_errors_for_one_file(self, mock_os_path_getmtime):
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            self._changed = None
+
+            def _callback_when_file_changes(changed):
+                self._changed = changed
+
+            file_1 = os.path.join(tmpdirname, "file_1")
+            file_2 = os.path.join(tmpdirname, "file_2")
+            with open(file_1, "w") as f1:
+                f1.write("content 1")
+            with open(file_2, "w") as f2:
+                f2.write("content 2")
+
+            def _side_effect(file):
+                if file == file_1:
+                    return time.time()
+                else:
+                    raise OSError
+
+            mock_os_path_getmtime.side_effect = _side_effect
+            checker = file_monitor.FileChangesChecker(
+                _callback_when_file_changes,
+                [
+                    file_1,
+                    file_2,
+                ],
+            )
+            with open(file_1, "a") as f1:
+                f1.write("append 1")
+            assert checker.check_changes()
+            assert [file_1] == self._changed
 
 
 class TestFileMonitor:
-    def test_check_monitor(self, monkeypatch):
-        self._called = False
+    def test_check_monitor(self):
+        with tempfile.NamedTemporaryFile() as tmpfile:
+            self._called = False
 
-        def _callback_when_file_changes(changed):
-            self._called = True
+            def _callback_when_file_changes(changed):
+                self._called = True
 
-        monitor = file_monitor.FileMonitor(
-            _callback_when_file_changes, [_monitor_file], interval=1
-        )
-        monitor.start()
-        assert self._called is False
+            monitor = file_monitor.FileMonitor(
+                _callback_when_file_changes, [tmpfile.name], interval=1
+            )
+            monitor.start()
+            assert self._called is False
 
-        time.sleep(1)
-        with open(_monitor_file, "w") as fp:
-            fp.write("efg")
-        time.sleep(2)
-        assert self._called is True
+            time.sleep(1)
+            with open(tmpfile.name, "w") as fp:
+                fp.write("some changes")
+            time.sleep(2)
+            assert self._called is True
 
-        monitor.stop()
+            monitor.stop()
+
+    @mock.patch("threading.Thread")
+    def test_two_times_start_calls_check_changes_only_once(self, mock_thread_class):
+        mock_thread = mock.MagicMock()
+        mock_thread_class.return_value = mock_thread
+        with tempfile.NamedTemporaryFile() as tmpfile:
+            monitor = file_monitor.FileMonitor(lambda _: _, [tmpfile.name])
+            monitor.start()
+            time.sleep(1)
+            monitor.start()
+            mock_thread.start.assert_called_once()
+            monitor.stop()
+
+    def test_do_monitor_early_exit(self):
+        self.check_changes_number = 0
+
+        def _callback(_):
+            self.check_changes_number += 1
+
+        with tempfile.NamedTemporaryFile() as tmpfile:
+            monitor = file_monitor.FileMonitor(_callback, [tmpfile.name], interval=1)
+            monitor.start()
+            for _ in range(3):
+                time.sleep(1)
+                with open(tmpfile.name, "a") as f:
+                    f.write("adding new content")
+            monitor.stop()
+        assert 2 == self.check_changes_number
