@@ -15,6 +15,7 @@
 #
 
 import hashlib
+from unittest import mock
 
 import common
 import pytest
@@ -184,3 +185,19 @@ def test_get_session_key(monkeypatch):
     )
     credentials.get_session_key("user", "password", scheme="HTTP")
     credentials.get_session_key("user", "password", scheme="HTTPS")
+
+
+@mock.patch("splunklib.binding.HttpLib")
+def test_get_session_key_when_503_error(mock_splunklib_httplib_class):
+    mock_splunklib_httplib = mock_splunklib_httplib_class.return_value
+    mock_splunklib_httplib.post.side_effect = binding.HTTPError(
+        common.make_response_record(b"", status=503)
+    )
+    with pytest.raises(binding.HTTPError):
+        credentials.get_session_key(
+            "user",
+            "password",
+            "http",
+            "localhost",
+            8089,
+        )

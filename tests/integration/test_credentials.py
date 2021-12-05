@@ -58,3 +58,14 @@ def test_credential_manager():
     cm.delete_password("testuser2")
     with pytest.raises(credentials.CredentialNotExistException):
         cm.get_password("testuser2")
+
+
+def test_get_session_key_when_invalid_credentials():
+    with pytest.raises(credentials.CredentialException):
+        credentials.get_session_key(
+            "invalid_user",
+            "invalid_password",
+            context=context.scheme,
+            host=context.host,
+            port=context.port,
+        )

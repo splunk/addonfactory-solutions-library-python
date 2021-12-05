@@ -18,6 +18,7 @@
 
 import json
 import re
+from typing import Any
 
 from splunklib import binding
 
@@ -295,7 +296,7 @@ def get_session_key(
     scheme: str = None,
     host: str = None,
     port: int = None,
-    **context: dict,
+    **context: Any,
 ) -> str:
     """Get splunkd access token.
 
@@ -315,16 +316,15 @@ def get_session_key(
         ValueError: if scheme, host or port are invalid.
 
     Examples:
-       >>> credentials.get_session_key('user', 'password')
+        >>> from solnlib import credentials
+        >>> credentials.get_session_key("user", "password")
     """
     validate_scheme_host_port(scheme, host, port)
 
     if any([scheme is None, host is None, port is None]):
         scheme, host, port = get_splunkd_access_info()
 
-    uri = "{scheme}://{host}:{port}/{endpoint}".format(
-        scheme=scheme, host=host, port=port, endpoint="services/auth/login"
-    )
+    uri = f"{scheme}://{host}:{port}/services/auth/login"
     _rest_client = rest_client.SplunkRestClient(
         None, "-", "nobody", scheme, host, port, **context
     )
@@ -335,7 +335,5 @@ def get_session_key(
     except binding.HTTPError as e:
         if e.status != 401:
             raise
-
         raise CredentialException("Invalid username/password.")
-
     return json.loads(response.body.read())["sessionKey"]
