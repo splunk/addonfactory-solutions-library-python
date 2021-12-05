@@ -50,7 +50,7 @@ def handle_teardown_signals(callback: Callable):
     signal.signal(signal.SIGTERM, callback)
     signal.signal(signal.SIGINT, callback)
 
-    if os.name == "nt":
+    if os.name == "nt":  # pragma: no cover
         signal.signal(signal.SIGBREAK, callback)
 
 
