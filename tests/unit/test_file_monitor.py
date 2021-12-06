@@ -135,19 +135,3 @@ class TestFileMonitor:
             monitor.start()
             mock_thread.start.assert_called_once()
             monitor.stop()
-
-    def test_do_monitor_early_exit(self):
-        self.check_changes_number = 0
-
-        def _callback(_):
-            self.check_changes_number += 1
-
-        with tempfile.NamedTemporaryFile() as tmpfile:
-            monitor = file_monitor.FileMonitor(_callback, [tmpfile.name], interval=1)
-            monitor.start()
-            for _ in range(3):
-                time.sleep(1)
-                with open(tmpfile.name, "a") as f:
-                    f.write("adding new content")
-            monitor.stop()
-        assert 2 == self.check_changes_number
