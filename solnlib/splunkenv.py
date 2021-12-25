@@ -24,8 +24,6 @@ from configparser import ConfigParser
 from io import StringIO
 from typing import List, Optional, Tuple, Union
 
-from . import utils
-
 __all__ = [
     "make_splunkhome_path",
     "get_splunk_host_info",

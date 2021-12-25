@@ -87,7 +87,8 @@ class ConfFile:
         self._port = port
         self._context = context
         self._cred_manager = None
-        ### 'realm' is set to provided 'realm' argument otherwise as default behaviour it is set to 'APP_NAME'.
+        # 'realm' is set to provided 'realm' argument otherwise as default
+        # behaviour it is set to 'APP_NAME'.
         if realm is None:
             self._realm = self._app
         else:
@@ -337,7 +338,7 @@ class ConfFile:
 
         try:
             self._conf.delete(stanza_name)
-        except KeyError as e:
+        except KeyError:
             logging.error(
                 "Delete stanza: %s error: %s.", stanza_name, traceback.format_exc()
             )
@@ -381,8 +382,11 @@ class ConfManager:
         `credential:__REST_CREDENTIAL__#Splunk_TA_test#configs/conf-CONF_FILENAME:STANZA_NAME``splunk_cred_sep``1:`
 
         >>> from solnlib import conf_manager
-        >>> cfm = conf_manager.ConfManager(session_key,
-                                          'Splunk_TA_test', realm='__REST_CREDENTIAL__#Splunk_TA_test#configs/conf-CONF_FILENAME')
+        >>> cfm = conf_manager.ConfManager(
+                session_key,
+                'Splunk_TA_test',
+                realm='__REST_CREDENTIAL__#Splunk_TA_test#configs/conf-CONF_FILENAME'
+            )
     """
 
     def __init__(

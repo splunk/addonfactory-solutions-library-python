@@ -151,7 +151,9 @@ class CredentialManager:
         length = 0
         index = 1
         while length < len(password):
-            curr_str = password[length : length + self.SPLUNK_CRED_LEN_LIMIT]
+            curr_str = password[
+                length : length + self.SPLUNK_CRED_LEN_LIMIT  # noqa: E203
+            ]
             partial_user = self.SEP.join([user, str(index)])
             self._update_password(partial_user, curr_str)
             length += self.SPLUNK_CRED_LEN_LIMIT

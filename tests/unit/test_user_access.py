@@ -151,7 +151,7 @@ def test_object_acl_manager(monkeypatch):
     assert obj_acl.obj_type == "test_object_type"
     assert obj_acl.obj_app == "Splunk_TA_test"
     assert obj_acl.obj_owner == "nobody"
-    assert obj_acl.obj_shared_by_inclusion == True
+    assert obj_acl.obj_shared_by_inclusion is True
     assert sorted(obj_acl.obj_perms["read"]) == ["admin", "user1"]
 
     oaclm.update_acls(

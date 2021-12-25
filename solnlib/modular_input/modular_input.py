@@ -194,7 +194,7 @@ class ModularInput(metaclass=ABCMeta):
                     host=self.server_host,
                     port=self.server_port,
                 )
-            except binding.HTTPError as e:
+            except binding.HTTPError:
                 logging.error(
                     "Failed to init kvstore checkpointer: %s.", traceback.format_exc()
                 )
@@ -231,7 +231,7 @@ class ModularInput(metaclass=ABCMeta):
                     host=self.server_host,
                     port=self.server_port,
                 )
-            except binding.HTTPError as e:
+            except binding.HTTPError:
                 logging.error(
                     "Failed to init HECEventWriter: %s.", traceback.format_exc()
                 )
@@ -464,7 +464,7 @@ class ModularInput(metaclass=ABCMeta):
                 self.do_run(input_definition["inputs"])
                 logging.info("Modular input: %s exit normally.", self.name)
                 return 0
-            except Exception as e:
+            except Exception:
                 logging.error(
                     "Modular input: %s exit with exception: %s.",
                     self.name,
