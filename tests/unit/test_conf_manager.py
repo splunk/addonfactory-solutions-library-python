@@ -15,6 +15,7 @@
 #
 
 import hashlib
+from unittest import mock
 
 import common
 import pytest
@@ -204,3 +205,19 @@ def test_conf_manager(monkeypatch):
     with pytest.raises(conf_manager.ConfStanzaNotExistException):
         conf.delete("test_stanza")
     conf.reload()
+
+
+@mock.patch.object(conf_manager, "ConfManager")
+def test_get_log_level_when_error_getting_conf(mock_conf_manager_class):
+    mock_conf_manager = mock_conf_manager_class.return_value
+    mock_conf_manager.get_conf.side_effect = conf_manager.ConfManagerException
+    expected_log_level = "INFO"
+
+    log_level = conf_manager.get_log_level(
+        logger=mock.MagicMock(),
+        session_key="session_key",
+        app_name="app_name",
+        conf_name="conf_name",
+    )
+
+    assert expected_log_level == log_level

@@ -456,7 +456,7 @@ class ConfManager:
         try:
             conf = self._confs[name]
         except KeyError:
-            raise ConfManagerException("Config file: %s does not exist." % name)
+            raise ConfManagerException(f"Config file: {name} does not exist.")
 
         return ConfFile(
             name,
@@ -498,3 +498,60 @@ class ConfManager:
             self._realm,
             **self._context,
         )
+
+
+def get_log_level(
+    *,
+    logger: logging.Logger,
+    session_key: str,
+    app_name: str,
+    conf_name: str,
+    log_level_field: str = "loglevel",
+    default_log_level: str = "INFO",
+) -> str:
+    """This function returns the log level for the addon from configuration
+    file.
+
+    Arguments:
+        logger: Logger.
+        session_key: Splunk access token.
+        app_name: Add-on name.
+        conf_name: Configuration file name where logging stanza is.
+        log_level_field: Logging level field name under logging stanza.
+        default_log_level: Default log level to return in case of errors.
+
+    Returns:
+        Log level defined under `logging.log_level_field` field in `conf_name`
+        file. In case of any error, `default_log_level` will be returned.
+
+    Examples:
+        >>> from solnlib import conf_manager
+        >>> log_level = conf_manager.get_log_level(
+        >>>     logger,
+        >>>     "session_key",
+        >>>     "ADDON_NAME",
+        >>>     "splunk_ta_addon_settings",
+        >>> )
+    """
+    try:
+        cfm = ConfManager(
+            session_key,
+            app_name,
+            realm=f"__REST_CREDENTIAL__#{app_name}#configs/conf-{conf_name}",
+        )
+        conf = cfm.get_conf(conf_name)
+    except ConfManagerException:
+        logger.error(
+            f"Failed to fetch configuration file {conf_name}, "
+            f"taking {default_log_level} as log level."
+        )
+        return default_log_level
+    try:
+        logging_details = conf.get("logging")
+        return logging_details.get(log_level_field, default_log_level)
+    except ConfStanzaNotExistException:
+        logger.error(
+            f'"logging" stanza does not exist under {conf_name}, '
+            f"taking {default_log_level} as log level."
+        )
+        return default_log_level
