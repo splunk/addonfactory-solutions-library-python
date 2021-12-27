@@ -16,6 +16,7 @@
 
 import os.path as op
 import sys
+from unittest import mock
 
 import pytest
 
@@ -53,3 +54,32 @@ def test_conf_manager():
     with pytest.raises(conf_manager.ConfStanzaNotExistException):
         conf.delete("test_stanza")
     conf.reload()
+
+
+def test_get_log_level():
+    session_key = context.get_session_key()
+    expected_log_level = "DEBUG"
+
+    log_level = conf_manager.get_log_level(
+        logger=mock.MagicMock(),
+        session_key=session_key,
+        app_name="solnlib_demo",
+        conf_name="splunk_ta_addon_settings",
+        log_level_field="log_level",
+    )
+
+    assert expected_log_level == log_level
+
+
+def test_get_log_level_incorrect_log_level_field():
+    session_key = context.get_session_key()
+    expected_log_level = "INFO"
+
+    log_level = conf_manager.get_log_level(
+        logger=mock.MagicMock(),
+        session_key=session_key,
+        app_name="solnlib_demo",
+        conf_name="splunk_ta_addon_settings",
+    )
+
+    assert expected_log_level == log_level
