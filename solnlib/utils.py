@@ -33,7 +33,32 @@ __all__ = [
     "is_false",
     "retry",
     "extract_http_scheme_host_port",
+    "remove_http_proxy_env_vars",
 ]
+
+
+def remove_http_proxy_env_vars() -> None:
+    """Removes HTTP(s) proxies from environment variables.
+
+    Removes the following environment variables:
+        * http_proxy
+        * https_proxy
+        * HTTP_PROXY
+        * HTTPS_PROXY
+
+    This function can be used in Splunk modular inputs code before starting the
+    ingestion to ensure that no proxy is going to be used when doing requests.
+    In case of proxy is needed, it can be defined in the modular inputs code.
+    """
+    env_vars_to_remove = (
+        "http_proxy",
+        "https_proxy",
+        "HTTP_PROXY",
+        "HTTPS_PROXY",
+    )
+    for env_var in env_vars_to_remove:
+        if env_var in os.environ:
+            del os.environ[env_var]
 
 
 def handle_teardown_signals(callback: Callable):
