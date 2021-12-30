@@ -19,6 +19,7 @@ import logging
 import os
 import signal
 import time
+from unittest import mock
 
 import pytest
 
@@ -138,3 +139,34 @@ def test_extract_http_scheme_host_port(monkeypatch):
     invalid = "localhost:8089"
     with pytest.raises(ValueError):
         _, _, _ = utils.extract_http_scheme_host_port(invalid)
+
+
+@mock.patch.dict(os.environ, {"SPLUNK_HOME": "/opt/splunk"}, clear=True)
+def test_remove_http_proxy_env_vars_preserves_non_http_env_vars():
+    utils.remove_http_proxy_env_vars()
+
+    assert "/opt/splunk" == os.getenv("SPLUNK_HOME")
+
+
+@mock.patch.dict(os.environ, {"HTTP_PROXY": "proxy:80"}, clear=True)
+def test_remove_http_proxy_env_vars_removes_proxy_related_env_vars():
+    utils.remove_http_proxy_env_vars()
+
+    assert None is os.getenv("HTTP_PROXY")
+
+
+@mock.patch.dict(
+    os.environ,
+    {
+        "SPLUNK_HOME": "/opt/splunk",
+        "HTTP_PROXY": "proxy",
+        "https_proxy": "proxy",
+    },
+    clear=True,
+)
+def test_remove_http_proxy_env_vars():
+    utils.remove_http_proxy_env_vars()
+
+    assert None is os.getenv("HTTP_PROXY")
+    assert None is os.getenv("https_proxy")
+    assert "/opt/splunk" == os.getenv("SPLUNK_HOME")
