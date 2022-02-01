@@ -87,29 +87,6 @@ jobs:
         with:
           publishToken: ${{ secrets.SEMGREP_PUBLISH_TOKEN }}
 
-  snyk:
-    name: security-vuln-snyk
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Setup python
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.7
-      - uses: snyk/actions/setup@master
-      - uses: actions/setup-go@v2.1.3
-        with:
-          go-version: "1.13"
-      - name: Snyk monitor
-        run: snyk test --sarif-file-output=snyk-scan_requirements.sarif --all-projects --print-deps --severity-threshold=high
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-      - uses: actions/upload-artifact@v2
-        if: always()
-        with:
-          name: snyk-results
-          path: snyk-scan_requirements.sarif
-
   run-unit-tests:
     name: test-unit
     runs-on: ubuntu-latest
@@ -222,7 +199,6 @@ jobs:
       - pre-commit
       - review_secrets
       - semgrep
-      - snyk
       - run-unit-tests
       - test-splunk
     runs-on: ubuntu-latest
