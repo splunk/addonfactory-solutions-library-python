@@ -99,8 +99,6 @@ jobs:
       - name: run tests
         run: |
           curl -sSL https://install.python-poetry.org | python3 -
-          # shellcheck disable=SC1090
-          source "$HOME/.poetry/env"
           poetry install
           poetry run pytest --junitxml=test-results/results.xml --cov=solnlib --cov-report=xml:unit_tests_coverage.xml tests/unit
       - uses: actions/upload-artifact@v2
@@ -155,8 +153,6 @@ jobs:
       - name: Run tests
         run: |
           curl -sSL https://install.python-poetry.org | python3 -
-          # shellcheck disable=SC1090
-          source "$HOME/.poetry/env"
           poetry install
           SPLUNK_HOME=/opt/splunk/ poetry run pytest --cov=solnlib --junitxml=test-results/results.xml --cov-report=xml:integration_tests_coverage_${{ matrix.splunk-version }}.xml -v tests/integration
       - uses: actions/upload-artifact@v2.2.4
@@ -217,16 +213,9 @@ jobs:
         with:
           python-version: "3.7"
       - name: Install Poetry
-        run: curl -sSL https://install.python-poetry.org | python3 -
-      - name: Install Code
         run: |
-          # shellcheck disable=SC1090
-          source "$HOME/.poetry/env"
+          curl -sSL https://install.python-poetry.org | python3 -
           poetry install
-      - name: Build
-        run: |
-          # shellcheck disable=SC1090
-          source "$HOME/.poetry/env"
           poetry build
       - name: Semantic Release
         uses: cycjimmy/semantic-release-action@v2.6.0
