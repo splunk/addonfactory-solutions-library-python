@@ -17,7 +17,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: ort-action
         uses: splunk/addonfactory-ort-action@v1
         id: ort-action
@@ -44,7 +44,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Check License Header
         uses: apache/skywalking-eyes@main
         env:
@@ -53,7 +53,7 @@ jobs:
   pre-commit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions/setup-python@v2
         with:
           python-version: "3.7"
@@ -67,7 +67,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           submodules: false
           fetch-depth: "0"
@@ -80,7 +80,7 @@ jobs:
     runs-on: ubuntu-latest
     name: security-sast-semgrep
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Semgrep
         id: semgrep
         uses: returntocorp/semgrep-action@v1
@@ -91,7 +91,7 @@ jobs:
     name: test-unit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Setup python
         uses: actions/setup-python@v2
         with:
@@ -117,7 +117,7 @@ jobs:
       matrix:
         splunk-version: ["8.0", "8.1", "8.2"]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: recursive
       - name: Setup python
@@ -170,7 +170,7 @@ jobs:
       - run-unit-tests
       - test-splunk
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: recursive
       - uses: actions/download-artifact@v2
@@ -199,7 +199,7 @@ jobs:
       - test-splunk
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: false
           # Very important: semantic-release won't trigger a tagged
