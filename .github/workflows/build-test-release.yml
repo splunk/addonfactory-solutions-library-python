@@ -180,7 +180,7 @@ jobs:
       - uses: actions/download-artifact@v2
         with:
           name: unit_tests_coverage
-      - uses: codecov/codecov-action@v2
+      - uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./unit_tests_coverage.xml,./integration_tests_coverage_8.0.xml,./integration_tests_coverage_8.1.xml,./integration_tests_coverage_8.2.xml
