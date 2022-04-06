@@ -243,7 +243,7 @@ class CredentialManager:
         all_passwords = self._storage_passwords.list(count=-1)
 
         results = {}
-        ptn = re.compile(fr"(.+){self.SEP}(\d+)")
+        ptn = re.compile(rf"(.+){self.SEP}(\d+)")
         for password in all_passwords:
             match = ptn.match(password.name)
             if match:
