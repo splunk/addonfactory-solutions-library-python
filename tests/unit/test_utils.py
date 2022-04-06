@@ -93,7 +93,7 @@ def test_retry(monkeypatch):
 
     mock_func()
     assert tried[0] == retries + 1
-    assert mock_sleep_time[0] == sum(2 ** i for i in range(retries))
+    assert mock_sleep_time[0] == sum(2**i for i in range(retries))
 
     record = [0, 0]
 

@@ -162,7 +162,7 @@ def retry(
                     ):
                         last_ex = e
                         if i < max_tries - 1:
-                            time.sleep(2 ** i)
+                            time.sleep(2**i)
                     else:
                         raise
 
