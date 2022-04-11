@@ -25,14 +25,14 @@ jobs:
           WorkDir: .
           UsePython3: "3.7"
       - name: ort-action-artifacts-reports
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: analysis-reports
           path: |
             .ort/reports/*
         if: always()
       - name: ort-action-artifacts-analyzer
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: analysis-analyzer
           path: |
@@ -99,11 +99,11 @@ jobs:
           curl -sSL https://install.python-poetry.org | python3 -
           poetry install
           poetry run pytest --junitxml=test-results/results.xml --cov=solnlib --cov-report=xml:unit_tests_coverage.xml tests/unit
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: unit tests test-results
           path: test-results
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: unit_tests_coverage
           path: unit_tests_coverage.xml
@@ -153,11 +153,11 @@ jobs:
           curl -sSL https://install.python-poetry.org | python3 -
           poetry install
           SPLUNK_HOME=/opt/splunk/ poetry run pytest --cov=solnlib --junitxml=test-results/results.xml --cov-report=xml:integration_tests_coverage_${{ matrix.splunk-version }}.xml -v tests/integration
-      - uses: actions/upload-artifact@v2.2.4
+      - uses: actions/upload-artifact@v3
         with:
           name: test-splunk test-results
           path: test-results
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: integration_tests_coverage
           path: integration_tests_coverage_*.xml
