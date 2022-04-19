@@ -171,10 +171,10 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: recursive
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v3
         with:
           name: integration_tests_coverage
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v3
         with:
           name: unit_tests_coverage
       - uses: codecov/codecov-action@v3
