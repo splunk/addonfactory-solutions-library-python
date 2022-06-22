@@ -25,9 +25,9 @@ repository = "https://github.com/splunk/addonfactory-solutions-library-python"
 [tool.poetry.dependencies]
 python = "^3.7"
 requests = "^2.28.0"
-splunk-sdk = "^1.6.16"
 sortedcontainers = "^2.2"
 defusedxml = "^0.7.1"
+splunk-sdk = ">=1.6.18"
 
 [tool.poetry.dev-dependencies]
 pytest-cov = "^3"
