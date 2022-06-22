@@ -464,7 +464,7 @@ python-versions = "*"
 
 [[package]]
 name = "splunk-sdk"
-version = "1.6.20"
+version = "1.7.0"
 description = "The Splunk Software Development Kit for Python."
 category = "main"
 optional = false
@@ -525,7 +525,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytes
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "169c6aaeaf3edf654e9ca7efff32711ff017701a6b0d85f0851324449bbd5be6"
+content-hash = "175c08142e92e76893b31c073953580c1c6fe608d52e6442c33d7f555100c486"
 
 [metadata.files]
 astunparse = [
@@ -793,7 +793,7 @@ sortedcontainers = [
     {file = "sortedcontainers-2.4.0.tar.gz", hash = "sha256:25caa5a06cc30b6b83d11423433f65d1f9d76c4c6a0c90e3379eaa43b9bfdb88"},
 ]
 splunk-sdk = [
-    {file = "splunk-sdk-1.6.20.tar.gz", hash = "sha256:cac4954bdd94443f180baa9fce9208dd0ce67ad1ef125e3b7f9aa91e52e94101"},
+    {file = "splunk-sdk-1.7.0.tar.gz", hash = "sha256:5ea24843f4c7a74ca0ed44645e7e9c78d0a57e70c08960b9f22b90fcfcc3242e"},
 ]
 tomli = [
     {file = "tomli-1.2.2-py3-none-any.whl", hash = "sha256:f04066f68f5554911363063a30b108d2b5a5b1a010aa8b6132af78489fe3aade"},
