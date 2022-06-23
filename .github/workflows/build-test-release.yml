@@ -120,7 +120,7 @@ jobs:
       - meta
     strategy:
       matrix:
-        splunk-version: ${{ fromJson(needs.meta.outputs.matrix_supportedSplunk) }}
+        splunk: ${{ fromJson(needs.meta.outputs.matrix_supportedSplunk) }}
     steps:
       - uses: actions/checkout@v3
       - name: Setup python
@@ -129,11 +129,10 @@ jobs:
           python-version: 3.7
       - name: Install Splunk
         run: |
-          pip install --user crudini
           export SPLUNK_PRODUCT=splunk
           export SPLUNK_VERSION=${{ matrix.splunk.version }}
           export SPLUNK_BUILD=${{ matrix.splunk.build }}
-          export SPLUNK_SLUG=$SPLUNK_VERSION-SPLUNK_BUILD
+          export SPLUNK_SLUG=$SPLUNK_VERSION-$SPLUNK_BUILD
           export SPLUNK_ARCH=x86_64
           export SPLUNK_LINUX_FILENAME=splunk-${SPLUNK_VERSION}-${SPLUNK_BUILD}-Linux-${SPLUNK_ARCH}.tgz
           export SPLUNK_BUILD_URL=https://download.splunk.com/products/${SPLUNK_PRODUCT}/releases/${SPLUNK_VERSION}/linux/${SPLUNK_LINUX_FILENAME}
