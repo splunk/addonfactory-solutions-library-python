@@ -16,6 +16,7 @@
 
 import os.path as op
 import sys
+from typing import Optional
 
 import pytest
 
@@ -25,7 +26,9 @@ import context
 from solnlib import credentials
 
 
-def test_credential_manager():
+def _build_credential_manager(
+    realm: Optional[str] = None,
+) -> credentials.CredentialManager:
     session_key = credentials.get_session_key(
         context.username,
         context.password,
@@ -33,28 +36,81 @@ def test_credential_manager():
         host=context.host,
         port=context.port,
     )
-
-    cm = credentials.CredentialManager(
+    return credentials.CredentialManager(
         session_key,
         context.app,
         owner=context.owner,
-        realm=context.app,
+        realm=realm,
         scheme=context.scheme,
         host=context.host,
         port=context.port,
     )
 
-    cm.set_password("testuser1", "password1")
-    assert cm.get_password("testuser1") == "password1"
 
-    long_password = "".join(["1111111111" for i in range(30)])
-    cm.set_password("testuser2", long_password)
-    assert cm.get_password("testuser2") == long_password
+def test_get_password():
+    cm = _build_credential_manager(realm=context.app)
 
-    cm.delete_password("testuser1")
+    cm.set_password("user1", "password1")
+    assert cm.get_password("user1") == "password1"
+
+
+def test_get_password_when_no_user_exists_then_throw_exception():
+    cm = _build_credential_manager(realm=context.app)
+
     with pytest.raises(credentials.CredentialNotExistException):
-        cm.get_password("testuser1")
+        cm.get_password("nonexistentuser")
 
-    cm.delete_password("testuser2")
+
+def test_delete_password():
+    cm = _build_credential_manager(realm=context.app)
+    cm.set_password("user2", "password2")
+
+    cm.delete_password("user2")
+
     with pytest.raises(credentials.CredentialNotExistException):
-        cm.get_password("testuser2")
+        cm.get_password("user2")
+
+
+def test_delete_password_when_no_user_exists_then_throw_exception():
+    cm = _build_credential_manager(realm=context.app)
+
+    with pytest.raises(credentials.CredentialNotExistException):
+        cm.delete_password("nonexistentuser")
+
+
+def test_get_clear_passwords_in_realm():
+    cm = _build_credential_manager(realm=context.app)
+    cm.set_password("user3", "password3")
+
+    expected_result = {
+        "name": "solnlib_demo:user3",
+        "realm": "solnlib_demo",
+        "username": "user3",
+        "clear_password": "password3",
+    }
+    results = cm.get_clear_passwords_in_realm()
+    for result in results:
+        if result["name"] == expected_result["name"]:
+            assert result["realm"] == expected_result["realm"]
+            assert result["username"] == expected_result["username"]
+            assert result["clear_password"] == expected_result["clear_password"]
+            break
+
+
+def test_get_clear_passwords():
+    cm = _build_credential_manager()
+    cm.set_password("user3", "password3")
+
+    expected_result = {
+        "name": "solnlib_demo:user3",
+        "realm": "solnlib_demo",
+        "username": "user3",
+        "clear_password": "password3",
+    }
+    results = cm.get_clear_passwords()
+    for result in results:
+        if result["name"] == expected_result["name"]:
+            assert result["realm"] == expected_result["realm"]
+            assert result["username"] == expected_result["username"]
+            assert result["clear_password"] == expected_result["clear_password"]
+            break
