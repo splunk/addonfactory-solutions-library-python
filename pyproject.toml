@@ -16,7 +16,7 @@
 
 [tool.poetry]
 name = "solnlib"
-version = "4.7.0"
+version = "4.8.0-beta.1"
 description = "The Splunk Software Development Kit for Splunk Solutions"
 authors = ["Splunk <addonfactory@splunk.com>"]
 license = "Apache-2.0"
