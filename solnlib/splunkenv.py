@@ -184,8 +184,9 @@ def get_splunkd_access_info() -> Tuple[str, str, int]:
 
     host_port = get_conf_key_value("web", "settings", "mgmtHostPort")
     host_port = host_port.strip()
-    host = host_port.split(":")[0]
-    port = int(host_port.split(":")[1])
+    host_port_split_parts = host_port.split(":")
+    host = ":".join(host_port_split_parts[:-1])
+    port = int(host_port_split_parts[-1])
 
     if "SPLUNK_BINDIP" in os.environ:
         bindip = os.environ["SPLUNK_BINDIP"]
