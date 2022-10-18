@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@v3
       - name: matrix
         id: matrix
-        uses: splunk/addonfactory-test-matrix-action@v1
+        uses: splunk/addonfactory-test-matrix-action@f981b2616e4cb4033e3bd6f9a7911a5ad9eca629
 
   fossa-scan:
     continue-on-error: true
