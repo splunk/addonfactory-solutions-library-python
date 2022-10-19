@@ -213,7 +213,7 @@ jobs:
           poetry install
           poetry build
       - name: Semantic Release
-        uses: cycjimmy/semantic-release-action@v3.1.1
+        uses: cycjimmy/semantic-release-action@v3.1.2
         with:
           semantic_version: 19.0.2
           extra_plugins: |
