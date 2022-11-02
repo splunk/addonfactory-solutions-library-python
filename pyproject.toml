@@ -31,7 +31,7 @@ splunk-sdk = ">=1.6.18"
 
 [tool.poetry.dev-dependencies]
 pytest-cov = "^3"
-pytest = "^7.1"
+pytest = "^7.2"
 mkdocs = "^1.4.2"
 mkdocs-material = "^8.5.3"
 mkdocstrings = "0.18.0"
