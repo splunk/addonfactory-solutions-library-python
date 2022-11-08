@@ -103,15 +103,11 @@ jobs:
         run: |
           curl -sSL https://install.python-poetry.org | python3 -
           poetry install
-          poetry run pytest --junitxml=test-results/results.xml --cov=solnlib --cov-report=xml:unit_tests_coverage.xml tests/unit
+          poetry run pytest --junitxml=test-results/results.xml tests/unit
       - uses: actions/upload-artifact@v3
         with:
           name: unit tests test-results
           path: test-results
-      - uses: actions/upload-artifact@v3
-        with:
-          name: unit_tests_coverage
-          path: unit_tests_coverage.xml
 
   test-splunk:
     name: test-splunk
@@ -154,36 +150,11 @@ jobs:
         run: |
           curl -sSL https://install.python-poetry.org | python3 -
           poetry install
-          SPLUNK_HOME=/opt/splunk/ poetry run pytest --cov=solnlib --junitxml=test-results/results.xml --cov-report=xml:integration_tests_coverage_${{ matrix.splunk-version }}.xml -v tests/integration
+          SPLUNK_HOME=/opt/splunk/ poetry run pytest --junitxml=test-results/results.xml -v tests/integration
       - uses: actions/upload-artifact@v3
         with:
           name: test-splunk test-results
           path: test-results
-      - uses: actions/upload-artifact@v3
-        with:
-          name: integration_tests_coverage
-          path: integration_tests_coverage_*.xml
-
-  upload-coverage:
-    runs-on: ubuntu-latest
-    needs:
-      - run-unit-tests
-      - test-splunk
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/download-artifact@v3
-        with:
-          name: integration_tests_coverage
-      - uses: actions/download-artifact@v3
-        with:
-          name: unit_tests_coverage
-      - uses: codecov/codecov-action@v3
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./unit_tests_coverage.xml,./integration_tests_coverage_8.0.xml,./integration_tests_coverage_8.1.xml,./integration_tests_coverage_8.2.xml
-          env_vars: OS,PYTHON
-          fail_ci_if_error: true
-          verbose: true
 
   publish:
     name: Build Release
