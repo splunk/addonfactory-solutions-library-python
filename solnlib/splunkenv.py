@@ -24,6 +24,8 @@ from configparser import ConfigParser
 from io import StringIO
 from typing import List, Optional, Tuple, Union
 
+from .utils import is_true
+
 __all__ = [
     "make_splunkhome_path",
     "get_splunk_host_info",
@@ -177,7 +179,7 @@ def get_splunkd_access_info() -> Tuple[str, str, int]:
         Tuple of (scheme, host, port).
     """
 
-    if get_conf_key_value("server", "sslConfig", "enableSplunkdSSL") == "true":
+    if is_true(get_conf_key_value("server", "sslConfig", "enableSplunkdSSL")):
         scheme = "https"
     else:
         scheme = "http"
