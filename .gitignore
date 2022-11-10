@@ -1,5 +1,9 @@
+# IDE related files
 *.idea
 *.DS_Store*
+.venv/
+
+# Compiled files
 __pycache__
 *.pyc
 *.pyo
