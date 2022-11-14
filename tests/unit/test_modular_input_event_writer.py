@@ -96,7 +96,8 @@ def test_hec_event_writer(monkeypatch):
         self, path_segment, owner=None, app=None, sharing=None, headers=None, **query
     ):
         event_strings = [
-            json.dumps(json.loads(e), sort_keys=True) for e in query["body"].split("\n")
+            json.dumps(json.loads(e), sort_keys=True)
+            for e in query["body"].decode("utf-8").split("\n")
         ]
 
         assert (

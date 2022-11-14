@@ -112,6 +112,7 @@ jobs:
   test-splunk:
     name: test-splunk
     runs-on: ubuntu-latest
+    continue-on-error: true
     needs:
       - meta
     strategy:
