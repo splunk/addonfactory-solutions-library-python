@@ -15,6 +15,7 @@
 #
 import os.path as op
 import sys
+import time
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 import context
@@ -39,12 +40,10 @@ def test_hec_event_writer():
 
 
 def test_hec_event_writes_with_non_utf_8():
-    test_name = "test_hec_event_writes_with_non_utf_8"
     # To test scenario listed in https://github.com/splunk/addonfactory-solutions-library-python/pull/112.
+    test_name = "test_hec_event_writes_with_non_utf_8"
     session_key = context.get_session_key()
-
     ew = hew.HECEventWriter("test", session_key)
-
     event = ew.create_event(
         [
             {
@@ -58,7 +57,11 @@ def test_hec_event_writes_with_non_utf_8():
         sourcetype="hec",
     )
     ew.write_events([event])
-    search_results = search(f"search index=main sourcetype=hec {test_name}")
+    time.sleep(2)
+
+    search_results = search(
+        session_key, f"search index=main sourcetype=hec {test_name}"
+    )
 
     assert len(search_results) == 1
     _raw_event = search_results[0]["_raw"]

@@ -23,8 +23,7 @@ from splunklib import client
 from splunklib import results as splunklib_results
 
 
-def search(query):
-    session_key = context.get_session_key()
+def search(session_key, query):
     service = client.connect(host=context.host, token=session_key)
     job = service.jobs.create(query)
     while True:
