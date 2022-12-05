@@ -50,43 +50,63 @@ def test_resolve_hostname(monkeypatch):
     assert net_utils.resolve_hostname(unresolvable_ip3) is None
 
 
-def test_is_valid_hostname():
-    assert net_utils.is_valid_hostname("splunk")
-    assert net_utils.is_valid_hostname("splunk.")
-    assert net_utils.is_valid_hostname("splunk.com")
-    assert net_utils.is_valid_hostname("localhost")
-    assert not net_utils.is_valid_hostname("")
-    assert not net_utils.is_valid_hostname("localhost:8000")
-    assert not net_utils.is_valid_hostname("http://localhost:8000")
-    assert not net_utils.is_valid_hostname("a" * 999)
+@pytest.mark.parametrize(
+    "hostname,expected_result",
+    [
+        ("splunk", True),
+        ("splunk.", True),
+        ("splunk.com", True),
+        ("localhost", True),
+        ("::1", True),
+        ("", False),
+        ("localhost:8000", False),
+        ("http://localhost:8000", False),
+        ("a" * 999, False),
+    ],
+)
+def test_is_valid_hostname(hostname, expected_result):
+    assert net_utils.is_valid_hostname(hostname) is expected_result
 
 
-def test_is_valid_port():
-    assert not net_utils.is_valid_port("0.0")
-    assert not net_utils.is_valid_port(0)
-    assert not net_utils.is_valid_port("0")
-    assert net_utils.is_valid_port("1")
-    assert net_utils.is_valid_port(1)
-    assert net_utils.is_valid_port(8080)
-    assert net_utils.is_valid_port("8080")
-    assert net_utils.is_valid_port("0808")
-    assert net_utils.is_valid_port("65535")
-    assert net_utils.is_valid_port(65535)
-    assert not net_utils.is_valid_port("65536")
-    assert not net_utils.is_valid_port(65536)
+@pytest.mark.parametrize(
+    "port,expected_result",
+    [
+        ("0.0", False),
+        (0, False),
+        ("0", False),
+        ("65536", False),
+        (65536, False),
+        ("1", True),
+        (1, True),
+        (8080, True),
+        ("8080", True),
+        ("0808", True),
+        ("65535", True),
+        (65535, True),
+    ],
+)
+def test_is_valid_port(port, expected_result):
+    assert net_utils.is_valid_port(port) is expected_result
 
 
-def test_is_valid_scheme():
-    assert net_utils.is_valid_scheme("http")
-    assert net_utils.is_valid_scheme("https")
-    assert net_utils.is_valid_scheme("HTTP")
-    assert net_utils.is_valid_scheme("HTTPS")
-    assert net_utils.is_valid_scheme("HTTp")
-    assert not net_utils.is_valid_scheme("non-http")
+@pytest.mark.parametrize(
+    "scheme,expected_result",
+    [
+        ("http", True),
+        ("https", True),
+        ("HTTP", True),
+        ("HTTPS", True),
+        ("HTTp", True),
+        ("non-http", False),
+    ],
+)
+def test_is_valid_scheme(scheme, expected_result):
+    assert net_utils.is_valid_scheme(scheme) is expected_result
 
 
 def test_validate_scheme_host_port():
     net_utils.validate_scheme_host_port("http", "localhost", 8080)
+    net_utils.validate_scheme_host_port("https", "::1", 8089)
     with pytest.raises(ValueError):
         net_utils.validate_scheme_host_port("scheme", "localhost:8000", 8080)
     with pytest.raises(ValueError):

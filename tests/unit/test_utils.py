@@ -111,31 +111,64 @@ def test_retry(monkeypatch):
     assert record[1] == 0
 
 
-def test_extract_http_scheme_host_port(monkeypatch):
-    h1 = "https://localhost:8089"
-    scheme, host, port = utils.extract_http_scheme_host_port(h1)
-    assert scheme == "https" and host == "localhost" and port == 8089
+@pytest.mark.parametrize(
+    "url,expected_scheme,expected_host,expected_port",
+    [
+        (
+            "https://localhost:8089",
+            "https",
+            "localhost",
+            8089,
+        ),
+        (
+            "https://localhost:8089/",
+            "https",
+            "localhost",
+            8089,
+        ),
+        (
+            "https://localhost:8089/servicesNS/",
+            "https",
+            "localhost",
+            8089,
+        ),
+        (
+            "http://localhost:8089",
+            "http",
+            "localhost",
+            8089,
+        ),
+        (
+            "http://localhost:8089/",
+            "http",
+            "localhost",
+            8089,
+        ),
+        (
+            "http://localhost:8089/servicesNS/",
+            "http",
+            "localhost",
+            8089,
+        ),
+        (
+            "https://[::1]:8089",
+            "https",
+            "::1",
+            8089,
+        ),
+    ],
+)
+def test_extract_http_scheme_host_port_when_success(
+    url, expected_scheme, expected_host, expected_port
+):
+    scheme, host, port = utils.extract_http_scheme_host_port(url)
 
-    h2 = "https://localhost:8089/"
-    scheme, host, port = utils.extract_http_scheme_host_port(h2)
-    assert scheme == "https" and host == "localhost" and port == 8089
+    assert expected_scheme == scheme
+    assert expected_host == host
+    assert expected_port == port
 
-    h3 = "https://localhost:8089/servicesNS/"
-    scheme, host, port = utils.extract_http_scheme_host_port(h3)
-    assert scheme == "https" and host == "localhost" and port == 8089
 
-    h1 = "http://localhost:8089"
-    scheme, host, port = utils.extract_http_scheme_host_port(h1)
-    assert scheme == "http" and host == "localhost" and port == 8089
-
-    h2 = "http://localhost:8089/"
-    scheme, host, port = utils.extract_http_scheme_host_port(h2)
-    assert scheme == "http" and host == "localhost" and port == 8089
-
-    h3 = "http://localhost:8089/servicesNS/"
-    scheme, host, port = utils.extract_http_scheme_host_port(h3)
-    assert scheme == "http" and host == "localhost" and port == 8089
-
+def test_extract_http_scheme_host_port_when_invalid():
     invalid = "localhost:8089"
     with pytest.raises(ValueError):
         _, _, _ = utils.extract_http_scheme_host_port(invalid)

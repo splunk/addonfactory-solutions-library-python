@@ -214,6 +214,8 @@ class SplunkRestClient(client.Service):
                 )
 
         validate_scheme_host_port(scheme, host, port)
+        if host == "[::1]":
+            host = "::1"
 
         handler = _request_handler(context)
         super().__init__(
