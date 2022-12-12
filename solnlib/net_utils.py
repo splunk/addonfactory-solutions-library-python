@@ -94,6 +94,10 @@ def is_valid_hostname(hostname: str) -> bool:
     Returns:
         True if is valid else False.
     """
+    # Splunk IPv6 support.
+    # https://docs.splunk.com/Documentation/Splunk/9.0.0/Admin/ConfigureSplunkforIPv6#Change_the_prioritization_of_IPv4_and_IPv6_communications
+    if hostname == "[::1]":
+        return True
 
     if len(hostname) > 255:
         return False
