@@ -35,9 +35,6 @@ mkdocs = "^1.4.2"
 mkdocs-material = "^8.5.10"
 mkdocstrings = "0.18.0"
 
-[tool.isort]
-profile = "black"
-
 [build-system]
 requires = ["poetry>=1.0.0"]
 build-backend = "poetry.masonry.api"
