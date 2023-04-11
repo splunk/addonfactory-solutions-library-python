@@ -62,9 +62,6 @@
       [
         "@semantic-release/exec",
         {
-          "prepareCmd": "./.github/workflows/sr-prepare.sh ${nextRelease.version}",
-          "publishCmd": "./.github/workflows/sr-release.sh",
-          "shell": "bash",
           "verifyReleaseCmd": "echo \"version=${nextRelease.version}\" >> $GITHUB_OUTPUT",
           "successCmd": "echo \"new_release_published=${'true'}\" >> $GITHUB_OUTPUT"
         },
@@ -73,7 +70,7 @@
         "@semantic-release/git",
         {
           "assets": ["NOTICE", "pyproject.toml", "solnlib/__init__.py"],
-          "message": "chore(release): ${nextRelease.version}\n\n${nextRelease.notes}",
+          "message": "chore(release): ${nextRelease.version}\n\n${nextRelease.notes} [ci skip]",
         },
       ],
       ["@semantic-release/github", { "assets": ["NOTICE", "pyproject.toml"] }],
