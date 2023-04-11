@@ -17,8 +17,7 @@ jobs:
       matrix_supportedSplunk: ${{ steps.matrix.outputs.supportedSplunk }}
     steps:
       - uses: actions/checkout@v3
-      - name: matrix
-        id: matrix
+      - id: matrix
         uses: splunk/addonfactory-test-matrix-action@v1
 
   fossa-scan:
@@ -45,15 +44,10 @@ jobs:
           FOSSA_API_KEY: ${{ secrets.FOSSA_API_KEY }}
 
   compliance-copyrights:
-    name: Compliance Copyright Headers
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Check License Header
-        uses: apache/skywalking-eyes@v0.4.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/checkout@v3
+      - uses: apache/skywalking-eyes@v0.4.0
 
   pre-commit:
     runs-on: ubuntu-latest
@@ -91,17 +85,15 @@ jobs:
           publishToken: ${{ secrets.SEMGREP_PUBLISH_TOKEN }}
 
   run-unit-tests:
-    name: test-unit
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Setup python
-        uses: actions/setup-python@v4
+      - run: pipx install poetry==1.1.15
+      - uses: actions/setup-python@v4
         with:
           python-version: 3.7
-      - name: run tests
-        run: |
-          curl -sSL https://install.python-poetry.org | python3 -
+          cache: "poetry"
+      - run: |
           poetry install
           poetry run pytest --junitxml=test-results/results.xml tests/unit
       - uses: actions/upload-artifact@v3
@@ -110,7 +102,6 @@ jobs:
           path: test-results
 
   test-splunk:
-    name: test-splunk
     runs-on: ubuntu-latest
     continue-on-error: true
     needs:
@@ -120,10 +111,11 @@ jobs:
         splunk: ${{ fromJson(needs.meta.outputs.matrix_supportedSplunk) }}
     steps:
       - uses: actions/checkout@v3
-      - name: Setup python
-        uses: actions/setup-python@v4
+      - run: pipx install poetry==1.1.15
+      - uses: actions/setup-python@v4
         with:
           python-version: 3.7
+          cache: "poetry"
       - name: Install Splunk
         run: |
           export SPLUNK_PRODUCT=splunk
@@ -149,7 +141,6 @@ jobs:
           sudo /opt/splunk/bin/splunk restart
       - name: Run tests
         run: |
-          curl -sSL https://install.python-poetry.org | python3 -
           poetry install
           SPLUNK_HOME=/opt/splunk/ poetry run pytest --junitxml=test-results/results.xml -v tests/integration
       - uses: actions/upload-artifact@v3
@@ -158,7 +149,6 @@ jobs:
           path: test-results
 
   publish:
-    name: Build Release
     needs:
       - fossa-scan
       - compliance-copyrights
@@ -175,14 +165,12 @@ jobs:
           # Very important: semantic-release won't trigger a tagged
           # build if this is not set false
           persist-credentials: false
-      - name: Setup python
-        uses: actions/setup-python@v4
+      - run: pipx install poetry==1.1.15
+      - uses: actions/setup-python@v4
         with:
           python-version: "3.7"
-      - name: Install Poetry
-        run: |
-          curl -sSL https://install.python-poetry.org | python3 -
-          poetry install
+          cache: "poetry"
+      - run: |
           poetry build
       - id: semantic
         uses: splunk/semantic-release-action@v1.3
