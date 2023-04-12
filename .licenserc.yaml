@@ -27,5 +27,6 @@ header:
     - ".*"
     - "mkdocs.yml"
     - "docs/"
+    - "renovate.json"
 
   comment: on-failure
