@@ -68,7 +68,7 @@ jobs:
           submodules: false
           fetch-depth: "0"
       - name: Trufflehog Actions Scan
-        uses: edplato/trufflehog-actions-scan@v0.9j-beta
+        uses: edplato/trufflehog-actions-scan@v0.9-beta
         with:
           scanArguments: "--max_depth 30 -x .github/workflows/exclude-patterns.txt"
 
