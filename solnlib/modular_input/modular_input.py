@@ -59,7 +59,7 @@ class ModularInput(metaclass=ABCMeta):
 
     Examples:
 
-       >>> Class TestModularInput(ModularInput):
+       >>> class TestModularInput(ModularInput):
        >>>     app = 'TestApp'
        >>>     name = 'test_modular_input'
        >>>     title = 'Test modular input'
@@ -419,7 +419,7 @@ class ModularInput(metaclass=ABCMeta):
         other input instead `stdin`.
 
         Returns:
-            A dict object must contains `metadata` and `inputs`::
+            A dict object must contain `metadata` and `inputs`::
 
                 example: {
                     'metadata': {
@@ -445,7 +445,7 @@ class ModularInput(metaclass=ABCMeta):
         """Modular input entry.
 
         Examples:
-           >>> Class TestModularInput(ModularInput):
+           >>> class TestModularInput(ModularInput):
            >>>         ... .. .
            >>>
            >>> if __name__ == '__main__':

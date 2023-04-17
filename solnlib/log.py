@@ -20,6 +20,7 @@ import logging
 import logging.handlers
 import os.path as op
 from threading import Lock
+from typing import Dict, Any
 
 from .pattern import Singleton
 from .splunkenv import make_splunkhome_path
@@ -64,7 +65,7 @@ class Logs(metaclass=Singleton):
     """A singleton class that manage all kinds of logger.
 
     Examples:
-      >>> from solnlib.import log
+      >>> from solnlib import log
       >>> log.Logs.set_context(directory='/var/log/test',
                                namespace='test')
       >>> logger = log.Logs().get_logger('mymodule')
@@ -217,3 +218,42 @@ class Logs(metaclass=Singleton):
                 for logger in list(self._loggers.values()):
                     logger.setLevel(level)
                 logging.getLogger().setLevel(level)
+
+
+def log_event(logger: logging.Logger, key_values: Dict[str, Any]):
+    message = " ".join([f"{k}={v}" for k, v in key_values.items()])
+    logger.info(message)
+
+
+def modular_input_start(logger: logging.Logger, modular_input_name: str):
+    log_event(
+        logger,
+        {
+            "action": "started",
+            "modular_input_name": modular_input_name,
+        },
+    )
+
+
+def modular_input_end(logger: logging.Logger, modular_input_name: str):
+    log_event(
+        logger,
+        {
+            "action": "ended",
+            "modular_input_name": modular_input_name,
+        },
+    )
+
+
+def events_ingested(
+    logger: logging.Logger, modular_input_name: str, sourcetype: str, n_events: int
+):
+    log_event(
+        logger,
+        {
+            "action": "events_ingested",
+            "modular_input_name": modular_input_name,
+            "sourcetype": sourcetype,
+            "n_events": n_events,
+        },
+    )

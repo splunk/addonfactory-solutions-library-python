@@ -20,6 +20,7 @@ import os
 import shutil
 import threading
 import time
+from unittest import mock
 
 from solnlib import log
 
@@ -135,3 +136,56 @@ class TestLogs:
         logging.info("This is another INFO log in root logger.")
         logging.error("This is another ERROR log in root logger.")
         assert os.path.isfile(root_log_file)
+
+
+def test_log_event():
+    with mock.patch("logging.Logger") as mock_logger:
+        log.log_event(
+            mock_logger,
+            {
+                "key": "foo",
+                "value": "bar",
+            },
+        )
+
+        assert mock_logger.info.call_count == 1
+        assert "key=foo value=bar" in mock_logger.info.call_args[0]
+
+
+def test_modular_input_start():
+    with mock.patch("logging.Logger") as mock_logger:
+        log.modular_input_start(
+            mock_logger,
+            "modular_input_name",
+        )
+
+        assert mock_logger.info.call_count == 1
+        assert (
+            "action=started modular_input_name=modular_input_name"
+            in mock_logger.info.call_args[0]
+        )
+
+
+def test_modular_input_end():
+    with mock.patch("logging.Logger") as mock_logger:
+        log.modular_input_end(
+            mock_logger,
+            "modular_input_name",
+        )
+
+        assert mock_logger.info.call_count == 1
+        assert (
+            "action=ended modular_input_name=modular_input_name"
+            in mock_logger.info.call_args[0]
+        )
+
+
+def test_events_ingested():
+    with mock.patch("logging.Logger") as mock_logger:
+        log.events_ingested(mock_logger, "modular_input_name", "sourcetype", 5)
+
+        assert mock_logger.info.call_count == 1
+        assert (
+            "action=events_ingested modular_input_name=modular_input_name sourcetype=sourcetype n_events=5"
+            in mock_logger.info.call_args[0]
+        )
