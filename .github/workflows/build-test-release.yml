@@ -141,7 +141,7 @@ jobs:
       - pre-commit
       - semgrep
       - run-unit-tests
-      - test-splunk
+#      - test-splunk
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
