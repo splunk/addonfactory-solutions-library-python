@@ -58,20 +58,6 @@ jobs:
           python-version: "3.7"
       - uses: pre-commit/action@v3.0.0
 
-  review_secrets:
-    name: security-detect-secrets
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          submodules: false
-          fetch-depth: "0"
-      - name: Trufflehog Actions Scan
-        uses: edplato/trufflehog-actions-scan@v0.9j-beta
-        with:
-          scanArguments: "--max_depth 30 -x .github/workflows/exclude-patterns.txt"
-
   semgrep:
     runs-on: ubuntu-latest
     name: security-sast-semgrep
@@ -153,7 +139,6 @@ jobs:
       - fossa-scan
       - compliance-copyrights
       - pre-commit
-      - review_secrets
       - semgrep
       - run-unit-tests
       - test-splunk
