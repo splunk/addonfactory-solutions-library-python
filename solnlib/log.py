@@ -236,15 +236,24 @@ def modular_input_start(logger: logging.Logger, modular_input_name: str):
 
 
 def modular_input_end(logger: logging.Logger, modular_input_name: str):
-    logger.info(f"action=ended modular_input_name={modular_input_name}")
+    log_event(
+        logger,
+        {
+            "action": "ended",
+            "modular_input_name": modular_input_name,
+        },
+    )
 
 
 def events_ingested(
     logger: logging.Logger, modular_input_name: str, sourcetype: str, n_events: int
 ):
-    logger.info(
-        f"action=events_ingested "
-        f"modular_input_name={modular_input_name} "
-        f"sourcetype={sourcetype} "
-        f"n_events={n_events}"
+    log_event(
+        logger,
+        {
+            "action": "events_ingested",
+            "modular_input_name": modular_input_name,
+            "sourcetype": sourcetype,
+            "n_events": n_events,
+        },
     )
