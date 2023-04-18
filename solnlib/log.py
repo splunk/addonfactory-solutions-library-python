@@ -220,12 +220,16 @@ class Logs(metaclass=Singleton):
                 logging.getLogger().setLevel(level)
 
 
-def log_event(logger: logging.Logger, key_values: Dict[str, Any]):
+def log_event(
+    logger: logging.Logger, key_values: Dict[str, Any], log_level: int = logging.INFO
+):
+    """General function to log any event in key-value format."""
     message = " ".join([f"{k}={v}" for k, v in key_values.items()])
-    logger.info(message)
+    logger.log(log_level, message)
 
 
 def modular_input_start(logger: logging.Logger, modular_input_name: str):
+    """Specific function to log the start of the modular input."""
     log_event(
         logger,
         {
@@ -236,6 +240,7 @@ def modular_input_start(logger: logging.Logger, modular_input_name: str):
 
 
 def modular_input_end(logger: logging.Logger, modular_input_name: str):
+    """Specific function to log the end of the modular input."""
     log_event(
         logger,
         {
@@ -248,6 +253,7 @@ def modular_input_end(logger: logging.Logger, modular_input_name: str):
 def events_ingested(
     logger: logging.Logger, modular_input_name: str, sourcetype: str, n_events: int
 ):
+    """Specific function to log the number of events ingested."""
     log_event(
         logger,
         {
