@@ -259,7 +259,7 @@ def events_ingested(
         {
             "action": "events_ingested",
             "modular_input_name": modular_input_name,
-            "sourcetype": sourcetype,
+            "sourcetype_ingested": sourcetype,
             "n_events": n_events,
         },
     )
