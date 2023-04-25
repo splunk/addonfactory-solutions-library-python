@@ -195,5 +195,5 @@ def test_events_ingested():
 
         mock_logger.log.assert_called_once_with(
             logging.INFO,
-            "action=events_ingested modular_input_name=modular_input_name sourcetype=sourcetype n_events=5",
+            "action=events_ingested modular_input_name=modular_input_name sourcetype_ingested=sourcetype n_events=5",
         )
