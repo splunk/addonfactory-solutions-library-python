@@ -74,11 +74,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - run: pipx install poetry==1.4.2
       - uses: actions/setup-python@v4
         with:
           python-version: 3.7
-          cache: "poetry"
+      - run: curl -sSL https://install.python-poetry.org | python3 - --version 1.4.2
       - run: |
           poetry install
           poetry run pytest --junitxml=test-results/results.xml tests/unit
@@ -97,11 +96,10 @@ jobs:
         splunk: ${{ fromJson(needs.meta.outputs.matrix_supportedSplunk) }}
     steps:
       - uses: actions/checkout@v3
-      - run: pipx install poetry==1.4.2
       - uses: actions/setup-python@v4
         with:
           python-version: 3.7
-          cache: "poetry"
+      - run: curl -sSL https://install.python-poetry.org | python3 - --version 1.4.2
       - name: Install Splunk
         run: |
           export SPLUNK_PRODUCT=splunk
@@ -150,11 +148,10 @@ jobs:
           # Very important: semantic-release won't trigger a tagged
           # build if this is not set false
           persist-credentials: false
-      - run: pipx install poetry==1.4.2
       - uses: actions/setup-python@v4
         with:
           python-version: "3.7"
-          cache: "poetry"
+      - run: curl -sSL https://install.python-poetry.org | python3 - --version 1.4.2
       - run: |
           poetry build
       - id: semantic
