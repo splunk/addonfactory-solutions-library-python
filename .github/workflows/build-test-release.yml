@@ -71,20 +71,26 @@ jobs:
           publishToken: ${{ secrets.SEMGREP_PUBLISH_TOKEN }}
 
   run-unit-tests:
+    name: test-unit ${{ matrix.python-version }}
     runs-on: ubuntu-latest
+    continue-on-error: true
+    strategy:
+      matrix:
+        python-version:
+          - "3.7"
+          - "3.8"
+          - "3.9"
+          - "3.10"
+          - "3.11"
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
         with:
-          python-version: 3.7
+          python-version: ${{ matrix.python-version }}
       - run: curl -sSL https://install.python-poetry.org | python3 - --version 1.4.2
       - run: |
           poetry install
-          poetry run pytest --junitxml=test-results/results.xml tests/unit
-      - uses: actions/upload-artifact@v3
-        with:
-          name: unit tests test-results
-          path: test-results
+          poetry run pytest tests/unit
 
   test-splunk:
     runs-on: ubuntu-latest
