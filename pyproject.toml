@@ -26,15 +26,15 @@ repository = "https://github.com/splunk/addonfactory-solutions-library-python"
 python = "^3.7"
 requests = "^2.31.0"
 urllib3 = "<2"
-sortedcontainers = "^2.2"
-defusedxml = "^0.7.1"
-splunk-sdk = ">=1.6.18"
+sortedcontainers = ">=2"
+defusedxml = ">=0.7"
+splunk-sdk = ">=1.6"
 
 [tool.poetry.dev-dependencies]
-pytest = "^7.2"
-mkdocs = "^1.4.2"
-mkdocs-material = "^9.1.6"
-mkdocstrings = {version="^0.22.0", extras=["python"]}
+pytest = ">=7"
+mkdocs = ">=1"
+mkdocs-material = ">=9"
+mkdocstrings = {version=">=0", extras=["python"]}
 
 [build-system]
 requires = ["poetry>=1.0.0"]
