@@ -129,6 +129,8 @@ jobs:
           sudo /opt/splunk/bin/splunk start --accept-license
           sudo /opt/splunk/bin/splunk set servername custom-servername -auth admin:Chang3d!
           sudo /opt/splunk/bin/splunk restart
+          until curl -k -s -u admin:Chang3d! https://localhost:8089/services/server/info\?output_mode\=json | jq '.entry[0].content.kvStoreStatus' | grep -o "ready" ; do echo -n "Waiting for KVStore to become ready-" && sleep 5 ; done
+        timeout-minutes: 5
       - name: Run tests
         run: |
           poetry install
