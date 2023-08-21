@@ -114,7 +114,7 @@ jobs:
           export SPLUNK_SLUG=$SPLUNK_VERSION-$SPLUNK_BUILD
           export SPLUNK_ARCH=x86_64
           export SPLUNK_LINUX_FILENAME=splunk-${SPLUNK_VERSION}-${SPLUNK_BUILD}-Linux-${SPLUNK_ARCH}.tgz
-          export SPLUNK_BUILD_URL=https://download.splunk.com/products/${SPLUNK_PRODUCT}/releases/${SPLUNK_VERSION}/linux/${SPLUNK_LINUX_FILENAME}
+          export SPLUNK_BUILD_URL=https://download.splunk.com/products/splunk/releases/9.1.0.2/linux/splunk-9.1.0.2-b6436b649711-Linux-x86_64.tgz
           echo "$SPLUNK_BUILD_URL"
           export SPLUNK_HOME=/opt/splunk
           wget -qO /tmp/splunk.tgz "${SPLUNK_BUILD_URL}"
