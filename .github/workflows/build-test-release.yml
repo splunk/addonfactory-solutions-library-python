@@ -141,7 +141,7 @@ jobs:
           echo "Check disk usage"
           df -h
           echo "========"
-          SPLUNK_HOME=/opt/splunk/ poetry run pytest -su --junitxml=test-results/results.xml -v tests/integration
+          SPLUNK_HOME=/opt/splunk/ poetry run pytest --junitxml=test-results/results.xml -v tests/integration
       - uses: actions/upload-artifact@v3
         with:
           name: test-splunk test-results
