@@ -31,9 +31,9 @@ def test_CVE_2023_32712():
     search_results = search(session_key, f'search index=_internal "{msg_prefix}"')
     assert len(search_results) >= 1
     _raw_event = search_results[0]["_raw"]
-    print("====debug====="
+    print("====debug=====")
     print(_raw_event)
-    print("Search results:"
+    print("Search results:")
     print(search_results)
 
     # test for nonwhite characters and white characters as they should be represented in fixed Splunk instance
