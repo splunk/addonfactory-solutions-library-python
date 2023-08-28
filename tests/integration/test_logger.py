@@ -28,7 +28,7 @@ def test_CVE_2023_32712():
 
     msg_prefix = "ASCII Table in one string: "
     time.sleep(30)
-    search_results = search(session_key, f'search index=_internal "{msg_prefix}"')
+    search_results = search(session_key, f'search index=_internal sourcetype="solnlib_demo_collector-too_small"')
     assert len(search_results) >= 1
     _raw_event = search_results[0]["_raw"]
     print("====debug=====")
