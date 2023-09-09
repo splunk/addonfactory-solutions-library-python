@@ -75,9 +75,9 @@ class SolnlibDemoCollector(ModularInput):
         msg = "ASCII Table in one string: "
         for i in range(9):
             msg += chr(i)
-        for i in range(11,13):
+        for i in range(11, 13):
             msg += chr(i)
-        for i in range(14,128):
+        for i in range(14, 128):
             msg += chr(i)
         logger.info(msg)
         # Register orphan process handler
