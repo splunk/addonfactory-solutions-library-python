@@ -73,7 +73,9 @@ class SolnlibDemoCollector(ModularInput):
         logger.info("Solnlib demo modular input start...")
         # for CVE-2023-32712 integration test
         msg = "ASCII Table in one string: "
-        for i in range(128):
+        for i in range(9):
+            msg += chr(i)
+        for i in range(11,128):
             msg += chr(i)
         logger.info(msg)
         # Register orphan process handler
