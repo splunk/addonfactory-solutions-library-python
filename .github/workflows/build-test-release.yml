@@ -138,7 +138,7 @@ jobs:
           SPLUNK_HOME=/opt/splunk/ poetry run pytest --junitxml=test-results/results.xml -v tests/integration
       - uses: actions/upload-artifact@v3
         with:
-          name: test-splunk test-results
+          name: test-splunk
           path: test-results
 
   publish:
@@ -148,7 +148,7 @@ jobs:
       - pre-commit
       - semgrep
       - run-unit-tests
-#      - test-splunk
+      - test-splunk
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -162,6 +162,7 @@ jobs:
           python-version: "3.7"
       - run: curl -sSL https://install.python-poetry.org | python3 - --version 1.5.1
       - run: |
+          poetry install
           poetry build
       - id: semantic
         uses: splunk/semantic-release-action@v1.3
@@ -171,11 +172,10 @@ jobs:
           gpg_private_key: ${{ secrets.SA_GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.SA_GPG_PASSPHRASE }}
           extra_plugins: |
-            @google/semantic-release-replace-plugin
+            semantic-release-replace-plugin
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN_ADMIN }}
       - if: ${{ steps.semantic.outputs.new_release_published == 'true' }}
-        uses: splunk/pypi-publish-action@v1.0
-        with:
-          pypi_username: ${{ secrets.PYPI_USERNAME }}
-          pypi_token: ${{ secrets.PYPI_TOKEN }}
+        run: |
+          poetry build
+          poetry publish -n -u ${{ secrets.PYPI_USERNAME }} -p ${{ secrets.PYPI_TOKEN }}
