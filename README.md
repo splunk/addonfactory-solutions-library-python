@@ -6,6 +6,8 @@ developers. This SDK/Library extends the Splunk SDK for python
 
 Documentation is available [here](https://splunk.github.io/addonfactory-solutions-library-python/).
 
+testing fossa
+
 ## Communication channels
 
 If you are a Splunker use: https://splunk.slack.com/archives/C03T8QCHBTJ
