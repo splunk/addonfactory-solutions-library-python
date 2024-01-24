@@ -19,6 +19,8 @@
 import logging
 import logging.handlers
 import os.path as op
+import sys
+import traceback
 from threading import Lock
 from typing import Dict, Any
 
@@ -263,3 +265,25 @@ def events_ingested(
             "n_events": n_events,
         },
     )
+
+
+def log_exception(
+        logger: logging.Logger,
+        e: Exception,
+        full_msg: bool = True,
+        msg_before: str = None,
+        msg_after: str = None,
+        log_level: int = logging.INFO
+):
+    """General function to log exceptions."""
+    exc_type, exc_value, exc_traceback = type(e), e, e.__traceback__
+    if full_msg:
+        error = traceback.format_exception(exc_type, exc_value, exc_traceback)
+    else:
+        error = traceback.format_exception_only(exc_type, exc_value)
+
+    msg_start = msg_before if msg_before is not None else ""
+    msg_mid = "".join(error)
+    msg_end = msg_after if msg_after is not None else ""
+    msg = f"{msg_start}\n{msg_mid}\n{msg_end}"
+    logger.log(log_level, msg)

@@ -15,10 +15,12 @@
 #
 
 import logging
+import json
 import multiprocessing
 import os
 import shutil
 import threading
+import traceback
 import time
 from unittest import mock
 
@@ -197,3 +199,30 @@ def test_events_ingested():
             logging.INFO,
             "action=events_ingested modular_input_name=modular_input_name sourcetype_ingested=sourcetype n_events=5",
         )
+
+
+def test_log_exceptions_full_msg():
+    start_msg = "some msg before exception"
+    with mock.patch("logging.Logger") as mock_logger:
+        try:
+            test_jsons = "{'a': 'aa'"
+            json.loads(test_jsons)
+        except Exception as e:
+            log.log_exception(mock_logger, e, msg_before=start_msg)
+            mock_logger.log.assert_called_with(logging.INFO, f"{start_msg}\n{traceback.format_exc()}\n")
+
+
+def test_log_exceptions_partial_msg():
+    start_msg = "some msg before exception"
+    end_msg = "some msg after exception"
+    with mock.patch("logging.Logger") as mock_logger:
+        try:
+            test_jsons = "{'a': 'aa'"
+            json.loads(test_jsons)
+        except Exception as e:
+            log.log_exception(mock_logger, e, full_msg=False, msg_before=start_msg, msg_after=end_msg)
+            mock_logger.log.assert_called_with(
+                logging.INFO,
+                'some msg before exception\njson.decoder.JSONDecodeError: Expecting property name enclosed in double '
+                'quotes: line 1 column 2 (char 1)\n\nsome msg after exception'
+            )
