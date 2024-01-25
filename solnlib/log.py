@@ -268,12 +268,12 @@ def events_ingested(
 
 
 def log_exception(
-        logger: logging.Logger,
-        e: Exception,
-        full_msg: bool = True,
-        msg_before: str = None,
-        msg_after: str = None,
-        log_level: int = logging.INFO
+    logger: logging.Logger,
+    e: Exception,
+    full_msg: bool = True,
+    msg_before: str = None,
+    msg_after: str = None,
+    log_level: int = logging.INFO,
 ):
     """General function to log exceptions."""
     exc_type, exc_value, exc_traceback = type(e), e, e.__traceback__
