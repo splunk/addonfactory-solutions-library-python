@@ -1,11 +1,11 @@
 #
-# Copyright 2021 Splunk Inc.
+# Copyright 2023 Splunk Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-# http://www.apache.org/licenses/LICENSE-2.0
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,6 +20,7 @@ import os
 import shutil
 import threading
 import time
+from unittest import mock
 
 from solnlib import log
 
@@ -135,3 +136,64 @@ class TestLogs:
         logging.info("This is another INFO log in root logger.")
         logging.error("This is another ERROR log in root logger.")
         assert os.path.isfile(root_log_file)
+
+
+def test_log_event():
+    with mock.patch("logging.Logger") as mock_logger:
+        log.log_event(
+            mock_logger,
+            {
+                "key": "foo",
+                "value": "bar",
+            },
+        )
+
+        mock_logger.log.assert_called_once_with(logging.INFO, "key=foo value=bar")
+
+
+def test_log_event_when_debug_log_level():
+    with mock.patch("logging.Logger") as mock_logger:
+        log.log_event(
+            mock_logger,
+            {
+                "key": "foo",
+                "value": "bar",
+            },
+            log_level=logging.DEBUG,
+        )
+
+        mock_logger.log.assert_called_once_with(logging.DEBUG, "key=foo value=bar")
+
+
+def test_modular_input_start():
+    with mock.patch("logging.Logger") as mock_logger:
+        log.modular_input_start(
+            mock_logger,
+            "modular_input_name",
+        )
+
+        mock_logger.log.assert_called_once_with(
+            logging.INFO, "action=started modular_input_name=modular_input_name"
+        )
+
+
+def test_modular_input_end():
+    with mock.patch("logging.Logger") as mock_logger:
+        log.modular_input_end(
+            mock_logger,
+            "modular_input_name",
+        )
+
+        mock_logger.log.assert_called_once_with(
+            logging.INFO, "action=ended modular_input_name=modular_input_name"
+        )
+
+
+def test_events_ingested():
+    with mock.patch("logging.Logger") as mock_logger:
+        log.events_ingested(mock_logger, "modular_input_name", "sourcetype", 5)
+
+        mock_logger.log.assert_called_once_with(
+            logging.INFO,
+            "action=events_ingested modular_input_name=modular_input_name sourcetype_ingested=sourcetype n_events=5",
+        )

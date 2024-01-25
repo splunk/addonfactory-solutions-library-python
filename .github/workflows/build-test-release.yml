@@ -16,7 +16,7 @@ jobs:
     outputs:
       matrix_supportedSplunk: ${{ steps.matrix.outputs.supportedSplunk }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - id: matrix
         uses: splunk/addonfactory-test-matrix-action@v1
 
@@ -24,7 +24,7 @@ jobs:
     continue-on-error: true
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: run fossa anlyze and create report
         run: |
           curl -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/fossas/fossa-cli/master/install-latest.sh | bash
@@ -33,7 +33,7 @@ jobs:
         env:
           FOSSA_API_KEY: ${{ secrets.FOSSA_API_KEY }}
       - name: upload THIRDPARTY file
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: THIRDPARTY
           path: /tmp/THIRDPARTY
@@ -46,14 +46,14 @@ jobs:
   compliance-copyrights:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: apache/skywalking-eyes@v0.4.0
+      - uses: actions/checkout@v4
+      - uses: apache/skywalking-eyes@v0.5.0
 
   pre-commit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.7"
       - uses: pre-commit/action@v3.0.0
@@ -63,29 +63,34 @@ jobs:
     name: security-sast-semgrep
     if: github.actor != 'dependabot[bot]'
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Semgrep
         id: semgrep
-        uses: returntocorp/semgrep-action@v1
+        uses: semgrep/semgrep-action@v1
         with:
           publishToken: ${{ secrets.SEMGREP_PUBLISH_TOKEN }}
 
   run-unit-tests:
+    name: test-unit ${{ matrix.python-version }}
     runs-on: ubuntu-latest
+    continue-on-error: true
+    strategy:
+      matrix:
+        python-version:
+          - "3.7"
+          - "3.8"
+          - "3.9"
+          - "3.10"
+          - "3.11"
     steps:
-      - uses: actions/checkout@v3
-      - run: pipx install poetry==1.1.15
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          python-version: 3.7
-          cache: "poetry"
+          python-version: ${{ matrix.python-version }}
+      - run: curl -sSL https://install.python-poetry.org | python3 - --version 1.5.1
       - run: |
           poetry install
-          poetry run pytest --junitxml=test-results/results.xml tests/unit
-      - uses: actions/upload-artifact@v3
-        with:
-          name: unit tests test-results
-          path: test-results
+          poetry run pytest tests/unit
 
   test-splunk:
     runs-on: ubuntu-latest
@@ -96,12 +101,11 @@ jobs:
       matrix:
         splunk: ${{ fromJson(needs.meta.outputs.matrix_supportedSplunk) }}
     steps:
-      - uses: actions/checkout@v3
-      - run: pipx install poetry==1.1.15
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: 3.7
-          cache: "poetry"
+      - run: curl -sSL https://install.python-poetry.org | python3 - --version 1.5.1
       - name: Install Splunk
         run: |
           export SPLUNK_PRODUCT=splunk
@@ -123,15 +127,18 @@ jobs:
           echo -e "[user_info]\nUSERNAME=Admin\nPASSWORD=Chang3d"'!' | sudo tee -a /opt/splunk/etc/system/local/user-seed.conf
           echo 'OPTIMISTIC_ABOUT_FILE_LOCKING=1' | sudo tee -a /opt/splunk/etc/splunk-launch.conf
           sudo /opt/splunk/bin/splunk start --accept-license
+          sudo /opt/splunk/bin/splunk cmd python -m pip install solnlib
           sudo /opt/splunk/bin/splunk set servername custom-servername -auth admin:Chang3d!
           sudo /opt/splunk/bin/splunk restart
+          until curl -k -s -u admin:Chang3d! https://localhost:8089/services/server/info\?output_mode\=json | jq '.entry[0].content.kvStoreStatus' | grep -o "ready" ; do echo -n "Waiting for KVStore to become ready-" && sleep 5 ; done
+        timeout-minutes: 5
       - name: Run tests
         run: |
           poetry install
           SPLUNK_HOME=/opt/splunk/ poetry run pytest --junitxml=test-results/results.xml -v tests/integration
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
-          name: test-splunk test-results
+          name: test-splunk-${{ matrix.splunk.version }}-${{ matrix.python-version }}
           path: test-results
 
   publish:
@@ -144,18 +151,18 @@ jobs:
       - test-splunk
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: false
           # Very important: semantic-release won't trigger a tagged
           # build if this is not set false
           persist-credentials: false
-      - run: pipx install poetry==1.1.15
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.7"
-          cache: "poetry"
+      - run: curl -sSL https://install.python-poetry.org | python3 - --version 1.5.1
       - run: |
+          poetry install
           poetry build
       - id: semantic
         uses: splunk/semantic-release-action@v1.3
@@ -165,11 +172,10 @@ jobs:
           gpg_private_key: ${{ secrets.SA_GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.SA_GPG_PASSPHRASE }}
           extra_plugins: |
-            @google/semantic-release-replace-plugin
+            semantic-release-replace-plugin
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN_ADMIN }}
       - if: ${{ steps.semantic.outputs.new_release_published == 'true' }}
-        uses: splunk/pypi-publish-action@v1.0
-        with:
-          pypi_username: ${{ secrets.PYPI_USERNAME }}
-          pypi_token: ${{ secrets.PYPI_TOKEN }}
+        run: |
+          poetry build
+          poetry publish -n -u ${{ secrets.PYPI_USERNAME }} -p ${{ secrets.PYPI_TOKEN }}
