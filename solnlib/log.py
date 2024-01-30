@@ -21,6 +21,7 @@ import logging.handlers
 import os.path as op
 from threading import Lock
 from typing import Dict, Any
+import sys
 
 from .pattern import Singleton
 from .splunkenv import make_splunkhome_path
