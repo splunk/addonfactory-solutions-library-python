@@ -14,16 +14,15 @@
 # limitations under the License.
 #
 
+import context
 import os.path as op
 import sys
+import pytest
+from solnlib import conf_manager
 from unittest import mock
 
-import pytest
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-import context
-
-from solnlib import conf_manager
 
 
 def _build_conf_manager(session_key: str) -> conf_manager.ConfManager:

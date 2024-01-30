@@ -52,7 +52,7 @@ def test_object_acl_manager(monkeypatch):
     def mock_kvstore_collection_data_query_by_id(self, id):
         try:
             return object_acls[id]
-        except:
+        except Exception:
             raise binding.HTTPError(common.make_response_record("", status=404))
 
     def mock_kvstore_collection_data_query(self, **query):
@@ -68,7 +68,7 @@ def test_object_acl_manager(monkeypatch):
     def mock_kvstore_collection_data_delete_by_id(self, id):
         try:
             del object_acls[id]
-        except:
+        except Exception:
             raise binding.HTTPError(common.make_response_record("", status=404))
 
     def mock_kvstore_collection_data_delete(self, query=None):
@@ -210,13 +210,13 @@ def test_app_capability_manager(monkeypatch):
     def mock_kvstore_collection_data_query_by_id(self, id):
         try:
             return app_capabilities[id]
-        except:
+        except Exception:
             raise binding.HTTPError(common.make_response_record("", status=404))
 
     def mock_kvstore_collection_data_delete_by_id(self, id):
         try:
             del app_capabilities[id]
-        except:
+        except Exception:
             raise binding.HTTPError(None, status=404)
 
     common.mock_splunkhome(monkeypatch)

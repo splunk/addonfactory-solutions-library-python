@@ -13,15 +13,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import context
 import os.path as op
 import sys
 import time
 
-sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-import context
 from _search import search
 
 from solnlib.modular_input import event_writer as hew
+
+sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 
 
 def test_hec_event_writer():
