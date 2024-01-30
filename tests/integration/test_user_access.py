@@ -14,15 +14,15 @@
 # limitations under the License.
 #
 
+import context
 import os.path as op
 import sys
 
 import pytest
 
-sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-import context
-
 from solnlib import user_access
+
+sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 
 
 def test_object_acl_manager():

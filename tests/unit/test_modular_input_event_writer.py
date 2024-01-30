@@ -76,7 +76,11 @@ def test_classic_event_writer(monkeypatch):
 
     assert (
         mock_stdout.read()
-        == '<stream><event stanza="test_scheme://test" unbroken="1"><time>1372274622.493</time><index>main</index><host>localhost</host><source>Splunk</source><sourcetype>misc</sourcetype><data>This is a test data1.</data></event><event stanza="test_scheme://test" unbroken="1"><time>1372274622.493</time><index>main</index><host>localhost</host><source>Splunk</source><sourcetype>misc</sourcetype><data>This is a test data2.</data><done /></event></stream>'
+        == '<stream><event stanza="test_scheme://test" unbroken="1"><time>1372274622.493</time><index>main'
+        "</index><host>localhost</host><source>Splunk</source><sourcetype>misc</sourcetype><data>"
+        'This is a test data1.</data></event><event stanza="test_scheme://test" unbroken="1"><time>'
+        "1372274622.493</time><index>main</index><host>localhost</host><source>Splunk</source><sourcetype>misc"
+        "</sourcetype><data>This is a test data2.</data><done /></event></stream>"
     )
     assert mock_stdout.write_count == 1
 
@@ -102,11 +106,13 @@ def test_hec_event_writer(monkeypatch):
 
         assert (
             event_strings[0]
-            == '{"event": "This is a test data1.", "host": "localhost", "index": "main", "source": "Splunk", "sourcetype": "misc", "time": 1372274622.493}'
+            == '{"event": "This is a test data1.", "host": "localhost", "index": "main", '
+            '"source": "Splunk", "sourcetype": "misc", "time": 1372274622.493}'
         )
         assert (
             event_strings[1]
-            == '{"event": "This is a test data2.", "host": "localhost", "index": "main", "source": "Splunk", "sourcetype": "misc", "time": 1372274622.493}'
+            == '{"event": "This is a test data2.", "host": "localhost", "index": "main", '
+            '"source": "Splunk", "sourcetype": "misc", "time": 1372274622.493}'
         )
 
     def mock_get_hec_config(

@@ -14,16 +14,14 @@
 # limitations under the License.
 #
 
+import context
 import datetime
 import os.path as op
 import sys
-
 import pytest
+from solnlib import time_parser
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-import context
-
-from solnlib import time_parser
 
 
 def test_time_parser():

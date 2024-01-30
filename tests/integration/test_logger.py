@@ -13,13 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import context
 import os.path as op
 import sys
 import time
+from _search import search
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-import context
-from _search import search
 
 
 def test_CVE_2023_32712():

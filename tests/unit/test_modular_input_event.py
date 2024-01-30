@@ -73,26 +73,41 @@ class TestXMLEvent:
     def test_str(self, monkeypatch):
         assert (
             to_sorted_json_string(self.xe1)
-            == '{"data": "This is a test data1.", "done": false, "host": "localhost", "index": "main", "source": "Splunk", "sourcetype": "misc", "stanza": "test_scheme://test", "time": 1372274622.493, "unbroken": true}'
+            == '{"data": "This is a test data1.", "done": false, "host": "localhost", "index": "main", '
+            '"source": "Splunk", "sourcetype": "misc", "stanza": "test_scheme://test", '
+            '"time": 1372274622.493, "unbroken": true}'
         )
         assert (
             to_sorted_json_string(self.xe2)
-            == '{"data": "This is a test data2.", "done": true, "host": "localhost", "index": "main", "source": "Splunk", "sourcetype": "misc", "stanza": "test_scheme://test", "time": 1372274622.493, "unbroken": true}'
+            == '{"data": "This is a test data2.", "done": true, "host": "localhost", "index": "main", '
+            '"source": "Splunk", "sourcetype": "misc", "stanza": "test_scheme://test", '
+            '"time": 1372274622.493, "unbroken": true}'
         )
         assert (
             to_sorted_json_string(self.xe3)
-            == '{"data": "This is a test data3.", "done": false, "host": "localhost", "index": "main", "source": "Splunk", "sourcetype": "misc", "stanza": "test_scheme://test", "time": 1372274622.493, "unbroken": false}'
+            == '{"data": "This is a test data3.", "done": false, "host": "localhost", "index": "main", '
+            '"source": "Splunk", "sourcetype": "misc", "stanza": "test_scheme://test", '
+            '"time": 1372274622.493, "unbroken": false}'
         )
 
     def test_format_events(self, monkeypatch):
         assert XMLEvent.format_events([self.xe1, self.xe2]) == [
-            '<stream><event stanza="test_scheme://test" unbroken="1"><time>1372274622.493</time><index>main</index><host>localhost</host><source>Splunk</source><sourcetype>misc</sourcetype><data>This is a test data1.</data></event><event stanza="test_scheme://test" unbroken="1"><time>1372274622.493</time><index>main</index><host>localhost</host><source>Splunk</source><sourcetype>misc</sourcetype><data>This is a test data2.</data><done /></event></stream>'
+            '<stream><event stanza="test_scheme://test" unbroken="1">'
+            "<time>1372274622.493</time><index>main</index><host>localhost</host><source>Splunk</source>"
+            "<sourcetype>misc</sourcetype><data>This is a test data1.</data></event>"
+            '<event stanza="test_scheme://test" unbroken="1"><time>1372274622.493</time>'
+            "<index>main</index><host>localhost</host><source>Splunk</source><sourcetype>misc</sourcetype>"
+            "<data>This is a test data2.</data><done /></event></stream>"
         ]
         assert XMLEvent.format_events([self.xe3]) == [
-            '<stream><event stanza="test_scheme://test"><time>1372274622.493</time><index>main</index><host>localhost</host><source>Splunk</source><sourcetype>misc</sourcetype><data>This is a test data3.</data></event></stream>'
+            '<stream><event stanza="test_scheme://test"><time>1372274622.493</time>'
+            "<index>main</index><host>localhost</host><source>Splunk</source><sourcetype>misc</sourcetype>"
+            "<data>This is a test data3.</data></event></stream>"
         ]
         assert XMLEvent.format_events([self.xe4]) == [
-            '<stream><event stanza="test_scheme://test"><time>1372274622.493</time><index>main</index><host>localhost</host><source>Splunk</source><sourcetype>misc</sourcetype><data>This is utf-8 \u2603 data4.</data></event></stream>'
+            '<stream><event stanza="test_scheme://test"><time>1372274622.493</time>'
+            "<index>main</index><host>localhost</host><source>Splunk</source><sourcetype>misc</sourcetype>"
+            "<data>This is utf-8 \u2603 data4.</data></event></stream>"
         ]
 
 
@@ -136,15 +151,21 @@ class TestHECEvent:
     def test_str(self, monkeypatch):
         assert (
             to_sorted_json_string(self.he1)
-            == '{"data": "This is a test data1.", "done": false, "host": "localhost", "index": "main", "source": "Splunk", "sourcetype": "misc", "stanza": "test_scheme://test", "time": 1372274622.493, "unbroken": true}'
+            == '{"data": "This is a test data1.", "done": false, "host": "localhost", "index": "main", '
+            '"source": "Splunk", "sourcetype": "misc", "stanza": "test_scheme://test", '
+            '"time": 1372274622.493, "unbroken": true}'
         )
         assert (
             to_sorted_json_string(self.he2)
-            == '{"data": "This is a test data2.", "done": true, "host": "localhost", "index": "main", "source": "Splunk", "sourcetype": "misc", "stanza": "test_scheme://test", "time": 1372274622.493, "unbroken": true}'
+            == '{"data": "This is a test data2.", "done": true, "host": "localhost", "index": "main", '
+            '"source": "Splunk", "sourcetype": "misc", "stanza": "test_scheme://test", '
+            '"time": 1372274622.493, "unbroken": true}'
         )
         assert (
             to_sorted_json_string(self.he3)
-            == '{"data": "This is a test data3.", "done": false, "host": "localhost", "index": "main", "source": "Splunk", "sourcetype": "misc", "stanza": "test_scheme://test", "time": 1372274622.493, "unbroken": false}'
+            == '{"data": "This is a test data3.", "done": false, "host": "localhost", "index": "main", '
+            '"source": "Splunk", "sourcetype": "misc", "stanza": "test_scheme://test", '
+            '"time": 1372274622.493, "unbroken": false}'
         )
 
     def test_format_events(self, monkeypatch):
@@ -157,11 +178,13 @@ class TestHECEvent:
         assert len(event_strings) == 2
         assert (
             event_strings[0]
-            == '{"event": "This is a test data1.", "host": "localhost", "index": "main", "source": "Splunk", "sourcetype": "misc", "time": 1372274622.493}'
+            == '{"event": "This is a test data1.", "host": "localhost", "index": "main", '
+            '"source": "Splunk", "sourcetype": "misc", "time": 1372274622.493}'
         )
         assert (
             event_strings[1]
-            == '{"event": "This is a test data2.", "host": "localhost", "index": "main", "source": "Splunk", "sourcetype": "misc", "time": 1372274622.493}'
+            == '{"event": "This is a test data2.", "host": "localhost", "index": "main", '
+            '"source": "Splunk", "sourcetype": "misc", "time": 1372274622.493}'
         )
 
         formatted_events = HECEvent.format_events([self.he3])
@@ -173,5 +196,6 @@ class TestHECEvent:
         assert len(event_strings) == 1
         assert (
             event_strings[0]
-            == '{"event": "This is a test data3.", "host": "localhost", "index": "main", "source": "Splunk", "sourcetype": "misc", "time": 1372274622.493}'
+            == '{"event": "This is a test data3.", "host": "localhost", "index": "main", '
+            '"source": "Splunk", "sourcetype": "misc", "time": 1372274622.493}'
         )

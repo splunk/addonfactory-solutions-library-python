@@ -14,13 +14,12 @@
 # limitations under the License.
 #
 
+import context
 import os.path as op
 import sys
+from solnlib import acl
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-import context
-
-from solnlib import acl
 
 
 def test_acl_manager():
