@@ -19,7 +19,6 @@
 import logging
 import logging.handlers
 import os.path as op
-import sys
 import traceback
 from threading import Lock
 from typing import Dict, Any
@@ -273,7 +272,7 @@ def log_exception(
     full_msg: bool = True,
     msg_before: str = None,
     msg_after: str = None,
-    log_level: int = logging.INFO,
+    log_level: int = logging.ERROR,
 ):
     """General function to log exceptions."""
     exc_type, exc_value, exc_traceback = type(e), e, e.__traceback__
