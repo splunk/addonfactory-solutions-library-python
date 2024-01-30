@@ -138,7 +138,7 @@ jobs:
           SPLUNK_HOME=/opt/splunk/ poetry run pytest --junitxml=test-results/results.xml -v tests/integration
       - uses: actions/upload-artifact@v4
         with:
-          name: test-splunk-${{ matrix.splunk.version }}-${{ matrix.python-version }}
+          name: test-splunk-${{ matrix.splunk.version }}
           path: test-results
 
   publish:
