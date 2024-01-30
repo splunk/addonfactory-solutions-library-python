@@ -210,7 +210,7 @@ def test_log_exceptions_full_msg():
         except Exception as e:
             log.log_exception(mock_logger, e, msg_before=start_msg)
             mock_logger.log.assert_called_with(
-                logging.INFO, f"{start_msg}\n{traceback.format_exc()}\n"
+                logging.ERROR, f"{start_msg}\n{traceback.format_exc()}\n"
             )
 
 
@@ -226,7 +226,7 @@ def test_log_exceptions_partial_msg():
                 mock_logger, e, full_msg=False, msg_before=start_msg, msg_after=end_msg
             )
             mock_logger.log.assert_called_with(
-                logging.INFO,
+                logging.ERROR,
                 "some msg before exception\njson.decoder.JSONDecodeError: Expecting property name enclosed in double "
                 "quotes: line 1 column 2 (char 1)\n\nsome msg after exception",
             )
