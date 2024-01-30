@@ -13,14 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import context
 import os.path as op
 import sys
 import time
 
-sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-import context
 from splunklib import client
 from splunklib import results as splunklib_results
+
+sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 
 
 def search(session_key, query):

@@ -14,6 +14,7 @@
 # limitations under the License.
 #
 
+import context
 import json
 import os.path as op
 import sys
@@ -22,10 +23,10 @@ import uuid
 
 import pytest
 
-sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-import context
 from splunklib import binding, client
 from splunklib.binding import HTTPError
+
+sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 
 
 def test_kvstore():

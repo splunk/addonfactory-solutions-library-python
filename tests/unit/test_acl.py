@@ -22,13 +22,37 @@ from splunklib import binding
 
 from solnlib import acl
 
-_old_acl = '{"entry": [{"author": "nobody", "name": "transforms", "acl": {"sharing": "global", "perms": {"read": ["*"], "write": ["*"]}, "app": "unittest", "modifiable": true, "owner": "nobody", "can_change_perms": true, "can_share_global": true, "can_list": true, "can_share_user": false, "can_share_app": true, "removable": false, "can_write": true}}]}'
+_old_acl = (
+    '{"entry": [{"author": "nobody", "name": "transforms", '
+    '"acl": {"sharing": "global", "perms": {"read": ["*"], "write": ["*"]}, '
+    '"app": "unittest", "modifiable": true, "owner": "nobody", "can_change_perms": true, '
+    '"can_share_global": true, "can_list": true, "can_share_user": false, "can_share_app": true, '
+    '"removable": false, "can_write": true}}]}'
+)
 
-_new_acl1 = '{"entry": [{"author": "nobody", "name": "transforms", "acl": {"sharing": "global", "perms": {"read": ["admin"], "write": ["admin"]}, "app": "unittest", "modifiable": true, "owner": "nobody", "can_change_perms": true, "can_share_global": true, "can_list": true, "can_share_user": false, "can_share_app": true, "removable": false, "can_write": true}}]}'
+_new_acl1 = (
+    '{"entry": [{"author": "nobody", "name": "transforms", '
+    '"acl": {"sharing": "global", "perms": {"read": ["admin"], "write": ["admin"]}, '
+    '"app": "unittest", "modifiable": true, "owner": "nobody", "can_change_perms": true, '
+    '"can_share_global": true, "can_list": true, "can_share_user": false, "can_share_app": true, '
+    '"removable": false, "can_write": true}}]}'
+)
 
-_new_acl2 = '{"entry": [{"author": "nobody", "name": "transforms", "acl": {"sharing": "global", "perms": {"read": ["admin"], "write": ["*"]}, "app": "unittest", "modifiable": true, "owner": "nobody", "can_change_perms": true, "can_share_global": true, "can_list": true, "can_share_user": false, "can_share_app": true, "removable": false, "can_write": true}}]}'
+_new_acl2 = (
+    '{"entry": [{"author": "nobody", "name": "transforms", '
+    '"acl": {"sharing": "global", "perms": {"read": ["admin"], "write": ["*"]}, '
+    '"app": "unittest", "modifiable": true, "owner": "nobody", "can_change_perms": true, '
+    '"can_share_global": true, "can_list": true, "can_share_user": false, "can_share_app": true, '
+    '"removable": false, "can_write": true}}]}'
+)
 
-_new_acl3 = '{"entry": [{"author": "nobody", "name": "transforms", "acl": {"sharing": "global", "perms": {"read": ["*"], "write": ["admin"]}, "app": "unittest", "modifiable": true, "owner": "nobody", "can_change_perms": true, "can_share_global": true, "can_list": true, "can_share_user": false, "can_share_app": true, "removable": false, "can_write": true}}]}'
+_new_acl3 = (
+    '{"entry": [{"author": "nobody", "name": "transforms", '
+    '"acl": {"sharing": "global", "perms": {"read": ["*"], "write": ["admin"]}, '
+    '"app": "unittest", "modifiable": true, "owner": "nobody", "can_change_perms": true, '
+    '"can_share_global": true, "can_list": true, "can_share_user": false, "can_share_app": true, '
+    '"removable": false, "can_write": true}}]}'
+)
 
 
 def _mock_get(self, path_segment, owner=None, app=None, sharing=None, **query):

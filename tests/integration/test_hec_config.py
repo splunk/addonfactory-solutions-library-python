@@ -14,13 +14,13 @@
 # limitations under the License.
 #
 
+import context
 import os.path as op
 import sys
 
-sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-import context
-
 from solnlib import hec_config
+
+sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 
 
 def test_hec_config():

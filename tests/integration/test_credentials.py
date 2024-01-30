@@ -14,16 +14,14 @@
 # limitations under the License.
 #
 
+import context
 import os.path as op
 import sys
 from typing import Optional
-
 import pytest
+from solnlib import credentials
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
-import context
-
-from solnlib import credentials
 
 
 def _build_credential_manager(

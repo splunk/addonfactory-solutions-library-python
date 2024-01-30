@@ -2,7 +2,7 @@ import time
 import uuid
 
 from solnlib import log
-from solnlib.modular_input import *
+from solnlib.modular_input import ModularInput, Argument
 
 # Set log context
 log.Logs.set_context(namespace="solnlib_demo", root_logger_log_file="collector")

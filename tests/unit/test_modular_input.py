@@ -149,13 +149,22 @@ def test_modular_input(monkeypatch):
     md.execute()
     assert (
         sys.stdout.read()
-        == '<scheme><title>unittest app collector</title><description>Unittest app collector</description><use_external_validation>true</use_external_validation><use_single_instance>false</use_single_instance><streaming_mode>xml</streaming_mode><endpoint><args><arg name="state"><description>Unittest app collector state</description><data_type>string</data_type><required_on_edit>false</required_on_edit><required_on_create>true</required_on_create></arg></args></endpoint></scheme>'
+        == "<scheme><title>unittest app collector</title><description>Unittest app collector</description>"
+        "<use_external_validation>true</use_external_validation><use_single_instance>false</use_single_instance>"
+        '<streaming_mode>xml</streaming_mode><endpoint><args><arg name="state">'
+        "<description>Unittest app collector state</description><data_type>string</data_type>"
+        "<required_on_edit>false</required_on_edit><required_on_create>true</required_on_create></arg></args>"
+        "</endpoint></scheme>"
     )
 
     sys.argv = [None, "--validate-arguments"]
-    validate_arugments_input = '<items><server_host>lli-mbpr.local</server_host><server_uri>https://127.0.0.1:8089</server_uri><session_key>{session_key}</session_key><checkpoint_dir>{checkpoint_dir}</checkpoint_dir><item name="unittest"><param name="state">success</param></item></items>'.format(
-        session_key=common.SESSION_KEY, checkpoint_dir=checkpoint_dir
-    )
+    validate_arugments_input = (
+        "<items><server_host>lli-mbpr.local</server_host>"
+        "<server_uri>https://127.0.0.1:8089</server_uri>"
+        "<session_key>{session_key}</session_key>"
+        '<checkpoint_dir>{checkpoint_dir}</checkpoint_dir><item name="unittest">'
+        '<param name="state">success</param></item></items>'
+    ).format(session_key=common.SESSION_KEY, checkpoint_dir=checkpoint_dir)
     with open(".validate-arguments.xml", "w") as fp:
         fp.write(validate_arugments_input)
     mock_stdin = open(".validate-arguments.xml", "rb")
@@ -165,9 +174,13 @@ def test_modular_input(monkeypatch):
     os.remove(".validate-arguments.xml")
 
     sys.argv = [None, "--validate-arguments"]
-    validate_arugments_input = '<items><server_host>lli-mbpr.local</server_host><server_uri>https://127.0.0.1:8089</server_uri><session_key>{session_key}</session_key><checkpoint_dir>{checkpoint_dir}</checkpoint_dir><item name="unittest"><param name="state">fail</param></item></items>'.format(
-        session_key=common.SESSION_KEY, checkpoint_dir=checkpoint_dir
-    )
+    validate_arugments_input = (
+        "<items><server_host>lli-mbpr.local</server_host>"
+        "<server_uri>https://127.0.0.1:8089</server_uri>"
+        "<session_key>{session_key}</session_key>"
+        "<checkpoint_dir>{checkpoint_dir}</checkpoint_dir>"
+        '<item name="unittest"><param name="state">fail</param></item></items>'
+    ).format(session_key=common.SESSION_KEY, checkpoint_dir=checkpoint_dir)
     with open(".validate-arguments.xml", "w") as fp:
         fp.write(validate_arugments_input)
     mock_stdin = open(".validate-arguments.xml", "rb")
@@ -178,9 +191,12 @@ def test_modular_input(monkeypatch):
     os.remove(".validate-arguments.xml")
 
     sys.argv = [None]
-    run_input = '<input><server_host>lli-mbpr.local</server_host><server_uri>https://127.0.0.1:8089</server_uri><session_key>{session_key}</session_key><checkpoint_dir>{checkpoint_dir}</checkpoint_dir><configuration><stanza name="unittest_app_collector://test1"><param name="state">success</param></stanza></configuration></input>'.format(
-        session_key=common.SESSION_KEY, checkpoint_dir=checkpoint_dir
-    )
+    run_input = (
+        "<input><server_host>lli-mbpr.local</server_host><server_uri>https://127.0.0.1:8089</server_uri>"
+        "<session_key>{session_key}</session_key><checkpoint_dir>{checkpoint_dir}</checkpoint_dir>"
+        '<configuration><stanza name="unittest_app_collector://test1"><param name="state">success</param>'
+        "</stanza></configuration></input>"
+    ).format(session_key=common.SESSION_KEY, checkpoint_dir=checkpoint_dir)
     with open(".run.xml", "w") as fp:
         fp.write(run_input)
     mock_stdin = open(".run.xml", "rb")
@@ -188,7 +204,10 @@ def test_modular_input(monkeypatch):
     md.execute()
     assert (
         sys.stdout.read()
-        == '<stream><event><time>1461394857.301</time><source>unittestapp</source><sourcetype>unittestapp</sourcetype><data>{"id": 12345, "time": 1461394857.301}</data></event><event><time>1461394857.301</time><source>unittestapp</source><sourcetype>unittestapp</sourcetype><data>12345</data></event></stream>'
+        == "<stream><event><time>1461394857.301</time><source>unittestapp</source>"
+        '<sourcetype>unittestapp</sourcetype><data>{"id": 12345, "time": 1461394857.301}</data></event>'
+        "<event><time>1461394857.301</time><source>unittestapp</source><sourcetype>unittestapp</sourcetype>"
+        "<data>12345</data></event></stream>"
     )
     mock_stdin.close()
     os.remove(".run.xml")
