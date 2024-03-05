@@ -107,6 +107,7 @@ class ModularInput(metaclass=ABCMeta):
     # Input name of Splunk HEC, must be overridden if use_hec_event_writer
     # is True
     hec_input_name = None
+    hec_global_settings_schema = False
 
     def __init__(self):
         # Validate properties
@@ -230,6 +231,7 @@ class ModularInput(metaclass=ABCMeta):
                     scheme=self.server_scheme,
                     host=self.server_host,
                     port=self.server_port,
+                    global_settings_schema=self.hec_global_settings_schema,
                 )
             except binding.HTTPError:
                 logging.error(
