@@ -210,7 +210,7 @@ def get_scheme_from_hec_settings() -> str:
     except KeyError:
         raise KeyError(
             "Cannot get enableSSL setting form conf: 'inputs' and stanza: '[http]'. "
-            "Verify that your splunk instance has the inputs.conf file with the correct [http] stanza. "
+            "Verify that your Splunk instance has the inputs.conf file with the correct [http] stanza. "
             "For more information see: "
             "https://docs.splunk.com/Documentation/Splunk/9.2.0/Data/UseHECusingconffiles"
         )
