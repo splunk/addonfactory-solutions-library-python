@@ -28,7 +28,7 @@
             },
             {
               "files": ["pyproject.toml"],
-              "from": "version ?=.*",
+              "from": "version = \".*\"",
               "to": "version = \"${nextRelease.version}\"",
               "results": [
                 {
