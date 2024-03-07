@@ -207,11 +207,21 @@ def test_hec_event_writer(monkeypatch):
     # test that post is called 2 times
     assert len(times_post_called) == 2
 
+    for i in range(4):
+        ev = create_hec_event_writer(i)
+        assert ev._rest_client.scheme == "https"
+    for i in range(4):
+        ev = create_hec_event_writer(i, hec=True)
+        assert ev._rest_client.scheme == "http"
 
-def create_hec_event_writer(i):
+
+def create_hec_event_writer(i, hec=False):
     if i == 1:
         return HECEventWriter.create_from_input(
-            "HECTestInput", "https://localhost:8089", common.SESSION_KEY
+            "HECTestInput",
+            "https://localhost:8089",
+            common.SESSION_KEY,
+            global_settings_schema=hec,
         )
     elif i == 2:
         return HECEventWriter.create_from_token_with_session_key(
@@ -219,8 +229,13 @@ def create_hec_event_writer(i):
             common.SESSION_KEY,
             "https://localhost:8090",
             "test_token",
+            global_settings_schema=hec,
         )
     elif i == 3:
-        return HECEventWriter.create_from_token("https://localhost:8090", "test_token")
+        return HECEventWriter.create_from_token(
+            "https://localhost:8090", "test_token", global_settings_schema=hec
+        )
     else:
-        return HECEventWriter("HECTestInput", common.SESSION_KEY)
+        return HECEventWriter(
+            "HECTestInput", common.SESSION_KEY, global_settings_schema=hec
+        )

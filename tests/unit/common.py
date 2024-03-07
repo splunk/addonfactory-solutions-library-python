@@ -57,6 +57,13 @@ def mock_splunkhome(monkeypatch):
                 file_path = op.sep.join(
                     [cur_dir, "data/mock_splunk/etc/system/default/server.conf"]
                 )
+            elif self._conf == "inputs":
+                file_path = op.sep.join(
+                    [
+                        cur_dir,
+                        "data/mock_splunk/etc/apps/splunk_httpinput/local/inputs.conf",
+                    ]
+                )
             else:
                 file_path = op.sep.join(
                     [cur_dir, "data/mock_splunk/etc/system/default/web.conf"]
