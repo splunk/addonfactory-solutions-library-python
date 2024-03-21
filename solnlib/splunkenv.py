@@ -31,6 +31,7 @@ __all__ = [
     "get_splunk_host_info",
     "get_splunk_bin",
     "get_splunkd_access_info",
+    "get_scheme_from_hec_settings",
     "get_splunkd_uri",
     "get_conf_key_value",
     "get_conf_stanza",
@@ -196,6 +197,30 @@ def get_splunkd_access_info() -> Tuple[str, str, int]:
         host = bindip[:port_idx] if port_idx > 0 else bindip
 
     return scheme, host, port
+
+
+def get_scheme_from_hec_settings() -> str:
+    """Get scheme from HEC global settings.
+
+    Returns:
+        scheme (str)
+    """
+    try:
+        ssl_enabled = get_conf_key_value("inputs", "http", "enableSSL")
+    except KeyError:
+        raise KeyError(
+            "Cannot get enableSSL setting form conf: 'inputs' and stanza: '[http]'. "
+            "Verify that your Splunk instance has the inputs.conf file with the correct [http] stanza. "
+            "For more information see: "
+            "https://docs.splunk.com/Documentation/Splunk/9.2.0/Data/UseHECusingconffiles"
+        )
+
+    if is_true(ssl_enabled):
+        scheme = "https"
+    else:
+        scheme = "http"
+
+    return scheme
 
 
 def get_splunkd_uri() -> str:
