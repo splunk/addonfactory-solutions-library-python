@@ -252,18 +252,32 @@ def modular_input_end(logger: logging.Logger, modular_input_name: str):
 
 
 def events_ingested(
-    logger: logging.Logger, modular_input_name: str, sourcetype: str, n_events: int
+    logger: logging.Logger,
+    modular_input_name: str,
+    sourcetype: str,
+    n_events: int,
+    index: str = None,
+    account: str = None,
+    host: str = None,
 ):
-    """Specific function to log the number of events ingested."""
-    log_event(
-        logger,
-        {
-            "action": "events_ingested",
-            "modular_input_name": modular_input_name,
-            "sourcetype_ingested": sourcetype,
-            "n_events": n_events,
-        },
-    )
+    """Specific function to log the basic information of events ingested."""
+
+    result = {
+        "action": "events_ingested",
+        "modular_input_name": modular_input_name,
+        "sourcetype_ingested": sourcetype,
+        "n_events": n_events,
+    }
+    if index:
+        result["event_index"] = index
+    if account:
+        result["event_account"] = account
+    if host:
+        result["event_host"] = host
+    if "://" in modular_input_name:
+        input_name = modular_input_name.split("/")[-1]
+        result["event_input"] = input_name
+    log_event(logger, result)
 
 
 def log_exception(

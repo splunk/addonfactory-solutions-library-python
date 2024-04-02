@@ -200,6 +200,40 @@ def test_events_ingested():
             "action=events_ingested modular_input_name=modular_input_name sourcetype_ingested=sourcetype n_events=5",
         )
 
+    with mock.patch("logging.Logger") as mock_logger:
+        log.events_ingested(
+            mock_logger,
+            "demo://modular_input_name",
+            "sourcetype",
+            5,
+            index="default",
+            host="abcd",
+            account="test_acc",
+        )
+
+        mock_logger.log.assert_called_once_with(
+            logging.INFO,
+            "action=events_ingested modular_input_name=demo://modular_input_name sourcetype_ingested=sourcetype n_"
+            "events=5 event_index=default event_account=test_acc event_host=abcd event_input=modular_input_name",
+        )
+
+    with mock.patch("logging.Logger") as mock_logger:
+        log.events_ingested(
+            mock_logger,
+            "modular_input_name",
+            "sourcetype",
+            5,
+            index="default",
+            host="abcd",
+            account="test_acc",
+        )
+
+        mock_logger.log.assert_called_once_with(
+            logging.INFO,
+            "action=events_ingested modular_input_name=modular_input_name sourcetype_ingested=sourcetype n_"
+            "events=5 event_index=default event_account=test_acc event_host=abcd",
+        )
+
 
 def test_log_exceptions_full_msg():
     start_msg = "some msg before exception"
