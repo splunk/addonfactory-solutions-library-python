@@ -18,6 +18,7 @@
 
 from splunklib.modularinput.argument import Argument
 
+from .base_script import BaseScript
 from .checkpointer import CheckpointerException, FileCheckpointer, KVStoreCheckpointer
 from .event import EventException, HECEvent, XMLEvent
 from .event_writer import ClassicEventWriter, HECEventWriter
@@ -35,4 +36,5 @@ __all__ = [
     "Argument",
     "ModularInputException",
     "ModularInput",
+    "BaseScript",
 ]
