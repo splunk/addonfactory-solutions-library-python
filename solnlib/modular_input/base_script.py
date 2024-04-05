@@ -23,8 +23,8 @@ from splunklib import modularinput as smi
 
 
 class BaseScript(smi.Script, ABC):
-    """
-    A class that by default takes scheme parameters from (...).args.json files.
+    """A class that by default takes scheme parameters from (...).args.json
+    files.
 
     For example, if the subclass is located in example.py, it will take parameters from example.args.json.
 
@@ -39,6 +39,7 @@ class BaseScript(smi.Script, ABC):
             ]
         ]
     """
+
     def get_scheme(self):
         scheme = smi.Scheme(self.args.get("name"))
         scheme.description = self.args.get("description")
@@ -48,10 +49,7 @@ class BaseScript(smi.Script, ABC):
 
         scheme.add_argument(
             smi.Argument(
-                'name',
-                title='Name',
-                description='Name',
-                required_on_create=True
+                "name", title="Name", description="Name", required_on_create=True
             )
         )
 

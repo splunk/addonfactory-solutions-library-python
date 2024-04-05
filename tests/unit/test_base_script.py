@@ -52,14 +52,9 @@ def args_content():
         "name": "example_script",
         "description": "Example description",
         "entity": [
-            {
-                "field": "some_field1",
-                "required": True
-            },
-            {
-                "field": "some_field2"
-            }
-        ]
+            {"field": "some_field1", "required": True},
+            {"field": "some_field2"},
+        ],
     }
 
 
@@ -102,7 +97,9 @@ def test_base_script_scheme(args_content, example_script):
     assert scheme.arguments[0].required_on_create
 
     assert scheme.arguments[1].name == args_content["entity"][0]["field"]
-    assert scheme.arguments[1].required_on_create == args_content["entity"][0]["required"]
+    assert (
+        scheme.arguments[1].required_on_create is args_content["entity"][0]["required"]
+    )
 
     assert scheme.arguments[2].name == args_content["entity"][1]["field"]
-    assert scheme.arguments[2].required_on_create == False
+    assert not scheme.arguments[2].required_on_create
