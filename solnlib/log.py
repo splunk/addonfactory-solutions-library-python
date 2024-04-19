@@ -256,27 +256,47 @@ def events_ingested(
     modular_input_name: str,
     sourcetype: str,
     n_events: int,
-    index: str = None,
+    index: str,
     account: str = None,
     host: str = None,
 ):
-    """Specific function to log the basic information of events ingested."""
+    """Specific function to log the basic information of events ingested for
+    the monitoring dashboard.
+
+    Arguments:
+        logger: Add-on logger.
+        modular_input_name: Full name of the modular input. It needs to be in a format <input_type>://<input_name>.
+        In case of invalid format ValueError is raised.
+        sourcetype: Source type used to write event.
+        n_events: Number of ingested events.
+        index: Index used to write event.
+        account: Account used to write event. (optional)
+        host: Host used to write event. (optional)
+    """
+
+    if "://" in modular_input_name:
+        input_name = modular_input_name.split("/")[-1]
+    else:
+        raise ValueError(
+            f"Invalid modular input name: {modular_input_name}. "
+            f"It should be in format <input_type>://<input_name>"
+        )
 
     result = {
         "action": "events_ingested",
         "modular_input_name": modular_input_name,
         "sourcetype_ingested": sourcetype,
         "n_events": n_events,
+        "event_input": input_name,
+        "event_index": index,
     }
-    if index:
-        result["event_index"] = index
+
     if account:
         result["event_account"] = account
+
     if host:
         result["event_host"] = host
-    if "://" in modular_input_name:
-        input_name = modular_input_name.split("/")[-1]
-        result["event_input"] = input_name
+
     log_event(logger, result)
 
 
