@@ -20,6 +20,7 @@ import logging
 import logging.handlers
 import os.path as op
 import traceback
+from functools import partial
 from threading import Lock
 from typing import Dict, Any
 
@@ -251,6 +252,31 @@ def modular_input_end(logger: logging.Logger, modular_input_name: str):
     )
 
 
+def _base_error_log(
+    logger,
+    exc: Exception,
+    exe_label,
+    full_msg: bool = True,
+    msg_before: str = None,
+    msg_after: str = None,
+):
+    log_exception(
+        logger,
+        exc,
+        exc_label=exe_label,
+        full_msg=full_msg,
+        msg_before=msg_before,
+        msg_after=msg_after,
+    )
+
+
+log_connection_error = partial(_base_error_log, exe_label="Connection Error")
+log_configuration_error = partial(_base_error_log, exe_label="Configuration Error")
+log_permission_error = partial(_base_error_log, exe_label="Permission Error")
+log_authentication_error = partial(_base_error_log, exe_label="Authentication Error")
+log_server_error = partial(_base_error_log, exe_label="Server Error")
+
+
 def events_ingested(
     logger: logging.Logger,
     modular_input_name: str,
@@ -306,9 +332,22 @@ def log_exception(
     full_msg: bool = True,
     msg_before: str = None,
     msg_after: str = None,
+    exc_label: str = None,
     log_level: int = logging.ERROR,
 ):
     """General function to log exceptions."""
+    msg = _get_exception_message(e, full_msg, msg_before, msg_after)
+    if exc_label:
+        msg = f'exc_l="{exc_label}" {msg}'
+    logger.log(log_level, msg)
+
+
+def _get_exception_message(
+    e: Exception,
+    full_msg: bool = True,
+    msg_before: str = None,
+    msg_after: str = None,
+) -> str:
     exc_type, exc_value, exc_traceback = type(e), e, e.__traceback__
     if full_msg:
         error = traceback.format_exception(exc_type, exc_value, exc_traceback)
@@ -318,5 +357,4 @@ def log_exception(
     msg_start = msg_before if msg_before is not None else ""
     msg_mid = "".join(error)
     msg_end = msg_after if msg_after is not None else ""
-    msg = f"{msg_start}\n{msg_mid}\n{msg_end}"
-    logger.log(log_level, msg)
+    return f"{msg_start}\n{msg_mid}\n{msg_end}"

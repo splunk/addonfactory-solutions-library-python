@@ -269,3 +269,28 @@ def test_log_exceptions_partial_msg():
                 "some msg before exception\njson.decoder.JSONDecodeError: Expecting property name enclosed in double "
                 "quotes: line 1 column 2 (char 1)\n\nsome msg after exception",
             )
+
+
+@pytest.mark.parametrize(
+    "func,result",
+    [
+        ("log_connection_error", '"Connection Error"'),
+        ("log_configuration_error", '"Configuration Error"'),
+        ("log_permission_error", '"Permission Error"'),
+        ("log_authentication_error", '"Authentication Error"'),
+        ("log_server_error", '"Server Error"'),
+    ],
+)
+def test_log_basic_error(func, result):
+    class AddonComplexError(Exception):
+        pass
+
+    with mock.patch("logging.Logger") as mock_logger:
+        try:
+            raise AddonComplexError
+        except AddonComplexError as e:
+            fun = getattr(log, func)
+            fun(mock_logger, e)
+            mock_logger.log.assert_called_with(
+                logging.ERROR, f"exc_l={result} \n{traceback.format_exc()}\n"
+            )
