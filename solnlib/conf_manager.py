@@ -506,6 +506,7 @@ def get_log_level(
     session_key: str,
     app_name: str,
     conf_name: str,
+    log_stanza: str = "logging",
     log_level_field: str = "loglevel",
     default_log_level: str = "INFO",
 ) -> str:
@@ -517,6 +518,7 @@ def get_log_level(
         session_key: Splunk access token.
         app_name: Add-on name.
         conf_name: Configuration file name where logging stanza is.
+        log_stanza: Logging stanza to define `log_level_field` and its value.
         log_level_field: Logging level field name under logging stanza.
         default_log_level: Default log level to return in case of errors.
 
@@ -547,7 +549,7 @@ def get_log_level(
         )
         return default_log_level
     try:
-        logging_details = conf.get("logging")
+        logging_details = conf.get(log_stanza)
         return logging_details.get(log_level_field, default_log_level)
     except ConfStanzaNotExistException:
         logger.error(
