@@ -329,17 +329,26 @@ def events_ingested(
 def log_exception(
     logger: logging.Logger,
     e: Exception,
+    exc_label: str,
     full_msg: bool = True,
     msg_before: str = None,
     msg_after: str = None,
-    exc_label: str = None,
     log_level: int = logging.ERROR,
 ):
-    """General function to log exceptions."""
+    """General function to log exceptions.
+
+    Arguments:
+        logger: Add-on logger.
+        e: Exception to log.
+        exc_label: label for the error to categorize it.
+        full_msg: if set to True, full traceback will be logged. Default: True
+        msg_before: custom message before exception traceback. Default: None
+        msg_after: custom message after exception traceback. Default: None
+        log_level: Log level to log exception. Default: ERROR.
+    """
+
     msg = _get_exception_message(e, full_msg, msg_before, msg_after)
-    if exc_label:
-        msg = f'exc_l="{exc_label}" {msg}'
-    logger.log(log_level, msg)
+    logger.log(log_level, f'exc_l="{exc_label}" {msg}')
 
 
 def _get_exception_message(

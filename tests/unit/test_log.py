@@ -247,9 +247,10 @@ def test_log_exceptions_full_msg():
             test_jsons = "{'a': 'aa'"
             json.loads(test_jsons)
         except Exception as e:
-            log.log_exception(mock_logger, e, msg_before=start_msg)
+            log.log_exception(mock_logger, e, "test type1", msg_before=start_msg)
             mock_logger.log.assert_called_with(
-                logging.ERROR, f"{start_msg}\n{traceback.format_exc()}\n"
+                logging.ERROR,
+                f'exc_l="test type1" {start_msg}\n{traceback.format_exc()}\n',
             )
 
 
@@ -262,12 +263,17 @@ def test_log_exceptions_partial_msg():
             json.loads(test_jsons)
         except Exception as e:
             log.log_exception(
-                mock_logger, e, full_msg=False, msg_before=start_msg, msg_after=end_msg
+                mock_logger,
+                e,
+                exc_label="test type",
+                full_msg=False,
+                msg_before=start_msg,
+                msg_after=end_msg,
             )
             mock_logger.log.assert_called_with(
                 logging.ERROR,
-                "some msg before exception\njson.decoder.JSONDecodeError: Expecting property name enclosed in double "
-                "quotes: line 1 column 2 (char 1)\n\nsome msg after exception",
+                'exc_l="test type" some msg before exception\njson.decoder.JSONDecodeError: Expecting property '
+                "name enclosed in double quotes: line 1 column 2 (char 1)\n\nsome msg after exception",
             )
 
 
