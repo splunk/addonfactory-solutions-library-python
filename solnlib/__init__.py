@@ -18,6 +18,7 @@
 
 from . import (
     acl,
+    bulletin_rest_client,
     conf_manager,
     credentials,
     file_monitor,
@@ -37,6 +38,7 @@ from . import (
 
 __all__ = [
     "acl",
+    "bulletin_rest_client",
     "conf_manager",
     "credentials",
     "file_monitor",
