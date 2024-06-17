@@ -55,7 +55,7 @@ class BulletinRestClient:
             self.session_key, app="-", **context
         )
 
-    def create_message(self, msg, msg_lvl=LogLevel.WARNING):
+    def create_message(self, msg: str, msg_lvl: LogLevel = LogLevel.WARNING):
         body = {"name": self.message_name, "value": msg, "severity": msg_lvl}
         try:
             self._rest_client.post(
