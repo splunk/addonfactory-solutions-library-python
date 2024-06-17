@@ -43,11 +43,15 @@ def test_bulletin_rest_api():
     assert get_msg_1["entry"][0]["content"]["message"] == "new message to bulletin"
     assert get_msg_1["entry"][0]["content"]["severity"] == "warn"
 
-    bulletin_client_1.create_message("new message to bulletin", bulletin_client_1.LogLevel.INFO)
+    bulletin_client_1.create_message(
+        "new message to bulletin", bulletin_client_1.LogLevel.INFO
+    )
     get_msg_1 = bulletin_client_1.get_message()
     assert get_msg_1["entry"][0]["content"]["severity"] == "info"
 
-    bulletin_client_1.create_message("new message to bulletin", bulletin_client_1.LogLevel.ERROR)
+    bulletin_client_1.create_message(
+        "new message to bulletin", bulletin_client_1.LogLevel.ERROR
+    )
     get_msg_1 = bulletin_client_1.get_message()
     assert get_msg_1["entry"][0]["content"]["severity"] == "error"
 
