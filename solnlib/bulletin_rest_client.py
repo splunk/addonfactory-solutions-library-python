@@ -1,6 +1,23 @@
+#
+# Copyright 2024 Splunk Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
 import logging
 from solnlib import splunk_rest_client as rest_client
 from splunklib import binding
+from typing import Optional
 import json
 
 
@@ -13,11 +30,16 @@ class BulletinRestClient:
 
     headers = [("Content-Type", "application/json")]
 
+    class LogLevel:
+        INFO = "info"
+        WARNING = "warn"
+        ERROR = "error"
+
     def __init__(
         self,
         message_name: str,
         session_key: str,
-        logger: logging.Logger = None,
+        logger: Optional[logging.Logger] = None,
         **context: dict,
     ):
 
@@ -32,73 +54,36 @@ class BulletinRestClient:
         self._rest_client = rest_client.SplunkRestClient(
             self.session_key, app="-", **context
         )
-        self.logger.info(f"mymy123 init {self.message_name}")
 
-    def create_message(self, msg):
-        body = {"name": self.message_name, "value": msg}
-        self.logger.info(f"mymy123 create_message {self.message_name} {msg}")
+    def create_message(self, msg, msg_lvl=LogLevel.WARNING):
+        body = {"name": self.message_name, "value": msg, "severity": msg_lvl}
         try:
             self._rest_client.post(
                 self.CREATE_DELETE_ENDPOINT, body=body, headers=self.headers
             )
-        except binding.HTTPError as e:
-            if 400 <= e.status < 500:
-                self.logger.error(
-                    f"Create message failed - {e.status} "
-                    f"Client Error: {e.reason} for url: {self.CREATE_DELETE_ENDPOINT}"
-                )
-            if 500 <= e.status < 600:
-                self.logger.error(
-                    f"Create message failed - {e.status} "
-                    f"Server Error: {e.reason} for url: {self.CREATE_DELETE_ENDPOINT}"
-                )
+        except binding.HTTPError:
+            raise
 
     def get_message(self):
         endpoint = f"{self.READ_ENDPOINT}/{self.message_name}"
-        self.logger.info(f"mymy123 get_message {self.message_name} url {endpoint}")
         try:
             response = self._rest_client.get(endpoint, output_mode="json").body.read()
             return json.loads(response)
-        except binding.HTTPError as e:
-            if 400 <= e.status < 500:
-                self.logger.error(
-                    f"Get message failed - {e.status} Client Error: {e.reason} for url: {endpoint}"
-                )
-            if 500 <= e.status < 600:
-                self.logger.error(
-                    f"Get message failed - {e.status} Server Error: {e.reason} for url: {endpoint}"
-                )
+        except binding.HTTPError:
+            raise
 
     def get_all_messages(self):
-        self.logger.info(
-            f"mymy123 get all message {self.message_name} url {self.READ_ENDPOINT}"
-        )
         try:
             response = self._rest_client.get(
                 self.READ_ENDPOINT, output_mode="json"
             ).body.read()
             return json.loads(response)
-        except binding.HTTPError as e:
-            if 400 <= e.status < 500:
-                self.logger.error(
-                    f"Get all messages failed - {e.status} Client Error: {e.reason} for url: {self.READ_ENDPOINT}"
-                )
-            if 500 <= e.status < 600:
-                self.logger.error(
-                    f"Get all messages failed - {e.status} Server Error: {e.reason} for url: {self.READ_ENDPOINT}"
-                )
+        except binding.HTTPError:
+            raise
 
     def delete_message(self):
         endpoint = f"{self.CREATE_DELETE_ENDPOINT}/{self.message_name}"
-        self.logger.info(f"mymy123 delete message {self.message_name} url {endpoint}")
         try:
             self._rest_client.delete(endpoint)
-        except binding.HTTPError as e:
-            if 400 <= e.status < 500:
-                self.logger.error(
-                    f"Delete message failed - {e.status} Client Error: {e.reason} for url: {endpoint}"
-                )
-            if 500 <= e.status < 600:
-                self.logger.error(
-                    f"Delete message failed - {e.status} Server Error: {e.reason} for url: {endpoint}"
-                )
+        except binding.HTTPError:
+            raise
