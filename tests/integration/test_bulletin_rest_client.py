@@ -24,7 +24,6 @@ def _build_bulletin_manager(msg_name, session_key: str) -> brc.BulletinRestClien
     return brc.BulletinRestClient(
         msg_name,
         session_key,
-        None,
         owner=context.owner,
         scheme=context.scheme,
         host=context.host,
@@ -32,25 +31,49 @@ def _build_bulletin_manager(msg_name, session_key: str) -> brc.BulletinRestClien
     )
 
 
+def test_create_message():
+    session_key = context.get_session_key()
+    bulletin_client = _build_bulletin_manager("msg_name", session_key)
+
+    with pytest.raises(binding.HTTPError) as e:
+        bulletin_client.create_message(
+            "new message to bulletin",
+            capabilities=["apps_restore", "unknown_cap"],
+            roles=["admin"]
+        )
+    assert str(e.value.status) == "400"
+
+    with pytest.raises(binding.HTTPError) as e:
+        bulletin_client.create_message(
+            "new message to bulletin",
+            roles=["unknown_role"]
+        )
+    assert str(e.value.status) == "400"
+
+
 def test_bulletin_rest_api():
     session_key = context.get_session_key()
     bulletin_client_1 = _build_bulletin_manager("msg_name_1", session_key)
     bulletin_client_2 = _build_bulletin_manager("msg_name_2", session_key)
 
-    bulletin_client_1.create_message("new message to bulletin")
+    bulletin_client_1.create_message(
+        "new message to bulletin",
+        capabilities=["apps_restore", "delete_messages"],
+        roles=["admin"]
+    )
 
     get_msg_1 = bulletin_client_1.get_message()
     assert get_msg_1["entry"][0]["content"]["message"] == "new message to bulletin"
     assert get_msg_1["entry"][0]["content"]["severity"] == "warn"
 
     bulletin_client_1.create_message(
-        "new message to bulletin", bulletin_client_1.LogLevel.INFO
+        "new message to bulletin", bulletin_client_1.Severity.INFO
     )
     get_msg_1 = bulletin_client_1.get_message()
     assert get_msg_1["entry"][0]["content"]["severity"] == "info"
 
     bulletin_client_1.create_message(
-        "new message to bulletin", bulletin_client_1.LogLevel.ERROR
+        "new message to bulletin", bulletin_client_1.Severity.ERROR
     )
     get_msg_1 = bulletin_client_1.get_message()
     assert get_msg_1["entry"][0]["content"]["severity"] == "error"
