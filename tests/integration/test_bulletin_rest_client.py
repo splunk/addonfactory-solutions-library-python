@@ -39,14 +39,13 @@ def test_create_message():
         bulletin_client.create_message(
             "new message to bulletin",
             capabilities=["apps_restore", "unknown_cap"],
-            roles=["admin"]
+            roles=["admin"],
         )
     assert str(e.value.status) == "400"
 
     with pytest.raises(binding.HTTPError) as e:
         bulletin_client.create_message(
-            "new message to bulletin",
-            roles=["unknown_role"]
+            "new message to bulletin", roles=["unknown_role"]
         )
     assert str(e.value.status) == "400"
 
@@ -59,7 +58,7 @@ def test_bulletin_rest_api():
     bulletin_client_1.create_message(
         "new message to bulletin",
         capabilities=["apps_restore", "delete_messages"],
-        roles=["admin"]
+        roles=["admin"],
     )
 
     get_msg_1 = bulletin_client_1.get_message()

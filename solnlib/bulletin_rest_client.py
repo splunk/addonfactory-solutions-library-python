@@ -14,7 +14,6 @@
 # limitations under the License.
 #
 
-from collections import namedtuple
 from solnlib import splunk_rest_client as rest_client
 from splunklib import binding
 from typing import Optional, List
@@ -24,21 +23,22 @@ __all__ = ["BulletinRestClient"]
 
 
 class BulletinRestClient:
-    """REST client for handling Bulletin messages"""
+    """REST client for handling Bulletin messages."""
+
     MESSAGES_ENDPOINT = "/services/messages"
 
     headers = [("Content-Type", "application/json")]
 
     class Severity:
-        INFO = 'info'
-        WARNING = 'warn'
-        ERROR = 'error'
+        INFO = "info"
+        WARNING = "warn"
+        ERROR = "error"
 
     def __init__(
-            self,
-            message_name: str,
-            session_key: str,
-            **context: dict,
+        self,
+        message_name: str,
+        session_key: str,
+        **context: dict,
     ):
         """Initializes BulletinRestClient.
 
@@ -63,15 +63,14 @@ class BulletinRestClient:
         )
 
     def create_message(
-            self,
-            msg: str,
-            severity: Severity = Severity.WARNING,
-            capabilities: Optional[List[str]] = None,
-            roles: Optional[List] = None
+        self,
+        msg: str,
+        severity: Severity = Severity.WARNING,
+        capabilities: Optional[List[str]] = None,
+        roles: Optional[List] = None,
     ):
-        """
-        Creates a message in the splunk's bulletin.'
-        Calling this method multiple times for the same instance will overwrite existing message.
+        """Creates a message in the splunk's bulletin.' Calling this method
+        multiple times for the same instance will overwrite existing message.
 
         Arguments:
             msg: The message which will be displayed in the splunk's bulletin'
@@ -87,7 +86,13 @@ class BulletinRestClient:
                 If a non-existent role is used, HTTP 400 BAD REQUEST exception will be raised.
                 If argument is not a List[str] ValueError will be raised.
         """
-        body = {"name": self.message_name, "value": msg, "severity": severity, "capability": [], "role": []}
+        body = {
+            "name": self.message_name,
+            "value": msg,
+            "severity": severity,
+            "capability": [],
+            "role": [],
+        }
 
         if severity not in ("info", "warn", "error"):
             raise ValueError("Severity must be one of ('info', 'warn', 'error').")
@@ -110,18 +115,20 @@ class BulletinRestClient:
             raise
 
     def get_message(self):
-        """Get specific message created by this instance"""
+        """Get specific message created by this instance."""
         endpoint = f"{self.MESSAGES_ENDPOINT}/{self.message_name}"
         response = self._rest_client.get(endpoint, output_mode="json").body.read()
         return json.loads(response)
 
     def get_all_messages(self):
-        """Get all messages in the bulletin"""
-        response = self._rest_client.get(self.MESSAGES_ENDPOINT, output_mode="json").body.read()
+        """Get all messages in the bulletin."""
+        response = self._rest_client.get(
+            self.MESSAGES_ENDPOINT, output_mode="json"
+        ).body.read()
         return json.loads(response)
 
     def delete_message(self):
-        """Delete specific message created by this instance"""
+        """Delete specific message created by this instance."""
         endpoint = f"{self.MESSAGES_ENDPOINT}/{self.message_name}"
         self._rest_client.delete(endpoint)
 

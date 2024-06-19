@@ -18,12 +18,7 @@ import pytest
 from solnlib.bulletin_rest_client import BulletinRestClient
 
 
-context = {
-    "owner": "nobody",
-    "scheme": "https",
-    "host": "localhost",
-    "port": 8089
-}
+context = {"owner": "nobody", "scheme": "https", "host": "localhost", "port": 8089}
 
 
 def test_create_message(monkeypatch):
@@ -36,32 +31,33 @@ def test_create_message(monkeypatch):
 
     def new_post(*args, **kwargs) -> str:
         return "ok"
+
     monkeypatch.setattr(bulletin_client._rest_client, "post", new_post)
 
     bulletin_client.create_message(
-            "new message to bulletin",
-            capabilities=["apps_restore", "delete_messages"],
-            roles=["admin"]
+        "new message to bulletin",
+        capabilities=["apps_restore", "delete_messages"],
+        roles=["admin"],
     )
 
-    with pytest.raises(ValueError, match='Severity must be one of'):
+    with pytest.raises(ValueError, match="Severity must be one of"):
         bulletin_client.create_message(
             "new message to bulletin",
             severity="debug",
             capabilities=["apps_restore", "delete_messages", 1],
-            roles=["admin"]
+            roles=["admin"],
         )
 
-    with pytest.raises(ValueError, match='Capabilities must be a list of strings.'):
+    with pytest.raises(ValueError, match="Capabilities must be a list of strings."):
         bulletin_client.create_message(
             "new message to bulletin",
             capabilities=["apps_restore", "delete_messages", 1],
-            roles=["admin"]
+            roles=["admin"],
         )
 
-    with pytest.raises(ValueError, match='Roles must be a list of strings.'):
+    with pytest.raises(ValueError, match="Roles must be a list of strings."):
         bulletin_client.create_message(
             "new message to bulletin",
             capabilities=["apps_restore", "delete_messages"],
-            roles=["admin", 1]
+            roles=["admin", 1],
         )
