@@ -13,8 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import common
 import pytest
+import common
+from unittest.mock import patch, MagicMock
 from splunklib import binding
 
 from solnlib import server_info
@@ -72,3 +73,103 @@ class TestServerInfo:
 
         si = server_info.ServerInfo(common.SESSION_KEY)
         assert si.is_captain_ready()
+
+    @patch("solnlib.server_info.os.environ", autospec=True, return_value="$SPLUNK_HOME")
+    @patch(
+        "solnlib.server_info.get_splunkd_access_info",
+        autospec=True,
+        return_value=("https", "127.0.0.1", "8089"),
+    )
+    @patch("solnlib.server_info.rest_client", autospec=True)
+    @patch("solnlib.server_info.getWebCertFile", autospec=True, return_value=None)
+    @patch("solnlib.server_info.getWebKeyFile", autospec=True, return_value=None)
+    def test_server_info_object_with_no_certs(
+        self, mock_web_key, mock_web_cert, mock_rest_client, mock_splunkd, mock_os_env
+    ):
+        mock_rest_client.SplunkRestClient = MagicMock()
+
+        server_info.ServerInfo(common.SESSION_KEY)
+
+        for call_arg in mock_rest_client.SplunkRestClient.call_args_list:
+            _, kwargs = call_arg
+            assert kwargs.get("cert_file") is None
+            assert kwargs.get("key_file") is None
+            assert kwargs.get("verify") is None
+
+    @patch("solnlib.server_info.os.environ", autospec=True, return_value="$SPLUNK_HOME")
+    @patch(
+        "solnlib.server_info.get_splunkd_access_info",
+        autospec=True,
+        return_value=("https", "127.0.0.1", "8089"),
+    )
+    @patch("solnlib.server_info.rest_client", autospec=True)
+    @patch(
+        "solnlib.server_info.getWebCertFile",
+        autospec=True,
+        return_value="/path/cert/pem",
+    )
+    @patch(
+        "solnlib.server_info.getWebKeyFile", autospec=True, return_value="/path/key/pem"
+    )
+    def test_server_info_object_with_both_certs(
+        self, mock_web_key, mock_web_cert, mock_rest_client, mock_splunkd, mock_os_env
+    ):
+        mock_rest_client.SplunkRestClient = MagicMock()
+
+        server_info.ServerInfo(common.SESSION_KEY)
+
+        for call_arg in mock_rest_client.SplunkRestClient.call_args_list:
+            _, kwargs = call_arg
+            assert kwargs.get("cert_file") == "/path/cert/pem"
+            assert kwargs.get("key_file") == "/path/key/pem"
+            assert kwargs.get("verify") is False
+
+    @patch("solnlib.server_info.os.environ", autospec=True, return_value="$SPLUNK_HOME")
+    @patch(
+        "solnlib.server_info.get_splunkd_access_info",
+        autospec=True,
+        return_value=("https", "127.0.0.1", "8089"),
+    )
+    @patch("solnlib.server_info.rest_client", autospec=True)
+    @patch(
+        "solnlib.server_info.getWebCertFile",
+        autospec=True,
+        return_value="/path/cert/pem",
+    )
+    @patch("solnlib.server_info.getWebKeyFile", autospec=True, return_value=None)
+    def test_server_info_object_with_cert_file(
+        self, mock_web_key, mock_web_cert, mock_rest_client, mock_splunkd, mock_os_env
+    ):
+        mock_rest_client.SplunkRestClient = MagicMock()
+
+        server_info.ServerInfo(common.SESSION_KEY)
+
+        for call_arg in mock_rest_client.SplunkRestClient.call_args_list:
+            _, kwargs = call_arg
+            assert kwargs.get("cert_file") == "/path/cert/pem"
+            assert kwargs.get("key_file") is None
+            assert kwargs.get("verify") is False
+
+    @patch("solnlib.server_info.os.environ", autospec=True, return_value="$SPLUNK_HOME")
+    @patch(
+        "solnlib.server_info.get_splunkd_access_info",
+        autospec=True,
+        return_value=("https", "127.0.0.1", "8089"),
+    )
+    @patch("solnlib.server_info.rest_client", autospec=True)
+    @patch("solnlib.server_info.getWebCertFile", autospec=True, return_value=None)
+    @patch(
+        "solnlib.server_info.getWebKeyFile", autospec=True, return_value="/path/key/pem"
+    )
+    def test_server_info_object_with_key_file(
+        self, mock_web_key, mock_web_cert, mock_rest_client, mock_splunkd, mock_os_env
+    ):
+        mock_rest_client.SplunkRestClient = MagicMock()
+
+        server_info.ServerInfo(common.SESSION_KEY)
+
+        for call_arg in mock_rest_client.SplunkRestClient.call_args_list:
+            _, kwargs = call_arg
+            assert kwargs.get("cert_file") is None
+            assert kwargs.get("key_file") is None
+            assert kwargs.get("verify") is None
