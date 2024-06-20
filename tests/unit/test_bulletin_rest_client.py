@@ -26,6 +26,7 @@ def test_create_message(monkeypatch):
     bulletin_client = BulletinRestClient(
         "msg_name_1",
         session_key,
+        "_",
         **context,
     )
 

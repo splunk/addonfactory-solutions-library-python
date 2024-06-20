@@ -24,6 +24,7 @@ def _build_bulletin_manager(msg_name, session_key: str) -> brc.BulletinRestClien
     return brc.BulletinRestClient(
         msg_name,
         session_key,
+        "-",
         owner=context.owner,
         scheme=context.scheme,
         host=context.host,

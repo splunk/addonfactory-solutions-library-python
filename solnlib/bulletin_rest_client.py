@@ -38,11 +38,17 @@ class BulletinRestClient:
         self,
         message_name: str,
         session_key: str,
+        app: str,
         **context: dict,
     ):
         """Initializes BulletinRestClient.
 
-            One instance is responsible for handling one, particular message.
+            When creating a new bulletin message, you must provide a name, which is a kind of ID.
+            If you try to create another message with the same name (ID), the API will not add another message
+            to the bulletin, but it will overwrite the existing one. Similar behaviour applies to deletion.
+            To delete a message, you must indicate the name (ID) of the message.
+            To provide better and easier control over bulletin messages, this client works in such a way
+            that there is one instance responsible for handling one specific message.
             If you need to add another message to bulletin create another instance
             with a different 'message_name'
             e.g.
@@ -52,14 +58,16 @@ class BulletinRestClient:
         Arguments:
             message_name: Name of the message in the splunk's bulletin.
             session_key: Splunk access token.
+            app: App name of namespace.
             context: Other configurations for Splunk rest client.
         """
 
         self.message_name = message_name
         self.session_key = session_key
+        self.app = app
 
         self._rest_client = rest_client.SplunkRestClient(
-            self.session_key, app="-", **context
+            self.session_key, app=self.app, **context
         )
 
     def create_message(
@@ -69,7 +77,7 @@ class BulletinRestClient:
         capabilities: Optional[List[str]] = None,
         roles: Optional[List] = None,
     ):
-        """Creates a message in the splunk's bulletin.' Calling this method
+        """Creates a message in the splunk's bulletin. Calling this method
         multiple times for the same instance will overwrite existing message.
 
         Arguments:
@@ -94,7 +102,7 @@ class BulletinRestClient:
             "role": [],
         }
 
-        if severity not in ("info", "warn", "error"):
+        if severity not in (self.Severity.INFO, self.Severity.WARNING, self.Severity.ERROR):
             raise ValueError("Severity must be one of ('info', 'warn', 'error').")
 
         if capabilities:
@@ -107,12 +115,7 @@ class BulletinRestClient:
                 roles, "Roles must be a list of strings."
             )
 
-        try:
-            self._rest_client.post(
-                self.MESSAGES_ENDPOINT, body=body, headers=self.headers
-            )
-        except binding.HTTPError:
-            raise
+        self._rest_client.post(self.MESSAGES_ENDPOINT, body=body, headers=self.headers)
 
     def get_message(self):
         """Get specific message created by this instance."""
