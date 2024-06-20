@@ -117,7 +117,6 @@ jobs:
           export SPLUNK_BUILD_URL=https://download.splunk.com/products/${SPLUNK_PRODUCT}/releases/${SPLUNK_VERSION}/linux/${SPLUNK_LINUX_FILENAME}
           echo "$SPLUNK_BUILD_URL"
           export SPLUNK_HOME=/opt/splunk
-          export SPLUNK_DB=$SPLUNK_HOME/var/lib/splunk
           wget -qO /tmp/splunk.tgz "${SPLUNK_BUILD_URL}"
           sudo tar -C /opt -zxf /tmp/splunk.tgz
           sudo cp -r tests/integration/data/solnlib_demo $SPLUNK_HOME/etc/apps
@@ -136,7 +135,7 @@ jobs:
       - name: Run tests
         run: |
           poetry install
-          SPLUNK_HOME=/opt/splunk/ poetry run pytest --junitxml=test-results/results.xml -v tests/integration
+          SPLUNK_HOME=/opt/splunk SPLUNK_DB=$SPLUNK_HOME/var/lib/splunk poetry run pytest --junitxml=test-results/results.xml -v tests/integration
       - uses: actions/upload-artifact@v4
         with:
           name: test-splunk-${{ matrix.splunk.version }}
