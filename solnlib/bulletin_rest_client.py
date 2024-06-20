@@ -106,7 +106,13 @@ class BulletinRestClient:
             self.Severity.WARNING,
             self.Severity.ERROR,
         ):
-            raise ValueError("Severity must be one of ('info', 'warn', 'error').")
+            raise ValueError(
+                "Severity must be one of ("
+                "'BulletinRestClient.Severity.INFO', "
+                "'BulletinRestClient.Severity.WARNING', "
+                "'BulletinRestClient.Severity.ERROR'"
+                ")."
+            )
 
         if capabilities:
             body["capability"] = self._validate_and_get_body_value(
