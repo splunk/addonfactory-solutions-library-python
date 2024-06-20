@@ -15,7 +15,6 @@
 #
 
 from solnlib import splunk_rest_client as rest_client
-from splunklib import binding
 from typing import Optional, List
 import json
 
@@ -102,7 +101,11 @@ class BulletinRestClient:
             "role": [],
         }
 
-        if severity not in (self.Severity.INFO, self.Severity.WARNING, self.Severity.ERROR):
+        if severity not in (
+            self.Severity.INFO,
+            self.Severity.WARNING,
+            self.Severity.ERROR,
+        ):
             raise ValueError("Severity must be one of ('info', 'warn', 'error').")
 
         if capabilities:
