@@ -1,7 +1,8 @@
 # IDE related files
 *.idea
 *.DS_Store*
-.venv/
+# ignore all virtual environments
+.venv*
 
 # Compiled files
 __pycache__

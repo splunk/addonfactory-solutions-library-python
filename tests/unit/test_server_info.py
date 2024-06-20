@@ -81,8 +81,8 @@ class TestServerInfo:
         return_value=("https", "127.0.0.1", "8089"),
     )
     @patch("solnlib.server_info.rest_client", autospec=True)
-    @patch("solnlib.server_info.getWebCertFile", autospec=True, return_value=None)
-    @patch("solnlib.server_info.getWebKeyFile", autospec=True, return_value=None)
+    @patch("solnlib.server_info.getWebCertFile", return_value=None)
+    @patch("solnlib.server_info.getWebKeyFile", return_value=None)
     def test_server_info_object_with_no_certs(
         self, mock_web_key, mock_web_cert, mock_rest_client, mock_splunkd, mock_os_env
     ):
@@ -103,14 +103,8 @@ class TestServerInfo:
         return_value=("https", "127.0.0.1", "8089"),
     )
     @patch("solnlib.server_info.rest_client", autospec=True)
-    @patch(
-        "solnlib.server_info.getWebCertFile",
-        autospec=True,
-        return_value="/path/cert/pem",
-    )
-    @patch(
-        "solnlib.server_info.getWebKeyFile", autospec=True, return_value="/path/key/pem"
-    )
+    @patch("solnlib.server_info.getWebCertFile", return_value="/path/cert/pem")
+    @patch("solnlib.server_info.getWebKeyFile", return_value="/path/key/pem")
     def test_server_info_object_with_both_certs(
         self, mock_web_key, mock_web_cert, mock_rest_client, mock_splunkd, mock_os_env
     ):
@@ -131,12 +125,8 @@ class TestServerInfo:
         return_value=("https", "127.0.0.1", "8089"),
     )
     @patch("solnlib.server_info.rest_client", autospec=True)
-    @patch(
-        "solnlib.server_info.getWebCertFile",
-        autospec=True,
-        return_value="/path/cert/pem",
-    )
-    @patch("solnlib.server_info.getWebKeyFile", autospec=True, return_value=None)
+    @patch("solnlib.server_info.getWebCertFile", return_value="/path/cert/pem")
+    @patch("solnlib.server_info.getWebKeyFile", return_value=None)
     def test_server_info_object_with_cert_file(
         self, mock_web_key, mock_web_cert, mock_rest_client, mock_splunkd, mock_os_env
     ):
@@ -157,10 +147,8 @@ class TestServerInfo:
         return_value=("https", "127.0.0.1", "8089"),
     )
     @patch("solnlib.server_info.rest_client", autospec=True)
-    @patch("solnlib.server_info.getWebCertFile", autospec=True, return_value=None)
-    @patch(
-        "solnlib.server_info.getWebKeyFile", autospec=True, return_value="/path/key/pem"
-    )
+    @patch("solnlib.server_info.getWebCertFile", return_value=None)
+    @patch("solnlib.server_info.getWebKeyFile", return_value="/path/key/pem")
     def test_server_info_object_with_key_file(
         self, mock_web_key, mock_web_cert, mock_rest_client, mock_splunkd, mock_os_env
     ):
