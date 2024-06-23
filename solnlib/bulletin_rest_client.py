@@ -41,7 +41,6 @@ class BulletinRestClient:
         **context: dict,
     ):
         """Initializes BulletinRestClient.
-
             When creating a new bulletin message, you must provide a name, which is a kind of ID.
             If you try to create another message with the same name (ID), the API will not add another message
             to the bulletin, but it will overwrite the existing one. Similar behaviour applies to deletion.
@@ -55,7 +54,7 @@ class BulletinRestClient:
             msg_2 = BulletinRestClient("message_2", "<some session key>")
 
         Arguments:
-            message_name: Name of the message in the splunk's bulletin.
+            message_name: Name of the message in the Splunk's bulletin.
             session_key: Splunk access token.
             app: App name of namespace.
             context: Other configurations for Splunk rest client.
@@ -76,13 +75,13 @@ class BulletinRestClient:
         capabilities: Optional[List[str]] = None,
         roles: Optional[List] = None,
     ):
-        """Creates a message in the splunk's bulletin. Calling this method
+        """Creates a message in the Splunk's bulletin. Calling this method
         multiple times for the same instance will overwrite existing message.
 
         Arguments:
-            msg: The message which will be displayed in the splunk's bulletin'
+            msg: The message which will be displayed in the Splunk's bulletin
             severity: Severity level of the message. It has to be one of: 'info', 'warn', 'error'.
-            If wrong severity is given, ValueError will be raised.
+                If wrong severity is given, ValueError will be raised.
             capabilities: One or more capabilities that users must have to view the message.
                 Capability names are validated.
                 This argument should be provided as a list of string/s e.g. capabilities=['one', 'two'].
