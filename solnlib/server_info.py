@@ -24,7 +24,7 @@ from splunk.rest import getWebCertFile, getWebKeyFile
 from splunklib import binding
 from solnlib import splunk_rest_client as rest_client
 from solnlib import utils
-from .splunkenv import get_splunkd_access_info
+from solnlib.splunkenv import get_splunkd_access_info
 
 __all__ = ["ServerInfo", "ServerInfoException"]
 
@@ -58,7 +58,7 @@ class ServerInfo:
             port: The port number, default is None.
             context: Other configurations for Splunk rest client.
         """
-        is_localhost: bool = False
+        is_localhost = False
         if not all([scheme, host, port]) and os.environ.get("SPLUNK_HOME"):
             scheme, host, port = get_splunkd_access_info()
             is_localhost = (
