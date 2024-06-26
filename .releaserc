@@ -55,7 +55,7 @@
         "@semantic-release/git",
         {
           "assets": ["NOTICE", "pyproject.toml", "solnlib/__init__.py"],
-          "message": "chore(release): ${nextRelease.version}\n\n${nextRelease.notes} [ci skip]",
+          "message": "chore(release): ${nextRelease.version}\n\n${nextRelease.notes}",
         },
       ],
       ["@semantic-release/github", { "assets": ["NOTICE", "pyproject.toml"] }],
