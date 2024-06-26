@@ -88,10 +88,13 @@ def _request_handler(context):
     verify = context.get("verify", False)
 
     if context.get("key_file") and context.get("cert_file"):
-        # cert = ('/path/client.cert', '/path/client.key')
-        cert = context["key_file"], context["cert_file"]
+        # cert: if tuple, ('cert', 'key') pair as per requests library
+        cert = context["cert_file"], context["key_file"]
     elif context.get("cert_file"):
         cert = context["cert_file"]
+    elif context.get("cert"):
+        # as the solnlib uses requests, we need to have a check for 'cert' key as well
+        cert = context["cert"]
     else:
         cert = None
 
