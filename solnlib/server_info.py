@@ -20,7 +20,17 @@ import os
 import json
 from typing import Any, Dict, Optional
 
-from splunk.rest import getWebCertFile, getWebKeyFile
+try:
+    from splunk.rest import getWebCertFile, getWebKeyFile
+except (ModuleNotFoundError, ImportError):
+
+    def getWebCertFile():
+        return None
+
+    def getWebKeyFile():
+        return None
+
+
 from splunklib import binding
 from solnlib import splunk_rest_client as rest_client
 from solnlib import utils
