@@ -18,6 +18,7 @@ import json
 import sys
 
 import common
+import pytest
 from splunklib import binding
 
 from solnlib.modular_input import ClassicEventWriter, HECEventWriter
@@ -85,7 +86,54 @@ def test_classic_event_writer(monkeypatch):
     assert mock_stdout.write_count == 1
 
 
-def test_hec_event_writer(monkeypatch):
+def create_hec_event_writer__create_from_input(hec=False):
+    return HECEventWriter.create_from_input(
+        "HECTestInput",
+        "https://localhost:8089",
+        common.SESSION_KEY,
+        global_settings_schema=hec,
+    )
+
+
+def create_hec_event_writer__create_from_token_with_session_key(hec=False):
+    return HECEventWriter.create_from_token_with_session_key(
+        "https://localhost:8089",
+        common.SESSION_KEY,
+        "https://localhost:8090",
+        "test_token",
+        global_settings_schema=hec,
+    )
+
+
+def create_hec_event_writer__create_from_token(hec=False):
+    return HECEventWriter.create_from_token(
+        "https://localhost:8090", "test_token", global_settings_schema=hec
+    )
+
+
+def create_hec_event_writer__create_from_token__external_host(hec=False):
+    return HECEventWriter.create_from_token(
+        "https://external:8090", "test_token", global_settings_schema=hec
+    )
+
+
+def create_hec_event_writer__constructor(hec=False):
+    return HECEventWriter(
+        "HECTestInput", common.SESSION_KEY, global_settings_schema=hec
+    )
+
+
+@pytest.mark.parametrize(
+    "create_hec_event_writer, has_splunk_home",
+    [
+        (create_hec_event_writer__constructor, True),
+        (create_hec_event_writer__create_from_input, True),
+        (create_hec_event_writer__create_from_token_with_session_key, True),
+        (create_hec_event_writer__create_from_token, True),
+        (create_hec_event_writer__create_from_token__external_host, False),
+    ],
+)
+def test_hec_event_writer(monkeypatch, create_hec_event_writer, has_splunk_home):
     def mock_get(self, path_segment, owner=None, app=None, sharing=None, **query):
         if path_segment.endswith("/http"):
             return common.make_response_record(
@@ -120,42 +168,46 @@ def test_hec_event_writer(monkeypatch):
     ):
         return "8088", "87de04d1-0823-11e6-9c94-a45e60e"
 
-    common.mock_splunkhome(monkeypatch)
+    if has_splunk_home:
+        common.mock_splunkhome(monkeypatch)
+    else:
+        # simulate an environment that has no splunk installation
+        monkeypatch.delenv("SPLUNK_HOME", raising=False)
+        monkeypatch.delenv("SPLUNK_ETC", raising=False)
     monkeypatch.setattr(binding.Context, "get", mock_get)
     monkeypatch.setattr(binding.Context, "post", mock_post)
     monkeypatch.setattr(HECEventWriter, "_get_hec_config", mock_get_hec_config)
 
-    for i in range(4):
-        ew = create_hec_event_writer(i)
+    ew = create_hec_event_writer(hec=False)
 
-        events = []
-        events.append(
-            ew.create_event(
-                data="This is a test data1.",
-                time=1372274622.493,
-                index="main",
-                host="localhost",
-                source="Splunk",
-                sourcetype="misc",
-                stanza="test_scheme://test",
-                unbroken=True,
-                done=False,
-            )
+    events = []
+    events.append(
+        ew.create_event(
+            data="This is a test data1.",
+            time=1372274622.493,
+            index="main",
+            host="localhost",
+            source="Splunk",
+            sourcetype="misc",
+            stanza="test_scheme://test",
+            unbroken=True,
+            done=False,
         )
-        events.append(
-            ew.create_event(
-                data="This is a test data2.",
-                time=1372274622.493,
-                index="main",
-                host="localhost",
-                source="Splunk",
-                sourcetype="misc",
-                stanza="test_scheme://test",
-                unbroken=True,
-                done=True,
-            )
+    )
+    events.append(
+        ew.create_event(
+            data="This is a test data2.",
+            time=1372274622.493,
+            index="main",
+            host="localhost",
+            source="Splunk",
+            sourcetype="misc",
+            stanza="test_scheme://test",
+            unbroken=True,
+            done=True,
         )
-        ew.write_events(events)
+    )
+    ew.write_events(events)
 
     # length of this list will indicate how many times post was called
     times_post_called = []
@@ -170,7 +222,7 @@ def test_hec_event_writer(monkeypatch):
     # test that there are 2 event batches created for write_event and post is called 2 times
     # max batch size is 1,000,000. If the max size is exceeded then a new batch is created.
     assert len(times_post_called) == 0
-    ew = create_hec_event_writer(1)
+
     events = []
 
     # each event length will be ~500 characters, 3000 events length will equal ~1,500,000 characters
@@ -207,35 +259,31 @@ def test_hec_event_writer(monkeypatch):
     # test that post is called 2 times
     assert len(times_post_called) == 2
 
-    for i in range(4):
-        ev = create_hec_event_writer(i)
-        assert ev._rest_client.scheme == "https"
-    for i in range(4):
-        ev = create_hec_event_writer(i, hec=True)
-        assert ev._rest_client.scheme == "http"
 
+@pytest.mark.parametrize(
+    "create_hec_event_writer, hec, expected_scheme",
+    [
+        (create_hec_event_writer__constructor, True, "http"),
+        (create_hec_event_writer__constructor, False, "https"),
+        (create_hec_event_writer__create_from_input, True, "http"),
+        (create_hec_event_writer__create_from_input, False, "https"),
+        (create_hec_event_writer__create_from_token_with_session_key, True, "http"),
+        (create_hec_event_writer__create_from_token_with_session_key, False, "https"),
+        (create_hec_event_writer__create_from_token, True, "http"),
+        (create_hec_event_writer__create_from_token, False, "https"),
+    ],
+)
+def test_hec_event_writer_gets_scheme_from_global_settings_if_requested(
+    monkeypatch, create_hec_event_writer, hec, expected_scheme
+):
+    common.mock_splunkhome(monkeypatch)
 
-def create_hec_event_writer(i, hec=False):
-    if i == 1:
-        return HECEventWriter.create_from_input(
-            "HECTestInput",
-            "https://localhost:8089",
-            common.SESSION_KEY,
-            global_settings_schema=hec,
-        )
-    elif i == 2:
-        return HECEventWriter.create_from_token_with_session_key(
-            "https://localhost:8089",
-            common.SESSION_KEY,
-            "https://localhost:8090",
-            "test_token",
-            global_settings_schema=hec,
-        )
-    elif i == 3:
-        return HECEventWriter.create_from_token(
-            "https://localhost:8090", "test_token", global_settings_schema=hec
-        )
-    else:
-        return HECEventWriter(
-            "HECTestInput", common.SESSION_KEY, global_settings_schema=hec
-        )
+    def mock_get_hec_config(
+        self, hec_input_name, session_key, scheme, host, port, **context
+    ):
+        return "8088", "87de04d1-0823-11e6-9c94-a45e60e"
+
+    monkeypatch.setattr(HECEventWriter, "_get_hec_config", mock_get_hec_config)
+
+    ev = create_hec_event_writer(hec)
+    assert ev._rest_client.scheme == expected_scheme
