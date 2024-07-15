@@ -79,7 +79,7 @@ class Logs(metaclass=Singleton):
     _default_directory = None
     _default_namespace = None
     _default_log_format = (
-        "%(asctime)s %(levelname)s pid=%(process)d tid=%(threadName)s "
+        "%(asctime)s log_level=%(levelname)s pid=%(process)d tid=%(threadName)s "
         "file=%(filename)s:%(funcName)s:%(lineno)d | %(message)s"
     )
     _default_log_level = logging.INFO
