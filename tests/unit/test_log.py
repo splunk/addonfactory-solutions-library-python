@@ -18,10 +18,13 @@ import logging
 import json
 import multiprocessing
 import os
+import re
 import shutil
 import threading
 import traceback
 import time
+from textwrap import dedent
+
 import pytest
 from unittest import mock
 
@@ -300,3 +303,33 @@ def test_log_basic_error(func, result):
             mock_logger.log.assert_called_with(
                 logging.ERROR, f"exc_l={result} \n{traceback.format_exc()}\n"
             )
+
+
+def test_log_format(monkeypatch, tmp_path):
+    log_file = tmp_path / "logging_levels.log"
+
+    monkeypatch.setattr(log.Logs, "_get_log_file", lambda _, name: str(log_file))
+
+    logger = log.Logs().get_logger("logging_levels")
+
+    logger.warning("log 2")
+    logger.error("log 3")
+
+    log_content = transform_log(log_file.read_text())
+
+    assert (
+        log_content
+        == dedent(
+            """
+            2024-03-23 10:15:20,555 log_level=WARNING pid=1234 tid=MainThread file=test_file.py:test_func:123 | log 2
+            2024-03-23 10:15:20,555 log_level=ERROR pid=1234 tid=MainThread file=test_file.py:test_func:123 | log 3
+        """,
+        ).lstrip()
+    )
+
+
+def transform_log(log: str) -> str:
+    log = re.sub(r"pid=\d+", "pid=1234", log)
+    log = re.sub(r"file=[^ ]+", "file=test_file.py:test_func:123", log)
+    log = re.sub(r"\d{4}-\d\d-\d\d \d\d[^ ]+", "2024-03-23 10:15:20,555", log)
+    return log
