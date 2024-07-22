@@ -229,12 +229,11 @@ class HECEventWriter(EventWriter):
         else:
             self.logger = logging
 
-        if not all([scheme, host, port]):
-            scheme, host, port = get_splunkd_access_info()
-
         if hec_uri and hec_token:
             scheme, host, hec_port = utils.extract_http_scheme_host_port(hec_uri)
         else:
+            if not all([scheme, host, port]):
+                scheme, host, port = get_splunkd_access_info()
             hec_port, hec_token = self._get_hec_config(
                 hec_input_name, session_key, scheme, host, port, **context
             )
