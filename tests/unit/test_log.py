@@ -246,8 +246,12 @@ def test_events_ingested_invalid_input():
 def test_events_ingested_custom_license_usage():
     with mock.patch("logging.Logger") as mock_logger:
         log.events_ingested(
-            mock_logger, "input_type://input_name", "sourcetype", 5, "default",
-            license_usage_source="custom:license:source"
+            mock_logger,
+            "input_type://input_name",
+            "sourcetype",
+            5,
+            "default",
+            license_usage_source="custom:license:source",
         )
 
         mock_logger.log.assert_called_once_with(
@@ -265,7 +269,7 @@ def test_events_ingested_custom_license_usage():
             "default",
             host="abcd",
             account="test_acc",
-            license_usage_source="custom:license:source:123"
+            license_usage_source="custom:license:source:123",
         )
 
         mock_logger.log.assert_called_once_with(
@@ -350,13 +354,13 @@ def test_log_format(monkeypatch, tmp_path):
     log_content = transform_log(log_file.read_text())
 
     assert (
-            log_content
-            == dedent(
-        """
+        log_content
+        == dedent(
+            """
         2024-03-23 10:15:20,555 log_level=WARNING pid=1234 tid=MainThread file=test_file.py:test_func:123 | log 2
         2024-03-23 10:15:20,555 log_level=ERROR pid=1234 tid=MainThread file=test_file.py:test_func:123 | log 3
     """,
-    ).lstrip()
+        ).lstrip()
     )
 
 

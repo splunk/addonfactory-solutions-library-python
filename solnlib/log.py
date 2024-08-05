@@ -312,7 +312,9 @@ def events_ingested(
 
     result = {
         "action": "events_ingested",
-        "modular_input_name": license_usage_source if license_usage_source else modular_input_name,
+        "modular_input_name": license_usage_source
+        if license_usage_source
+        else modular_input_name,
         "sourcetype_ingested": sourcetype,
         "n_events": n_events,
         "event_input": input_name,
