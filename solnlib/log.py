@@ -285,6 +285,7 @@ def events_ingested(
     index: str,
     account: str = None,
     host: str = None,
+    license_usage_source: str = None,
 ):
     """Specific function to log the basic information of events ingested for
     the monitoring dashboard.
@@ -296,6 +297,7 @@ def events_ingested(
         sourcetype: Source type used to write event.
         n_events: Number of ingested events.
         index: Index used to write event.
+        license_usage_source: source used to match data with license_usage.log.
         account: Account used to write event. (optional)
         host: Host used to write event. (optional)
     """
@@ -310,7 +312,7 @@ def events_ingested(
 
     result = {
         "action": "events_ingested",
-        "modular_input_name": modular_input_name,
+        "modular_input_name": license_usage_source if license_usage_source else modular_input_name,
         "sourcetype_ingested": sourcetype,
         "n_events": n_events,
         "event_input": input_name,
