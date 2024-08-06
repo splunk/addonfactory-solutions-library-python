@@ -115,7 +115,7 @@ def _clear_bulletin():
     session_key = context.get_session_key()
     bulletin_client = _build_bulletin_manager("", session_key)
 
-    msg_to_del = [el['name'] for el in bulletin_client.get_all_messages()['entry']]
+    msg_to_del = [el["name"] for el in bulletin_client.get_all_messages()["entry"]]
     for msg in msg_to_del:
         endpoint = f"{bulletin_client.MESSAGES_ENDPOINT}/{msg}"
         bulletin_client._rest_client.delete(endpoint)
