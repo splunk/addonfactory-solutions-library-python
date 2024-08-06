@@ -58,7 +58,7 @@ def test_bulletin_rest_api():
 
     bulletin_client_1.create_message(
         "new message to bulletin",
-        capabilities=["apps_restore", "delete_messages"],
+        capabilities=["apps_restore", "edit_roles"],
         roles=["admin"],
     )
 
