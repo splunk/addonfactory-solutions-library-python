@@ -56,9 +56,12 @@ def test_bulletin_rest_api():
     bulletin_client_1 = _build_bulletin_manager("msg_name_1", session_key)
     bulletin_client_2 = _build_bulletin_manager("msg_name_2", session_key)
 
+    # clear bulletin before tests
+    _clear_bulletin()
+
     bulletin_client_1.create_message(
         "new message to bulletin",
-        capabilities=["apps_restore", "delete_messages"],
+        capabilities=["apps_restore", "edit_roles"],
         roles=["admin"],
     )
 
@@ -106,3 +109,13 @@ def test_bulletin_rest_api():
 
     get_all_msg = bulletin_client_1.get_all_messages()
     assert len(get_all_msg["entry"]) == 0
+
+
+def _clear_bulletin():
+    session_key = context.get_session_key()
+    bulletin_client = _build_bulletin_manager("", session_key)
+
+    msg_to_del = [el["name"] for el in bulletin_client.get_all_messages()["entry"]]
+    for msg in msg_to_del:
+        endpoint = f"{bulletin_client.MESSAGES_ENDPOINT}/{msg}"
+        bulletin_client._rest_client.delete(endpoint)
