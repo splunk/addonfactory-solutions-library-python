@@ -161,3 +161,32 @@ class TestServerInfo:
             assert kwargs.get("cert_file") is None
             assert kwargs.get("key_file") is None
             assert kwargs.get("verify") is None
+
+    @patch("solnlib.server_info.os.environ", autospec=True, return_value="$SPLUNK_HOME")
+    @patch(
+        "solnlib.server_info.get_splunkd_access_info",
+        autospec=True,
+        return_value=("https", "127.0.0.1", "8089"),
+    )
+    @patch("solnlib.server_info.rest_client", autospec=True)
+    def test_server_info_object_with_no_splunk_import(
+        self,
+        mock_rest_client,
+        mock_splunkd,
+        mock_os_env,
+    ):
+        mock_rest_client.SplunkRestClient = MagicMock()
+
+        # we want to raise 'ModuleNotFoundError' when importing the required functions
+        with patch.dict("sys.modules", {"splunk": ModuleNotFoundError}):
+            server_info.ServerInfo(common.SESSION_KEY)
+
+            for call_arg in mock_rest_client.SplunkRestClient.call_args_list:
+                _, kwargs = call_arg
+                assert (
+                    kwargs.get("cert_file") is None
+                )  # comes from the empty function in except
+                assert (
+                    kwargs.get("key_file") is None
+                )  # comes from the empty function in except
+                assert kwargs.get("verify") is None
