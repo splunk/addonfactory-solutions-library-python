@@ -18,10 +18,13 @@ import logging
 import json
 import multiprocessing
 import os
+import re
 import shutil
 import threading
 import traceback
 import time
+from textwrap import dedent
+
 import pytest
 from unittest import mock
 
@@ -240,6 +243,42 @@ def test_events_ingested_invalid_input():
     assert exp_msg == str(excinfo.value)
 
 
+def test_events_ingested_custom_license_usage():
+    with mock.patch("logging.Logger") as mock_logger:
+        log.events_ingested(
+            mock_logger,
+            "input_type://input_name",
+            "sourcetype",
+            5,
+            "default",
+            license_usage_source="custom:license:source",
+        )
+
+        mock_logger.log.assert_called_once_with(
+            logging.INFO,
+            "action=events_ingested modular_input_name=custom:license:source sourcetype_ingested=sourcetype "
+            "n_events=5 event_input=input_name event_index=default",
+        )
+
+    with mock.patch("logging.Logger") as mock_logger:
+        log.events_ingested(
+            mock_logger,
+            "demo://modular_input_name",
+            "sourcetype",
+            5,
+            "default",
+            host="abcd",
+            account="test_acc",
+            license_usage_source="custom:license:source:123",
+        )
+
+        mock_logger.log.assert_called_once_with(
+            logging.INFO,
+            "action=events_ingested modular_input_name=custom:license:source:123 sourcetype_ingested=sourcetype n_"
+            "events=5 event_input=modular_input_name event_index=default event_account=test_acc event_host=abcd",
+        )
+
+
 def test_log_exceptions_full_msg():
     start_msg = "some msg before exception"
     with mock.patch("logging.Logger") as mock_logger:
@@ -300,3 +339,33 @@ def test_log_basic_error(func, result):
             mock_logger.log.assert_called_with(
                 logging.ERROR, f"exc_l={result} \n{traceback.format_exc()}\n"
             )
+
+
+def test_log_format(monkeypatch, tmp_path):
+    log_file = tmp_path / "logging_levels.log"
+
+    monkeypatch.setattr(log.Logs, "_get_log_file", lambda _, name: str(log_file))
+
+    logger = log.Logs().get_logger("logging_levels")
+
+    logger.warning("log 2")
+    logger.error("log 3")
+
+    log_content = transform_log(log_file.read_text())
+
+    assert (
+        log_content
+        == dedent(
+            """
+        2024-03-23 10:15:20,555 log_level=WARNING pid=1234 tid=MainThread file=test_file.py:test_func:123 | log 2
+        2024-03-23 10:15:20,555 log_level=ERROR pid=1234 tid=MainThread file=test_file.py:test_func:123 | log 3
+    """,
+        ).lstrip()
+    )
+
+
+def transform_log(log: str) -> str:
+    log = re.sub(r"pid=\d+", "pid=1234", log)
+    log = re.sub(r"file=[^ ]+", "file=test_file.py:test_func:123", log)
+    log = re.sub(r"\d{4}-\d\d-\d\d \d\d[^ ]+", "2024-03-23 10:15:20,555", log)
+    return log
