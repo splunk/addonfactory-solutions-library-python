@@ -73,6 +73,10 @@ def _request_handler(context):
 
     try:
         import requests
+        import urllib.request
+        import urllib.parse
+        import urllib.error
+        import ssl
     except ImportError:
         # FIXME proxy ?
         return binding.handler(
@@ -98,17 +102,7 @@ def _request_handler(context):
     else:
         cert = None
 
-    if context.get("pool_connections", 0):
-        logging.info("Use HTTP connection pooling")
-        session = requests.Session()
-        adapter = requests.adapters.HTTPAdapter(
-            pool_connections=context.get("pool_connections", 10),
-            pool_maxsize=context.get("pool_maxsize", 10),
-        )
-        session.mount("https://", adapter)
-        req_func = session.request
-    else:
-        req_func = requests.request
+    req_func = urllib.request.urlopen
 
     def request(url, message, **kwargs):
         """
@@ -138,17 +132,18 @@ def _request_handler(context):
         method = message.get("method", "GET")
 
         try:
-            resp = req_func(
-                method,
-                url,
-                data=body,
-                headers=headers,
-                stream=False,
-                verify=verify,
-                proxies=proxies,
-                cert=cert,
-                **kwargs,
-            )
+            req = urllib.request.Request(url, body, headers, method=method)
+
+            proxy_support = urllib.request.ProxyHandler(proxies)
+            opener = urllib.request.build_opener(proxy_support)
+            urllib.request.install_opener(opener)
+
+            if not verify:
+                context = ssl.SSLContext()
+                resp = req_func(req, cafile=cert, context=context)
+            else:
+                resp = req_func(req, cafile=cert)
+
         except Exception:
             logging.error(
                 "Failed to issue http request=%s to url=%s, error=%s",
@@ -159,10 +154,10 @@ def _request_handler(context):
             raise
 
         return {
-            "status": resp.status_code,
+            "status": resp.status,
             "reason": resp.reason,
             "headers": dict(resp.headers),
-            "body": BytesIO(resp.content),
+            "body": BytesIO(resp.fp.read()),
         }
 
     return request
