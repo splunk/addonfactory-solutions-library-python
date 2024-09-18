@@ -25,6 +25,7 @@ import logging
 import os
 import traceback
 from io import BytesIO
+from urllib.error import HTTPError
 from urllib.parse import quote
 
 from splunklib import binding, client
@@ -72,17 +73,15 @@ def _request_handler(context):
     """
 
     try:
-        import requests
+        import urllib.request
+        import urllib.parse
+        import urllib.error
+        import ssl
     except ImportError:
         # FIXME proxy ?
         return binding.handler(
             key_file=context.get("key_file"), cert_file=context.get("cert_file")
         )
-
-    try:
-        requests.urllib3.disable_warnings()
-    except AttributeError:
-        pass
 
     proxies = _get_proxy_info(context)
     verify = context.get("verify", False)
@@ -98,17 +97,7 @@ def _request_handler(context):
     else:
         cert = None
 
-    if context.get("pool_connections", 0):
-        logging.info("Use HTTP connection pooling")
-        session = requests.Session()
-        adapter = requests.adapters.HTTPAdapter(
-            pool_connections=context.get("pool_connections", 10),
-            pool_maxsize=context.get("pool_maxsize", 10),
-        )
-        session.mount("https://", adapter)
-        req_func = session.request
-    else:
-        req_func = requests.request
+    req_func = urllib.request.urlopen
 
     def request(url, message, **kwargs):
         """
@@ -130,6 +119,8 @@ def _request_handler(context):
         }
 
         if body:
+            if not isinstance(body, bytes):
+                body = body.encode("utf-8")
             headers["Content-Length"] = str(len(body))
 
         for key, value in message["headers"]:
@@ -138,17 +129,26 @@ def _request_handler(context):
         method = message.get("method", "GET")
 
         try:
-            resp = req_func(
-                method,
-                url,
-                data=body,
-                headers=headers,
-                stream=False,
-                verify=verify,
-                proxies=proxies,
-                cert=cert,
-                **kwargs,
-            )
+            req = urllib.request.Request(url, body, headers, method=method)
+
+            proxy_support = urllib.request.ProxyHandler(proxies)
+            opener = urllib.request.build_opener(proxy_support)
+            urllib.request.install_opener(opener)
+
+            context = ssl.create_default_context()
+            if not verify:
+                context.check_hostname = False
+                context.verify_mode = ssl.CERT_NONE
+            resp = req_func(req, cafile=cert, context=context)
+
+        except HTTPError as err:
+            return {
+                "status": err.code,
+                "reason": err.reason,
+                "headers": dict(err.headers),
+                "body": BytesIO(err.fp.read()),
+            }
+
         except Exception:
             logging.error(
                 "Failed to issue http request=%s to url=%s, error=%s",
@@ -159,10 +159,10 @@ def _request_handler(context):
             raise
 
         return {
-            "status": resp.status_code,
+            "status": resp.status,
             "reason": resp.reason,
             "headers": dict(resp.headers),
-            "body": BytesIO(resp.content),
+            "body": BytesIO(resp.fp.read()),
         }
 
     return request
