@@ -25,6 +25,7 @@ import logging
 import os
 import traceback
 from io import BytesIO
+from urllib.error import HTTPError
 from urllib.parse import quote
 
 from splunklib import binding, client
@@ -124,6 +125,8 @@ def _request_handler(context):
         }
 
         if body:
+            if not isinstance(body, bytes):
+                body = body.encode("utf-8")
             headers["Content-Length"] = str(len(body))
 
         for key, value in message["headers"]:
@@ -143,6 +146,14 @@ def _request_handler(context):
                 resp = req_func(req, cafile=cert, context=context)
             else:
                 resp = req_func(req, cafile=cert)
+
+        except HTTPError as err:
+            return {
+                "status": err.code,
+                "reason": err.reason,
+                "headers": dict(err.headers),
+                "body": BytesIO(err.fp.read()),
+            }
 
         except Exception:
             logging.error(
