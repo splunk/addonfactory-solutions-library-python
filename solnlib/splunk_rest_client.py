@@ -73,7 +73,6 @@ def _request_handler(context):
     """
 
     try:
-        import requests
         import urllib.request
         import urllib.parse
         import urllib.error
@@ -83,11 +82,6 @@ def _request_handler(context):
         return binding.handler(
             key_file=context.get("key_file"), cert_file=context.get("cert_file")
         )
-
-    try:
-        requests.urllib3.disable_warnings()
-    except AttributeError:
-        pass
 
     proxies = _get_proxy_info(context)
     verify = context.get("verify", False)
@@ -141,11 +135,11 @@ def _request_handler(context):
             opener = urllib.request.build_opener(proxy_support)
             urllib.request.install_opener(opener)
 
+            context = ssl.create_default_context()
             if not verify:
-                context = ssl.SSLContext()
-                resp = req_func(req, cafile=cert, context=context)
-            else:
-                resp = req_func(req, cafile=cert)
+                context.check_hostname = False
+                context.verify_mode = ssl.CERT_NONE
+            resp = req_func(req, cafile=cert, context=context)
 
         except HTTPError as err:
             return {
