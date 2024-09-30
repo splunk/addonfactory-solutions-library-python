@@ -86,9 +86,11 @@ def test_init_with_invalid_port():
 
 
 @mock.patch.dict(os.environ, {"SPLUNK_HOME": "/opt/splunk"}, clear=True)
+@mock.patch("solnlib.splunk_rest_client.get_splunkd_access_info")
 @mock.patch("http.client.HTTPResponse")
 @mock.patch("urllib3.HTTPConnectionPool._make_request")
-def test_no_retry_error(http_conn_pool, http_resp, monkeypatch):
+def test_request_retry(http_conn_pool, http_resp, mock_get_splunkd_access_info):
+    mock_get_splunkd_access_info.return_value = "https", "localhost", 8089
     session_key = "123"
     context = {"pool_connections": 5}
     rest_client = SplunkRestClient("msg_name_1", session_key, "_", **context)
