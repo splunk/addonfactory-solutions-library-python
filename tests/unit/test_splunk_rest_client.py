@@ -17,8 +17,11 @@ import os
 from unittest import mock
 
 import pytest
+from solnlib.splunk_rest_client import MAX_REQUEST_RETRIES
 
+from requests.exceptions import ConnectionError
 from solnlib import splunk_rest_client
+from solnlib.splunk_rest_client import SplunkRestClient
 
 
 @mock.patch.dict(os.environ, {"SPLUNK_HOME": "/opt/splunk"}, clear=True)
@@ -80,3 +83,27 @@ def test_init_with_invalid_port():
             host="localhost",
             port=99999,
         )
+
+
+@mock.patch.dict(os.environ, {"SPLUNK_HOME": "/opt/splunk"}, clear=True)
+@mock.patch("http.client.HTTPResponse")
+@mock.patch("urllib3.HTTPConnectionPool._make_request")
+def test_no_retry_error(http_conn_pool, http_resp, monkeypatch):
+    session_key = "123"
+    context = {"pool_connections": 5}
+    rest_client = SplunkRestClient("msg_name_1", session_key, "_", **context)
+
+    mock_resp = http_resp()
+    mock_resp.status = 200
+    mock_resp.reason = "TEST OK"
+
+    side_effects = [ConnectionError(), ConnectionError(), ConnectionError(), mock_resp]
+    http_conn_pool.side_effect = side_effects
+    res = rest_client.get("test")
+    assert http_conn_pool.call_count == len(side_effects)
+    assert res.reason == mock_resp.reason
+
+    side_effects = [ConnectionError()] * (MAX_REQUEST_RETRIES + 1) + [mock_resp]
+    http_conn_pool.side_effect = side_effects
+    with pytest.raises(ConnectionError):
+        rest_client.get("test")
