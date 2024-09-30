@@ -26,6 +26,7 @@ import os
 import traceback
 from io import BytesIO
 from urllib.parse import quote
+from urllib3.util.retry import Retry
 
 from splunklib import binding, client
 
@@ -33,6 +34,7 @@ from .net_utils import validate_scheme_host_port
 from .splunkenv import get_splunkd_access_info
 
 __all__ = ["SplunkRestClient"]
+MAX_REQUEST_RETRIES = 5
 
 
 def _get_proxy_info(context):
@@ -98,10 +100,18 @@ def _request_handler(context):
     else:
         cert = None
 
+    retries = Retry(
+        total=MAX_REQUEST_RETRIES,
+        backoff_factor=0.3,
+        status_forcelist=[500, 502, 503, 504],
+        allowed_methods=["GET", "POST", "PUT", "DELETE"],
+        raise_on_status=False,
+    )
     if context.get("pool_connections", 0):
         logging.info("Use HTTP connection pooling")
         session = requests.Session()
         adapter = requests.adapters.HTTPAdapter(
+            max_retries=retries,
             pool_connections=context.get("pool_connections", 10),
             pool_maxsize=context.get("pool_maxsize", 10),
         )
