@@ -309,7 +309,7 @@ def get_conf_stanzas(conf_name: str) -> dict:
 
     parser = ConfigParser(**{"strict": False})
     parser.optionxform = str
-    parser.readfp(StringIO(out))
+    parser.read_file(StringIO(out))
 
     out = {}
     for section in parser.sections():
