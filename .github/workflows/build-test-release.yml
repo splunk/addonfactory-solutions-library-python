@@ -50,7 +50,7 @@ jobs:
       - uses: apache/skywalking-eyes@v0.6.0
 
   pre-commit:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -66,7 +66,7 @@ jobs:
 
   run-unit-tests:
     name: test-unit ${{ matrix.python-version }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     continue-on-error: true
     strategy:
       matrix:
@@ -87,7 +87,7 @@ jobs:
           poetry run pytest tests/unit
 
   test-splunk:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     continue-on-error: true
     needs:
       - meta
@@ -143,7 +143,7 @@ jobs:
       - semgrep
       - run-unit-tests
       - test-splunk
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
         with:
