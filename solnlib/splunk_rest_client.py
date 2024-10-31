@@ -21,12 +21,9 @@ All clients should use SplunkRestProxy to do REST call instead of
 calling splunklib SDK directly in business logic code.
 """
 
-import logging
+
 import os
-import traceback
-from io import BytesIO
 from urllib.parse import quote
-from urllib3.util.retry import Retry
 
 from splunklib import binding, client
 
@@ -34,6 +31,7 @@ from .net_utils import validate_scheme_host_port
 from .splunkenv import get_splunkd_access_info
 
 __all__ = ["SplunkRestClient"]
+
 MAX_REQUEST_RETRIES = 5
 
 
@@ -73,109 +71,19 @@ def _request_handler(context):
     :type content: dict
     """
 
-    try:
-        import requests
-    except ImportError:
-        # FIXME proxy ?
-        return binding.handler(
-            key_file=context.get("key_file"), cert_file=context.get("cert_file")
-        )
-
-    try:
-        requests.urllib3.disable_warnings()
-    except AttributeError:
-        pass
-
-    proxies = _get_proxy_info(context)
     verify = context.get("verify", False)
+    key_file = None
+    cert_file = None
 
     if context.get("key_file") and context.get("cert_file"):
-        # cert: if tuple, ('cert', 'key') pair as per requests library
-        cert = context["cert_file"], context["key_file"]
+        key_file, cert_file = context["cert_file"], context["key_file"]
+
     elif context.get("cert_file"):
-        cert = context["cert_file"]
-    elif context.get("cert"):
-        # as the solnlib uses requests, we need to have a check for 'cert' key as well
-        cert = context["cert"]
-    else:
-        cert = None
+        cert_file = context["cert_file"]
 
-    retries = Retry(
-        total=MAX_REQUEST_RETRIES,
-        backoff_factor=0.3,
-        status_forcelist=[500, 502, 503, 504],
-        allowed_methods=["GET", "POST", "PUT", "DELETE"],
-        raise_on_status=False,
+    return binding.handler(
+        key_file=key_file, cert_file=cert_file, verify=verify, context=context
     )
-    if context.get("pool_connections", 0):
-        logging.info("Use HTTP connection pooling")
-        session = requests.Session()
-        adapter = requests.adapters.HTTPAdapter(
-            max_retries=retries,
-            pool_connections=context.get("pool_connections", 10),
-            pool_maxsize=context.get("pool_maxsize", 10),
-        )
-        session.mount("https://", adapter)
-        req_func = session.request
-    else:
-        req_func = requests.request
-
-    def request(url, message, **kwargs):
-        """
-        :param url: URL
-        :type url: string
-        :param message: Can contain following key/values: {
-            'method': 'GET' or 'DELETE', or 'PUT' or 'POST'
-            'headers': [[key, value], [key, value], ...],
-            'body': string
-            }
-        :type message: dict
-        """
-
-        body = message.get("body")
-        headers = {
-            "User-Agent": "curl",
-            "Accept": "*/*",
-            "Connection": "Keep-Alive",
-        }
-
-        if body:
-            headers["Content-Length"] = str(len(body))
-
-        for key, value in message["headers"]:
-            headers[key] = value
-
-        method = message.get("method", "GET")
-
-        try:
-            resp = req_func(
-                method,
-                url,
-                data=body,
-                headers=headers,
-                stream=False,
-                verify=verify,
-                proxies=proxies,
-                cert=cert,
-                **kwargs,
-            )
-        except Exception:
-            logging.error(
-                "Failed to issue http request=%s to url=%s, error=%s",
-                method,
-                url,
-                traceback.format_exc(),
-            )
-            raise
-
-        return {
-            "status": resp.status_code,
-            "reason": resp.reason,
-            "headers": dict(resp.headers),
-            "body": BytesIO(resp.content),
-        }
-
-    return request
 
 
 class SplunkRestClient(client.Service):
@@ -231,6 +139,7 @@ class SplunkRestClient(client.Service):
             host = "::1"
 
         handler = _request_handler(context)
+        retries = 5
         super().__init__(
             handler=handler,
             scheme=scheme,
@@ -240,4 +149,5 @@ class SplunkRestClient(client.Service):
             app=app,
             owner=owner,
             autologin=True,
+            retries=retries,
         )
