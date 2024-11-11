@@ -570,7 +570,7 @@ def get_proxy_dict(
         conf_name: Configuration file name where logging stanza is.
         proxy_stanza: Proxy stanza that would contain the Proxy details
     Returns:
-        A dictionary is returned with stanza details present in the file. 
+        A dictionary is returned with stanza details present in the file.
         The keys related to `eai` are removed before returning.
 
     Examples:
