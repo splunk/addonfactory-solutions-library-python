@@ -553,7 +553,6 @@ def get_log_level(
 
 
 def get_proxy_dict(
-    *,
     logger: logging.Logger,
     session_key: str,
     app_name: str,
@@ -571,7 +570,8 @@ def get_proxy_dict(
         conf_name: Configuration file name where logging stanza is.
         proxy_stanza: Proxy stanza that would contain the Proxy details
     Returns:
-        TODO: add details
+        A dictionary is returned with stanza details present in the file. 
+        The keys related to `eai` are removed before returning.
 
     Examples:
         >>> from solnlib import conf_manager
