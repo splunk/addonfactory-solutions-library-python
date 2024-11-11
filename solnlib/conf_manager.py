@@ -21,26 +21,25 @@ automatically."""
 import json
 import logging
 import traceback
-from typing import List
+from typing import List, Union, Dict, NoReturn
 
 from splunklib import binding, client
 
 from . import splunk_rest_client as rest_client
 from .credentials import CredentialManager, CredentialNotExistException
 from .utils import retry
+from .net_utils import is_valid_port, is_valid_hostname
+from .soln_exceptions import (
+    ConfManagerException,
+    ConfStanzaNotExistException,
+    InvalidPortError,
+    InvalidHostnameError,
+)
 
 __all__ = [
-    "ConfStanzaNotExistException",
     "ConfFile",
-    "ConfManagerException",
     "ConfManager",
 ]
-
-
-class ConfStanzaNotExistException(Exception):
-    """Exception raised by ConfFile class."""
-
-    pass
 
 
 class ConfFile:
@@ -361,12 +360,6 @@ class ConfFile:
         self._conf.get("_reload")
 
 
-class ConfManagerException(Exception):
-    """Exception raised by ConfManager class."""
-
-    pass
-
-
 class ConfManager:
     """Configuration file manager.
 
@@ -557,3 +550,68 @@ def get_log_level(
             f"taking {default_log_level} as log level."
         )
         return default_log_level
+
+
+def get_proxy_dict(
+    *,
+    logger: logging.Logger,
+    session_key: str,
+    app_name: str,
+    conf_name: str,
+    proxy_stanza: str = "proxy",
+    **kwargs,
+) -> Union[Dict[str, str], NoReturn]:
+    """This function returns the log level for the addon from configuration
+    file.
+
+    Arguments:
+        logger: Logger.
+        session_key: Splunk access token.
+        app_name: Add-on name.
+        conf_name: Configuration file name where logging stanza is.
+        proxy_stanza: Proxy stanza that would contain the Proxy details
+    Returns:
+        TODO: add details
+
+    Examples:
+        >>> from solnlib import conf_manager
+        >>> proxy_details = conf_manager.get_proxy_dict(
+        >>>     logger,
+        >>>     "session_key",
+        >>>     "ADDON_NAME",
+        >>>     "splunk_ta_addon_settings",
+        >>> )
+    """
+    proxy_dict = {}
+    try:
+        cfm = ConfManager(
+            session_key,
+            app_name,
+            realm=f"__REST_CREDENTIAL__#{app_name}#configs/conf-{conf_name}",
+        )
+        conf = cfm.get_conf(conf_name)
+    except ConfManagerException:
+        logger.error(f"Failed to fetch configuration file '{conf_name}'.")
+    else:
+        try:
+            proxy_dict = conf.get(proxy_stanza)
+        except ConfStanzaNotExistException:
+            logger.error(
+                f"Failed to fetch '{proxy_stanza}' from the configuration file '{conf_name}'. "
+            )
+        else:
+            # remove the other fields that are added by ConfFile class
+            proxy_dict.pop("disabled", None)
+            proxy_dict.pop("eai:access", None)
+            proxy_dict.pop("eai:appName", None)
+            proxy_dict.pop("eai:userName", None)
+
+            if "proxy_port" in kwargs:
+                if not is_valid_port(proxy_dict.get(kwargs["proxy_port"])):
+                    logger.error("Invalid proxy port provided.")
+                    raise InvalidPortError("The provided port is not valid.")
+            if "proxy_host" in kwargs:
+                if not is_valid_hostname(proxy_dict.get(kwargs["proxy_host"])):
+                    logger.error("Invalid proxy host provided.")
+                    raise InvalidHostnameError("The provided hostname is not valid.")
+    return proxy_dict
