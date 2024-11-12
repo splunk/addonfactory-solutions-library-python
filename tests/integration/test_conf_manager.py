@@ -15,14 +15,20 @@
 #
 
 import context
-import os.path as op
-import sys
 import pytest
 from solnlib import conf_manager, soln_exceptions
 from unittest import mock
 
 
-sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
+VALID_PROXY_DICT = {
+    "proxy_enabled": None,
+    "proxy_type": "http",
+    "proxy_url": "remote_host",
+    "proxy_port": "3128",
+    "proxy_username": None,
+    "proxy_password": None,
+    "proxy_rdns": None,
+}
 
 
 def _build_conf_manager(session_key: str) -> conf_manager.ConfManager:
@@ -169,15 +175,7 @@ def test_get_log_level_incorrect_log_level_field():
 
 def test_get_proxy_dict():
     session_key = context.get_session_key()
-    expected_proxy_dict = {
-        "proxy_enabled": None,
-        "proxy_type": "http",
-        "proxy_url": None,
-        "proxy_port": None,
-        "proxy_username": None,
-        "proxy_password": None,
-        "proxy_rdns": None,
-    }
+    expected_proxy_dict = VALID_PROXY_DICT
     proxy_dict = conf_manager.get_proxy_dict(
         logger=mock.MagicMock(),
         session_key=session_key,
@@ -195,7 +193,8 @@ def test_invalid_proxy_port():
             logger=mock.MagicMock(),
             session_key=session_key,
             app_name="solnlib_demo",
-            conf_name="splunk_ta_addon_settings",
+            conf_name="splunk_ta_addon_settings_invalid",
+            proxy_stanza="invalid_proxy",
             proxy_port="proxy_port",
         )
 
@@ -208,6 +207,7 @@ def test_invalid_proxy_host():
             logger=mock.MagicMock(),
             session_key=session_key,
             app_name="solnlib_demo",
-            conf_name="splunk_ta_addon_settings",
+            conf_name="splunk_ta_addon_settings_invalid",
+            proxy_stanza="invalid_proxy",
             proxy_host="proxy_url",
         )
