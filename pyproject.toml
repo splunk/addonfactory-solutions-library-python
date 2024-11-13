@@ -35,6 +35,7 @@ pytest = ">=7"
 mkdocs = ">=1"
 mkdocs-material = ">=9"
 mkdocstrings = {version=">=0", extras=["python"]}
+mkdocs-print-site-plugin = "^2.3.6"
 
 [build-system]
 requires = ["poetry>=1.0.0"]
