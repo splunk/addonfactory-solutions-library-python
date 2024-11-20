@@ -229,15 +229,31 @@ def test_get_proxy_dict_conf_manager_exception(mock_conf_manager_class):
     mock_conf_manager = mock_conf_manager_class.return_value
     mock_conf_manager.get_conf.side_effect = ConfManagerException
 
-    logger = mock.MagicMock()
-    proxy_dict = conf_manager.get_proxy_dict(
-        logger=logger,
-        session_key="session_key",
-        app_name="app_name",
-        conf_name="conf_name",
-    )
+    with pytest.raises(
+        ConfManagerException, match="Failed to fetch configuration file 'conf_name'."
+    ):
+        conf_manager.get_proxy_dict(
+            logger=mock.MagicMock(),
+            session_key="session_key",
+            app_name="app_name",
+            conf_name="conf_name",
+        )
 
-    logger.error.assert_called_once_with(
-        "Failed to fetch configuration file 'conf_name'."
+
+@mock.patch.object(conf_manager, "ConfManager")
+def test_get_proxy_dict_conf_stanza_exception(mock_conf_manager_class):
+    mock_conf_manager = mock_conf_manager_class.return_value
+    mock_conf_manager.get_conf.return_value.get.side_effect = (
+        ConfStanzaNotExistException
     )
-    assert proxy_dict == {}
+    with pytest.raises(
+        ConfStanzaNotExistException,
+        match="Failed to fetch 'custom_stanza' from the configuration file 'conf_name'. ",
+    ):
+        conf_manager.get_proxy_dict(
+            logger=mock.MagicMock(),
+            session_key="session_key",
+            app_name="app_name",
+            conf_name="conf_name",
+            proxy_stanza="custom_stanza",
+        )

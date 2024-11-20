@@ -211,3 +211,28 @@ def test_invalid_proxy_host():
             proxy_stanza="invalid_proxy",
             proxy_host="proxy_url",
         )
+
+
+def test_conf_manager_exception():
+    session_key = context.get_session_key()
+
+    with pytest.raises(soln_exceptions.ConfManagerException):
+        conf_manager.get_proxy_dict(
+            logger=mock.MagicMock(),
+            session_key=session_key,
+            app_name="solnlib_demo",
+            conf_name="splunk_ta_addon_settings_not_valid",
+        )
+
+
+def test_conf_stanza_not_exist_exception():
+    session_key = context.get_session_key()
+
+    with pytest.raises(soln_exceptions.ConfStanzaNotExistException):
+        conf_manager.get_proxy_dict(
+            logger=mock.MagicMock(),
+            session_key=session_key,
+            app_name="solnlib_demo",
+            conf_name="splunk_ta_addon_settings",
+            proxy_stanza="invalid_proxy",
+        )
