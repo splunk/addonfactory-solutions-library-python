@@ -560,8 +560,8 @@ def get_proxy_dict(
     proxy_stanza: str = "proxy",
     **kwargs,
 ) -> Union[Dict[str, str], NoReturn]:
-    """This function returns the log level for the addon from configuration
-    file.
+    """This function returns the proxy settings for the addon from
+    configuration file.
 
     Arguments:
         logger: Logger.
@@ -590,13 +590,13 @@ def get_proxy_dict(
             realm=f"__REST_CREDENTIAL__#{app_name}#configs/conf-{conf_name}",
         )
         conf = cfm.get_conf(conf_name)
-    except ConfManagerException:
-        logger.error(f"Failed to fetch configuration file '{conf_name}'.")
+    except Exception:
+        raise ConfManagerException(f"Failed to fetch configuration file '{conf_name}'.")
     else:
         try:
             proxy_dict = conf.get(proxy_stanza)
-        except ConfStanzaNotExistException:
-            logger.error(
+        except Exception:
+            raise ConfStanzaNotExistException(
                 f"Failed to fetch '{proxy_stanza}' from the configuration file '{conf_name}'. "
             )
         else:
