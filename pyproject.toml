@@ -21,9 +21,25 @@ description = "The Splunk Software Development Kit for Splunk Solutions"
 authors = ["Splunk <addonfactory@splunk.com>"]
 license = "Apache-2.0"
 repository = "https://github.com/splunk/addonfactory-solutions-library-python"
+keywords = ["splunk", "ucc"]
+classifiers = [
+    "Programming Language :: Python",
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Software Development :: Code Generators",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = ">=3.7,<3.14"
 requests = "^2.31.0"
 urllib3 = "<2"
 sortedcontainers = ">=2"
