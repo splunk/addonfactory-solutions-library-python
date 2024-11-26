@@ -1,1 +1,3 @@
+# pattern.py
+
 ::: solnlib.pattern

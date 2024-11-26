@@ -2,9 +2,13 @@ site_name: Splunk Solutions SDK
 
 theme:
   name: "material"
+  custom_dir: docs/theme_overrides
   palette:
     primary: "black"
     accent: "orange"
+  features:
+    - content.code.copy
+    - navigation.indexes
 
 markdown_extensions:
   - toc:
@@ -15,12 +19,14 @@ markdown_extensions:
   - codehilite
 
 plugins:
-  - search
   - mkdocstrings:
       handlers:
         python:
           options:
             show_if_no_docstring: true
+  - autorefs
+  - search
+  - print-site  # should be at the end
 
 nav:
   - Home: index.md

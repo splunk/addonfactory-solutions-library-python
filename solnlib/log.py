@@ -292,8 +292,8 @@ def events_ingested(
 
     Arguments:
         logger: Add-on logger.
-        modular_input_name: Full name of the modular input. It needs to be in a format <input_type>://<input_name>.
-        In case of invalid format ValueError is raised.
+        modular_input_name: Full name of the modular input. It needs to be in a format `<input_type>://<input_name>`.
+            In case of invalid format ValueError is raised.
         sourcetype: Source type used to write event.
         n_events: Number of ingested events.
         index: Index used to write event.

@@ -15,14 +15,20 @@
 #
 
 import context
-import os.path as op
-import sys
 import pytest
-from solnlib import conf_manager
+from solnlib import conf_manager, soln_exceptions
 from unittest import mock
 
 
-sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
+VALID_PROXY_DICT = {
+    "proxy_enabled": None,
+    "proxy_type": "http",
+    "proxy_url": "remote_host",
+    "proxy_port": "3128",
+    "proxy_username": None,
+    "proxy_password": None,
+    "proxy_rdns": None,
+}
 
 
 def _build_conf_manager(session_key: str) -> conf_manager.ConfManager:
@@ -40,7 +46,7 @@ def test_conf_manager_when_no_conf_then_throw_exception():
     session_key = context.get_session_key()
     cfm = _build_conf_manager(session_key)
 
-    with pytest.raises(conf_manager.ConfManagerException):
+    with pytest.raises(soln_exceptions.ConfManagerException):
         cfm.get_conf("non_existent_configuration_file")
 
 
@@ -50,7 +56,7 @@ def test_conf_manager_when_conf_file_exists_but_no_specific_stanza_then_throw_ex
 
     splunk_ta_addon_settings_conf_file = cfm.get_conf("splunk_ta_addon_settings")
 
-    with pytest.raises(conf_manager.ConfStanzaNotExistException):
+    with pytest.raises(soln_exceptions.ConfStanzaNotExistException):
         splunk_ta_addon_settings_conf_file.get(
             "non_existent_stanza_under_existing_conf_file"
         )
@@ -60,6 +66,7 @@ def test_conf_manager_when_conf_file_exists_but_no_specific_stanza_then_throw_ex
     "stanza_name,expected_result",
     [
         ("logging", True),
+        ("proxy", True),
         ("non_existent_stanza_under_existing_conf_file", False),
     ],
 )
@@ -109,7 +116,7 @@ def test_conf_manager_delete_non_existent_stanza_then_throw_exception():
 
     splunk_ta_addon_settings_conf_file = cfm.get_conf("splunk_ta_addon_settings")
 
-    with pytest.raises(conf_manager.ConfStanzaNotExistException):
+    with pytest.raises(soln_exceptions.ConfStanzaNotExistException):
         splunk_ta_addon_settings_conf_file.delete(
             "non_existent_stanza_under_existing_conf_file"
         )
@@ -164,3 +171,68 @@ def test_get_log_level_incorrect_log_level_field():
     )
 
     assert expected_log_level == log_level
+
+
+def test_get_proxy_dict():
+    session_key = context.get_session_key()
+    expected_proxy_dict = VALID_PROXY_DICT
+    proxy_dict = conf_manager.get_proxy_dict(
+        logger=mock.MagicMock(),
+        session_key=session_key,
+        app_name="solnlib_demo",
+        conf_name="splunk_ta_addon_settings",
+    )
+    assert expected_proxy_dict == proxy_dict
+
+
+def test_invalid_proxy_port():
+    session_key = context.get_session_key()
+
+    with pytest.raises(soln_exceptions.InvalidPortError):
+        conf_manager.get_proxy_dict(
+            logger=mock.MagicMock(),
+            session_key=session_key,
+            app_name="solnlib_demo",
+            conf_name="splunk_ta_addon_settings_invalid",
+            proxy_stanza="invalid_proxy",
+            proxy_port="proxy_port",
+        )
+
+
+def test_invalid_proxy_host():
+    session_key = context.get_session_key()
+
+    with pytest.raises(soln_exceptions.InvalidHostnameError):
+        conf_manager.get_proxy_dict(
+            logger=mock.MagicMock(),
+            session_key=session_key,
+            app_name="solnlib_demo",
+            conf_name="splunk_ta_addon_settings_invalid",
+            proxy_stanza="invalid_proxy",
+            proxy_host="proxy_url",
+        )
+
+
+def test_conf_manager_exception():
+    session_key = context.get_session_key()
+
+    with pytest.raises(soln_exceptions.ConfManagerException):
+        conf_manager.get_proxy_dict(
+            logger=mock.MagicMock(),
+            session_key=session_key,
+            app_name="solnlib_demo",
+            conf_name="splunk_ta_addon_settings_not_valid",
+        )
+
+
+def test_conf_stanza_not_exist_exception():
+    session_key = context.get_session_key()
+
+    with pytest.raises(soln_exceptions.ConfStanzaNotExistException):
+        conf_manager.get_proxy_dict(
+            logger=mock.MagicMock(),
+            session_key=session_key,
+            app_name="solnlib_demo",
+            conf_name="splunk_ta_addon_settings",
+            proxy_stanza="invalid_proxy",
+        )
