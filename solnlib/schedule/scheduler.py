@@ -23,9 +23,7 @@ import logging
 
 
 class Scheduler:
-    """
-    A simple scheduler which schedules the periodic or once event
-    """
+    """A simple scheduler which schedules the periodic or once event."""
 
     import sortedcontainers as sc
 
@@ -42,9 +40,10 @@ class Scheduler:
         self._started = False
 
     def start(self):
-        """
-        Start the schduler which will start the internal thread for scheduling
-        jobs. Please do tear_down when doing cleanup
+        """Start the schduler which will start the internal thread for
+        scheduling jobs.
+
+        Please do tear_down when doing cleanup
         """
 
         if self._started:
@@ -55,10 +54,8 @@ class Scheduler:
         self._thr.start()
 
     def tear_down(self):
-        """
-        Stop the schduler which will stop the internal thread for scheduling
-        jobs.
-        """
+        """Stop the schduler which will stop the internal thread for scheduling
+        jobs."""
 
         if not self._started:
             logging.info("Scheduler already tear down.")

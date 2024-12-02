@@ -14,9 +14,7 @@
 # limitations under the License.
 #
 
-"""
-A simple thread pool implementation
-"""
+"""A simple thread pool implementation."""
 
 import multiprocessing
 import queue
@@ -26,11 +24,8 @@ from time import time
 import logging
 
 
-
 class ThreadPool:
-    """
-    A simple thread pool implementation
-    """
+    """A simple thread pool implementation."""
 
     _high_watermark = 0.2
     _resize_window = 10
@@ -63,9 +58,7 @@ class ThreadPool:
         self._started = False
 
     def start(self):
-        """
-        Start threads in the pool
-        """
+        """Start threads in the pool."""
 
         with self._lock:
             if self._started:
@@ -80,9 +73,7 @@ class ThreadPool:
         logging.info("ThreadPool started.")
 
     def tear_down(self):
-        """
-        Tear down thread pool
-        """
+        """Tear down thread pool."""
 
         with self._lock:
             if not self._started:
@@ -103,9 +94,9 @@ class ThreadPool:
         logging.info("ThreadPool stopped.")
 
     def enqueue_funcs(self, funcs, block=True):
-        """
-        run jobs in a fire and forget way, no result will be handled
-        over to clients
+        """run jobs in a fire and forget way, no result will be handled over to
+        clients.
+
         :param funcs: tuple/list-like or generator like object, func shall be
                       callable
         """
@@ -153,9 +144,7 @@ class ThreadPool:
         return self._last_size
 
     def resize(self, new_size):
-        """
-        Resize the pool size, spawn or destroy threads if necessary
-        """
+        """Resize the pool size, spawn or destroy threads if necessary."""
 
         if new_size <= 0:
             return
@@ -182,9 +171,7 @@ class ThreadPool:
         logging.info("Finished ThreadPool resizing. New size=%d", new_size)
 
     def _remove_exited_threads_with_lock(self):
-        """
-        Join the exited threads last time when resize was called
-        """
+        """Join the exited threads last time when resize was called."""
 
         joined_thrs = set()
         for thr in self._thrs:
@@ -252,9 +239,8 @@ class ThreadPool:
         )
 
     def _run(self):
-        """
-        Threads callback func, run forever to handle jobs from the job queue
-        """
+        """Threads callback func, run forever to handle jobs from the job
+        queue."""
 
         work_queue = self._work_queue
         count_lock = self._count_lock
@@ -282,9 +268,7 @@ class ThreadPool:
             logging.debug("Done with exec job")
             logging.info("Thread work_queue_size=%d", work_queue.qsize())
 
-        logging.debug(
-            "Worker thread %s stopped.", threading.current_thread().getName()
-        )
+        logging.debug("Worker thread %s stopped.", threading.current_thread().getName())
 
 
 class AsyncResult:
@@ -315,11 +299,12 @@ class AsyncResult:
             self._callback()
 
     def get(self, timeout=None):
-        """
-        Return the result when it arrives. If timeout is not None and the
-        result does not arrive within timeout seconds then
-        multiprocessing.TimeoutError is raised. If the remote call raised an
-        exception then that exception will be reraised by get().
+        """Return the result when it arrives.
+
+        If timeout is not None and the result does not arrive within
+        timeout seconds then multiprocessing.TimeoutError is raised. If
+        the remote call raised an exception then that exception will be
+        reraised by get().
         """
 
         try:
@@ -332,9 +317,7 @@ class AsyncResult:
         return res
 
     def wait(self, timeout=None):
-        """
-        Wait until the result is available or until timeout seconds pass.
-        """
+        """Wait until the result is available or until timeout seconds pass."""
 
         try:
             res = self._q.get(timeout=timeout)
@@ -344,15 +327,13 @@ class AsyncResult:
             self._q.put(res)
 
     def ready(self):
-        """
-        Return whether the call has completed.
-        """
+        """Return whether the call has completed."""
 
         return len(self._q)
 
     def successful(self):
-        """
-        Return whether the call completed without raising an exception.
+        """Return whether the call completed without raising an exception.
+
         Will raise AssertionError if the result is not ready.
         """
 

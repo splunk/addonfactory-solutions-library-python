@@ -14,10 +14,8 @@
 # limitations under the License.
 #
 
-"""
-Concurrent executor provides concurrent executing function either in
-a thread pool or a process pool
-"""
+"""Concurrent executor provides concurrent executing function either in a
+thread pool or a process pool."""
 
 import solnlib.concurrent.process_pool as pp
 import solnlib.concurrent.thread_pool as tp
@@ -71,9 +69,9 @@ class ConcurrentExecutor:
         return self._io_executor.apply_async(func, args, kwargs, callback)
 
     def enqueue_io_funcs(self, funcs, block=True):
-        """
-        run jobs in a fire and forget way, no result will be handled
-        over to clients
+        """run jobs in a fire and forget way, no result will be handled over to
+        clients.
+
         :param funcs: tuple/list-like or generator like object, func shall be
                       callable
         """

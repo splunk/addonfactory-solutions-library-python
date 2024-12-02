@@ -19,9 +19,7 @@ import time
 
 
 class Job:
-    """
-    Timer wraps the callback and timestamp related stuff
-    """
+    """Timer wraps the callback and timestamp related stuff."""
 
     _ident = 0
     _lock = threading.Lock()

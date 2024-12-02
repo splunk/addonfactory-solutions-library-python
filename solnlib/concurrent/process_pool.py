@@ -14,9 +14,7 @@
 # limitations under the License.
 #
 
-"""
-A wrapper of multiprocessing.pool
-"""
+"""A wrapper of multiprocessing.pool."""
 
 import multiprocessing
 
@@ -24,9 +22,7 @@ import logging
 
 
 class ProcessPool:
-    """
-    A simple wrapper of multiprocessing.pool
-    """
+    """A simple wrapper of multiprocessing.pool."""
 
     def __init__(self, size=0, maxtasksperchild=10000):
         if size <= 0:
@@ -38,9 +34,7 @@ class ProcessPool:
         self._stopped = False
 
     def tear_down(self):
-        """
-        Tear down the pool
-        """
+        """Tear down the pool."""
 
         if self._stopped:
             logging.info("ProcessPool has already stopped.")

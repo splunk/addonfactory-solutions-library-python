@@ -36,7 +36,7 @@ def splunkd_request(
 ) -> Optional[requests.Response]:
 
     headers = headers if headers is not None else {}
-    headers["Authorization"] = "Splunk {}".format(session_key)
+    headers["Authorization"] = f"Splunk {session_key}"
     content_type = headers.get("Content-Type")
     if not content_type:
         content_type = headers.get("content-type")
@@ -79,13 +79,13 @@ def splunkd_request(
 
 def code_to_msg(response: requests.Response):
     code_msg_tbl = {
-        400: "Request error. reason={}".format(response.text),
+        400: f"Request error. reason={response.text}",
         401: "Authentication failure, invalid access credentials.",
         402: "In-use license disables this feature.",
         403: "Insufficient permission.",
         404: "Requested endpoint does not exist.",
-        409: "Invalid operation for this endpoint. reason={}".format(response.text),
-        500: "Unspecified internal server error. reason={}".format(response.text),
+        409: f"Invalid operation for this endpoint. reason={response.text}",
+        500: f"Unspecified internal server error. reason={response.text}",
         503: (
             "Feature is disabled in the configuration file. "
             "reason={}".format(response.text)

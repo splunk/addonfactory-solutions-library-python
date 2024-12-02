@@ -23,8 +23,7 @@ import logging
 
 
 def _parse_modinput_configs(root, outer_block, inner_block):
-    """
-    When user splunkd spawns modinput script to do config check or run
+    """When user splunkd spawns modinput script to do config check or run.
 
     <?xml version="1.0" encoding="UTF-8"?>
     <input>
@@ -148,9 +147,7 @@ def get_modinput_configs_from_cli(modinput, modinput_stanza=None):
 
 
 def get_modinput_config_str_from_stdin():
-    """
-    Get modinput from stdin which is feed by splunkd
-    """
+    """Get modinput from stdin which is feed by splunkd."""
 
     try:
         return sys.stdin.read(5000)
