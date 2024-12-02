@@ -193,3 +193,29 @@ def extract_http_scheme_host_port(http_url: str) -> Tuple:
     if not http_info.scheme or not http_info.hostname or not http_info.port:
         raise ValueError(http_url + " is not in http(s)://hostname:port format")
     return http_info.scheme, http_info.hostname, http_info.port
+
+
+def get_appname_from_path(absolute_path):
+    """Gets name of the app from its path.
+
+    Arguments:
+        absolute_path: path of app
+
+    Returns:
+    """
+    absolute_path = os.path.normpath(absolute_path)
+    parts = absolute_path.split(os.path.sep)
+    parts.reverse()
+    for key in ("apps", "peer-apps", "manager-apps"):
+        try:
+            idx = parts.index(key)
+        except ValueError:
+            continue
+        else:
+            try:
+                if parts[idx + 1] == "etc":
+                    return parts[idx - 1]
+            except IndexError:
+                pass
+            continue
+    return "-"
