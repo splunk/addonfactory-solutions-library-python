@@ -16,7 +16,7 @@
 
 [tool.poetry]
 name = "solnlib"
-version = "5.5.0-beta.1"
+version = "6.1.0-beta.1"
 description = "The Splunk Software Development Kit for Splunk Solutions"
 authors = ["Splunk <addonfactory@splunk.com>"]
 license = "Apache-2.0"
@@ -42,7 +42,7 @@ classifiers = [
 python = ">=3.7,<3.14"
 sortedcontainers = ">=2"
 defusedxml = ">=0.7"
-splunk-sdk = ">=1.6"
+splunk-sdk = ">=2.0.2"
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=7"
