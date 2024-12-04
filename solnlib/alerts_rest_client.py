@@ -101,7 +101,7 @@ class AlertsRestClient:
             alert_condition: Condition for the alert.
             alert_comparator: Comparator for the alert. Default is GREATER_THAN.
             alert_threshold: Threshold for the alert. Default is 0.
-            time_window: Time window for the alert. Tuple of earliest and latest time. Default is ("-1h", "now").
+            time_window: Time window for the alert. Tuple of earliest and latest time. Default is ("-15m", "now").
             alert_severity: Severity level of the alert. Default is WARN.
             cron_schedule: Cron schedule for the alert. Default is "* * * * *".
             expires: Expiration time for the alert (i.e. how long you can access the result of triggered alert).
