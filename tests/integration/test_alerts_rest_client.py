@@ -181,6 +181,9 @@ def test_create_get_list_and_delete_alerts(client, example_name):
     assert alert["name"] == example_name
     assert alert["content"]["search"] == search
 
+    # Check default permissions
+    assert alert["acl"]["sharing"] == "app"
+
     # Get all alerts
     alerts = get_alert_names_set()
     assert alerts - initial_alerts == {example_name}

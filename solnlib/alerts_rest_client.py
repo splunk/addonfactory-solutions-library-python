@@ -49,13 +49,14 @@ class AlertComparator(Enum):
 class AlertsRestClient:
     """REST client for handling alerts."""
 
-    ENDPOINT = "/services/saved/searches"
+    ENDPOINT = "/servicesNS/{owner}/{app}/saved/searches"
     headers = [("Content-Type", "application/json")]
 
     def __init__(
         self,
         session_key: str,
         app: str,
+        owner: str = "nobody",
         **context: dict,
     ):
         """Initializes AlertsRestClient.
@@ -69,8 +70,13 @@ class AlertsRestClient:
         self.app = app
 
         self._rest_client = rest_client.SplunkRestClient(
-            self.session_key, app=self.app, **context
+            self.session_key,
+            app=self.app,
+            owner=owner,
+            **context,
         )
+
+        self.endpoint = self.ENDPOINT.format(owner=owner, app=app)
 
     def create_search_alert(
         self,
@@ -130,7 +136,7 @@ class AlertsRestClient:
 
         params.update(kwargs)
 
-        self._rest_client.post(self.ENDPOINT, body=params, headers=self.headers)
+        self._rest_client.post(self.endpoint, body=params, headers=self.headers)
 
     def delete_search_alert(self, name: str):
         """Deletes a search alert in Splunk.
@@ -138,7 +144,7 @@ class AlertsRestClient:
         Arguments:
             name: Name of the alert to delete.
         """
-        self._rest_client.delete(f"{self.ENDPOINT}/{name}")
+        self._rest_client.delete(f"{self.endpoint}/{name}")
 
     def get_search_alert(self, name: str):
         """Retrieves a specific search alert from Splunk.
@@ -150,7 +156,7 @@ class AlertsRestClient:
             A dictionary containing the alert details.
         """
         response = (
-            self._rest_client.get(f"{self.ENDPOINT}/{name}", output_mode="json")
+            self._rest_client.get(f"{self.endpoint}/{name}", output_mode="json")
             .body.read()
             .decode("utf-8")
         )
@@ -164,7 +170,7 @@ class AlertsRestClient:
             A dictionary containing all search alerts.
         """
         response = (
-            self._rest_client.get(self.ENDPOINT, output_mode="json")
+            self._rest_client.get(self.endpoint, output_mode="json")
             .body.read()
             .decode("utf-8")
         )
@@ -248,5 +254,5 @@ class AlertsRestClient:
         params.update(kwargs)
 
         self._rest_client.post(
-            f"{self.ENDPOINT}/{name}", body=params, headers=self.headers
+            f"{self.endpoint}/{name}", body=params, headers=self.headers
         )
