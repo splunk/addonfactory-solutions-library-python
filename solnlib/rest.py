@@ -34,7 +34,6 @@ def splunkd_request(
     retry=1,
     verify=False,
 ) -> Optional[requests.Response]:
-
     headers = headers if headers is not None else {}
     headers["Authorization"] = f"Splunk {session_key}"
     content_type = headers.get("Content-Type")
