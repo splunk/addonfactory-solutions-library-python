@@ -108,8 +108,20 @@ jobs:
           export SPLUNK_VERSION=${{ matrix.splunk.version }}
           export SPLUNK_BUILD=${{ matrix.splunk.build }}
           export SPLUNK_SLUG=$SPLUNK_VERSION-$SPLUNK_BUILD
-          export SPLUNK_ARCH=x86_64
-          export SPLUNK_LINUX_FILENAME=splunk-${SPLUNK_VERSION}-${SPLUNK_BUILD}-Linux-${SPLUNK_ARCH}.tgz
+          export SPLUNK_ARCH=amd64
+          export SPLUNK_LINUX_FILENAME=splunk-${SPLUNK_VERSION}-${SPLUNK_BUILD}-linux-${SPLUNK_ARCH}.tgz
+
+          # Before 9.4, the filename was splunk-<version>-<build>-Linux-x86_64.tgz
+          if [[ $(echo $SPLUNK_VERSION | cut -d. -f1) -le 8 ]] || \
+             [[ $SPLUNK_VERSION == 9.0.* ]] || \
+             [[ $SPLUNK_VERSION == 9.1.* ]] || \
+             [[ $SPLUNK_VERSION == 9.2.* ]] || \
+             [[ $SPLUNK_VERSION == 9.3.* ]]
+          then
+            export SPLUNK_ARCH=x86_64
+            export SPLUNK_LINUX_FILENAME=splunk-${SPLUNK_VERSION}-${SPLUNK_BUILD}-Linux-${SPLUNK_ARCH}.tgz
+          fi
+
           export SPLUNK_BUILD_URL=https://download.splunk.com/products/${SPLUNK_PRODUCT}/releases/${SPLUNK_VERSION}/linux/${SPLUNK_LINUX_FILENAME}
           echo "$SPLUNK_BUILD_URL"
           export SPLUNK_HOME=/opt/splunk
