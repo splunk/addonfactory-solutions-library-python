@@ -1,5 +1,5 @@
 #
-# Copyright 2024 Splunk Inc.
+# Copyright 2025 Splunk Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 [tool.poetry]
 name = "solnlib"
-version = "6.0.1"
+version = "6.1.0-beta.1"
 description = "The Splunk Software Development Kit for Splunk Solutions"
 authors = ["Splunk <addonfactory@splunk.com>"]
 license = "Apache-2.0"

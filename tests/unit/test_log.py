@@ -48,6 +48,14 @@ def teardown_module(module):
     shutil.rmtree(reset_root_log_path)
 
 
+def multiprocess_worker(logger_ref):
+    native_logger = log.Logs().get_logger("test_multi_process")
+
+    for _ in range(100):
+        logger_ref.debug("Log info from child process")
+        native_logger.debug("Log info from child process on native logger")
+
+
 def test_log_enter_exit(monkeypatch):
     logger1 = log.Logs().get_logger("enter_exit1")
     logger2 = log.Logs().get_logger("enter_exit2")
@@ -107,15 +115,8 @@ class TestLogs:
 
         logger.debug("Log info from main process")
 
-        def worker(logger_ref):
-            native_logger = log.Logs().get_logger("test_multi_process")
-
-            for i in range(100):
-                logger_ref.debug("Log info from child process")
-                native_logger.debug("Log info from child process on native logger")
-
         for _ in range(20):
-            p = multiprocessing.Process(target=worker, args=(logger,))
+            p = multiprocessing.Process(target=multiprocess_worker, args=(logger,))
             p.start()
 
         time.sleep(1)
