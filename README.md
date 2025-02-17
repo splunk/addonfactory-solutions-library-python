@@ -1,8 +1,18 @@
-# README
+# solnlib
 
-Splunk Solutions SDK is an open source packaged solution for getting data into Splunk using modular inputs.
-This SDK is used by Splunk Add-on builder, and Splunk UCC based add-ons and is intended for use by partner
-developers. This SDK/Library extends the Splunk SDK for python
+![PyPI](https://img.shields.io/pypi/v/solnlib)
+![Python](https://img.shields.io/pypi/pyversions/solnlib.svg)
+![PyPI monthly downloads](https://img.shields.io/pypi/dm/solnlib)
+
+## What is solnlib?
+
+`solnlib` is an open source Python library designed to be used in Splunk technology add-ons.
+
+It allows to:
+* interact with Splunk's KVStore to manage checkpoints
+* read, update and delete secrets in Splunk's credential store
+* manipulate with Splunk's .conf files
+* and many more
 
 Documentation is available [here](https://splunk.github.io/addonfactory-solutions-library-python/).
 
@@ -14,9 +24,13 @@ If you are a part of the community use: https://splunk-usergroups.slack.com/arch
 
 ## Support
 
-Splunk Solutions SDK is an open source product developed by Splunkers. This SDK is not "Supported Software" by Splunk, Inc. issues and defects can be reported
+`solnlib` is an open source product developed by Splunkers. This SDK is not "Supported Software" by Splunk, Inc. issues and defects can be reported
 via the public issue tracker.
+
+## Contributing Guidelines
+
+Go to [contributing Guidelines in the repo](docs/contributing.md) or [published version](https://splunk.github.io/solnlib/contributing/).
 
 ## License
 
-* Configuration and documentation licensed subject to [APACHE-2.0](LICENSE)
+Configuration and documentation licensed subject to [APACHE-2.0](LICENSE).

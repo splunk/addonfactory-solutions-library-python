@@ -1,4 +1,11 @@
-site_name: Splunk Solutions SDK
+site_name: solnlib
+site_author: Splunk
+site_url: "https://splunk.github.io/solnlib/"
+edit_uri: "tree/main/docs/"
+remote_branch: gh-pages
+
+repo_name: Splunk Solutions Library
+repo_url: "https://github.com/splunk/addonfactory-solutions-library-python"
 
 theme:
   name: "material"
@@ -31,6 +38,7 @@ plugins:
 nav:
   - Home: index.md
   - Release 6.0.0: release_6_0_0.md
+  - Contributing: contributing.md
   - References:
       - modular_input:
           - "checkpointer.py": modular_input/checkpointer.md
@@ -38,6 +46,8 @@ nav:
           - "event_writer.py": modular_input/event_writer.md
           - "modular_input.py": modular_input/modular_input.md
       - "acl.py": acl.md
+      - "alerts_rest_client.py": alerts_rest_client.md
+      - "bulletin_rest_client.py": bulletin_rest_client.md
       - "credentials.py": credentials.md
       - "conf_manager.py": conf_manager.md
       - "file_monitor.py": file_monitor.md
