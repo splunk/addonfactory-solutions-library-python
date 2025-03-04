@@ -35,7 +35,7 @@ def test_rest_client_user_agent():
         owner=context.owner,
         scheme=context.scheme,
         host=context.host,
-        port=context.port
+        port=context.port,
     )
     with pytest.raises(binding.HTTPError):
         rc.get(wrong_url)
