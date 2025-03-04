@@ -23,11 +23,13 @@ calling splunklib SDK directly in business logic code.
 
 import logging
 import os
+import sys
 import traceback
+import solnlib
+
 from io import BytesIO
 from urllib.parse import quote
 from urllib3.util.retry import Retry
-
 from splunklib import binding, client
 
 from .net_utils import validate_scheme_host_port
@@ -134,7 +136,7 @@ def _request_handler(context):
 
         body = message.get("body")
         headers = {
-            "User-Agent": "curl",
+            "User-Agent": f"solnlib/{solnlib.__version__} rest-client {sys.platform}",
             "Accept": "*/*",
             "Connection": "Keep-Alive",
         }
