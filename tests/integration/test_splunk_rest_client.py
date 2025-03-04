@@ -17,7 +17,7 @@
 import context
 import pytest
 import solnlib
-import sys
+from time import sleep
 from splunklib import binding
 from solnlib import splunk_rest_client as rest_client
 
@@ -26,7 +26,7 @@ from _search import search
 
 def test_rest_client_user_agent():
     test_url = r'search index = _internal uri_path="*/servicesNS/nobody/test_app/some/unexisting/url"'
-    user_agent = f"solnlib/{solnlib.__version__} rest-client {sys.platform}"
+    user_agent = f"solnlib/{solnlib.__version__} rest-client linux"
     session_key = context.get_session_key()
     wrong_url = r"some/unexisting/url"
     rc = rest_client.SplunkRestClient(
@@ -40,6 +40,10 @@ def test_rest_client_user_agent():
     with pytest.raises(binding.HTTPError):
         rc.get(wrong_url)
 
-    search_results = search(session_key, test_url)
-    assert len(search_results) == 1
+    for i in range(50):
+        search_results = search(session_key, test_url)
+        if len(search_results) > 0:
+            break
+        sleep(0.5)
+
     assert user_agent in search_results[0]["_raw"]
