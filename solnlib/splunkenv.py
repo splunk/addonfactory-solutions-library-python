@@ -298,6 +298,7 @@ def get_conf_stanzas(conf_name: str) -> dict:
         "btool",
         conf_name,
         "list",
+        "--app=system",
     ]
     p = subprocess.Popen(  # nosemgrep: python.lang.security.audit.dangerous-subprocess-use.dangerous-subprocess-use
         btool_cli, stdout=subprocess.PIPE, stderr=subprocess.PIPE
