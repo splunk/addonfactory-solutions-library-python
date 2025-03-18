@@ -39,6 +39,8 @@ __all__ = [
 ]
 
 ETC_LEAF = "etc"
+APP_SYSTEM = "system"
+APP_HEC = "splunk_httpinput"
 
 # See validateSearchHeadPooling() in src/libbundle/ConfSettings.cpp
 on_shared_storage = [
@@ -73,8 +75,8 @@ def _get_shared_storage() -> Optional[str]:
     """
 
     try:
-        state = get_conf_key_value("server", "pooling", "state")
-        storage = get_conf_key_value("server", "pooling", "storage")
+        state = get_conf_key_value("server", "pooling", "state", APP_SYSTEM)
+        storage = get_conf_key_value("server", "pooling", "storage", APP_SYSTEM)
     except KeyError:
         state = "disabled"
         storage = None
@@ -154,7 +156,7 @@ def get_splunk_host_info() -> Tuple:
         Tuple of (server_name, host_name).
     """
 
-    server_name = get_conf_key_value("server", "general", "serverName")
+    server_name = get_conf_key_value("server", "general", "serverName", APP_SYSTEM)
     host_name = socket.gethostname()
     return server_name, host_name
 
@@ -180,12 +182,14 @@ def get_splunkd_access_info() -> Tuple[str, str, int]:
         Tuple of (scheme, host, port).
     """
 
-    if is_true(get_conf_key_value("server", "sslConfig", "enableSplunkdSSL")):
+    if is_true(
+        get_conf_key_value("server", "sslConfig", "enableSplunkdSSL", APP_SYSTEM)
+    ):
         scheme = "https"
     else:
         scheme = "http"
 
-    host_port = get_conf_key_value("web", "settings", "mgmtHostPort")
+    host_port = get_conf_key_value("web", "settings", "mgmtHostPort", APP_SYSTEM)
     host_port = host_port.strip()
     host_port_split_parts = host_port.split(":")
     host = ":".join(host_port_split_parts[:-1])
@@ -206,7 +210,7 @@ def get_scheme_from_hec_settings() -> str:
         scheme (str)
     """
     try:
-        ssl_enabled = get_conf_key_value("inputs", "http", "enableSSL")
+        ssl_enabled = get_conf_key_value("inputs", "http", "enableSSL", APP_HEC)
     except KeyError:
         raise KeyError(
             "Cannot get enableSSL setting form conf: 'inputs' and stanza: '[http]'. "
@@ -237,13 +241,16 @@ def get_splunkd_uri() -> str:
     return f"{scheme}://{host}:{port}"
 
 
-def get_conf_key_value(conf_name: str, stanza: str, key: str) -> Union[str, List, dict]:
+def get_conf_key_value(
+    conf_name: str, stanza: str, key: str, app_name: Optional[str] = None
+) -> Union[str, List, dict]:
     """Get value of `key` of `stanza` in `conf_name`.
 
     Arguments:
         conf_name: Config file.
         stanza: Stanza name.
         key: Key name.
+        app_name: Application name. Optional.
 
     Returns:
         Config value.
@@ -252,16 +259,19 @@ def get_conf_key_value(conf_name: str, stanza: str, key: str) -> Union[str, List
         KeyError: If `stanza` or `key` doesn't exist.
     """
 
-    stanzas = get_conf_stanzas(conf_name)
+    stanzas = get_conf_stanzas(conf_name, app_name)
     return stanzas[stanza][key]
 
 
-def get_conf_stanza(conf_name: str, stanza: str) -> dict:
+def get_conf_stanza(
+    conf_name: str, stanza: str, app_name: Optional[str] = None
+) -> dict:
     """Get `stanza` in `conf_name`.
 
     Arguments:
         conf_name: Config file.
         stanza: Stanza name.
+        app_name: Application name. Optional.
 
     Returns:
         Config stanza.
@@ -270,15 +280,16 @@ def get_conf_stanza(conf_name: str, stanza: str) -> dict:
          KeyError: If stanza doesn't exist.
     """
 
-    stanzas = get_conf_stanzas(conf_name)
+    stanzas = get_conf_stanzas(conf_name, app_name)
     return stanzas[stanza]
 
 
-def get_conf_stanzas(conf_name: str) -> dict:
+def get_conf_stanzas(conf_name: str, app_name: Optional[str] = None) -> dict:
     """Get stanzas of `conf_name`
 
     Arguments:
         conf_name: Config file.
+        app_name: Application name. Optional.
 
     Returns:
         Config stanzas.
@@ -299,6 +310,10 @@ def get_conf_stanzas(conf_name: str) -> dict:
         conf_name,
         "list",
     ]
+
+    if app_name:
+        btool_cli.append(f"--app={app_name}")
+
     p = subprocess.Popen(  # nosemgrep: python.lang.security.audit.dangerous-subprocess-use.dangerous-subprocess-use
         btool_cli, stdout=subprocess.PIPE, stderr=subprocess.PIPE
     )
