@@ -85,23 +85,18 @@ class ServerInfo:
 
         web_key_file = getWebKeyFile()
         web_cert_file = getWebCertFile()
-        if (
-            web_cert_file
-            and web_key_file
-            and not is_cert_or_key_encrypted(web_key_file)
+        if web_cert_file and (
+            web_key_file is None or not is_cert_or_key_encrypted(web_key_file)
         ):
             context["cert_file"] = web_cert_file
-            context["key_file"] = web_key_file
+
+            if web_key_file is not None:
+                context["key_file"] = web_key_file
 
             if all([is_localhost, context.get("verify") is None]):
                 # NOTE: this is specifically for mTLS communication
                 # ONLY if scheme, host, port aren't provided AND user hasn't provided server certificate
                 # we set verify to off (similar to 'rest.simpleRequest' implementation)
-                context["verify"] = False
-
-        elif web_cert_file is not None:
-            context["cert_file"] = web_cert_file
-            if all([is_localhost, context.get("verify") is None]):
                 context["verify"] = False
 
         self._rest_client = rest_client.SplunkRestClient(
