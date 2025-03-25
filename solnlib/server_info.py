@@ -31,6 +31,14 @@ except (ModuleNotFoundError, ImportError):
         return None
 
 
+try:
+    from splunk.rest import is_cert_or_key_encrypted
+except (ModuleNotFoundError, ImportError):
+
+    def is_cert_or_key_encrypted(cert_filename):
+        return False
+
+
 from splunklib import binding
 from solnlib import splunk_rest_client as rest_client
 from solnlib import utils
@@ -75,19 +83,20 @@ class ServerInfo:
                 host == "localhost" or host == "127.0.0.1" or host in ("::1", "[::1]")
             )
 
-        if getWebCertFile() and getWebKeyFile():
-            context["cert_file"] = getWebCertFile()
-            context["key_file"] = getWebKeyFile()
+        web_key_file = getWebKeyFile()
+        web_cert_file = getWebCertFile()
+        if web_cert_file and (
+            web_key_file is None or not is_cert_or_key_encrypted(web_key_file)
+        ):
+            context["cert_file"] = web_cert_file
+
+            if web_key_file is not None:
+                context["key_file"] = web_key_file
 
             if all([is_localhost, context.get("verify") is None]):
                 # NOTE: this is specifically for mTLS communication
                 # ONLY if scheme, host, port aren't provided AND user hasn't provided server certificate
                 # we set verify to off (similar to 'rest.simpleRequest' implementation)
-                context["verify"] = False
-
-        elif getWebCertFile() is not None:
-            context["cert_file"] = getWebCertFile()
-            if all([is_localhost, context.get("verify") is None]):
                 context["verify"] = False
 
         self._rest_client = rest_client.SplunkRestClient(
