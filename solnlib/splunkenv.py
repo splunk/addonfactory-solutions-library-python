@@ -21,7 +21,7 @@ import os.path as op
 import socket
 from typing import List, Optional, Tuple, Union
 from splunk.clilib.cli_common import getAppConf
-from splunk.clilib.bundle_paths import make_splunkhome_path
+from splunk.clilib.bundle_paths import make_splunkhome_path as mksplhomepath
 
 from .utils import is_true
 
@@ -111,7 +111,7 @@ def make_splunkhome_path(parts: Union[List, Tuple]) -> str:
         ValueError: Escape from intended parent directories.
     """
 
-    make_splunkhome_path(parts)
+    return mksplhomepath(parts)
 
 
 def get_splunk_host_info() -> Tuple:
@@ -249,7 +249,7 @@ def get_conf_stanza(
     return stanzas[stanza]
 
 
-def get_conf_stanzas(conf_name: str, app_name: str, logger = None) -> dict:
+def get_conf_stanzas(conf_name: str, app_name: str, logger=None) -> dict:
     """Get stanzas of `conf_name`
 
     Arguments:
@@ -265,12 +265,16 @@ def get_conf_stanzas(conf_name: str, app_name: str, logger = None) -> dict:
     """
 
     path = make_splunkhome_path(["etc", "apps", app_name])
-    app_conf = getAppConf(confName=conf_name, app=app_name, use_btool=False, app_path=path)
+    app_conf = getAppConf(
+        confName=conf_name, app=app_name, use_btool=False, app_path=path
+    )
 
     if logger:
         logger.info(f"akakakakakkakakakaka 21 path:  {path}")
 
     if logger:
-        logger.info(f"akakakakakkakakakaka 22 app_conf={type(app_conf)} app_conf:  {app_conf}")
+        logger.info(
+            f"akakakakakkakakakaka 22 app_conf={type(app_conf)} app_conf:  {app_conf}"
+        )
 
     return app_conf
