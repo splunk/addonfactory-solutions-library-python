@@ -19,10 +19,9 @@
 import os
 import os.path as op
 import socket
-import subprocess
-from configparser import ConfigParser
-from io import StringIO
 from typing import List, Optional, Tuple, Union
+from splunk.clilib.cli_common import getAppConf
+from splunk.clilib.bundle_paths import make_splunkhome_path
 
 from .utils import is_true
 
@@ -112,41 +111,7 @@ def make_splunkhome_path(parts: Union[List, Tuple]) -> str:
         ValueError: Escape from intended parent directories.
     """
 
-    relpath = os.path.normpath(os.path.join(*parts))
-
-    basepath = None
-    shared_storage = _get_shared_storage()
-    if shared_storage:
-        for candidate in on_shared_storage:
-            # SPL-100508 On windows if the path is missing the drive letter,
-            # construct fullpath manually and call relpath
-            if os.name == "nt" and not _verify_path_prefix(relpath, candidate):
-                break
-
-            if os.path.relpath(relpath, candidate)[0:2] != "..":
-                basepath = shared_storage
-                break
-
-    if basepath is None:
-        etc_with_trailing_sep = os.path.join(ETC_LEAF, "")
-        if relpath == ETC_LEAF or relpath.startswith(etc_with_trailing_sep):
-            # Redirect $SPLUNK_HOME/etc to $SPLUNK_ETC.
-            basepath = _splunk_etc()
-            # Remove leading etc (and path separator, if present). Note: when
-            # emitting $SPLUNK_ETC exactly, with no additional path parts, we
-            # set <relpath> to the empty string.
-            relpath = relpath[4:]
-        else:
-            basepath = _splunk_home()
-
-    fullpath = os.path.normpath(os.path.join(basepath, relpath))
-
-    # Check that we haven't escaped from intended parent directories.
-    if os.path.relpath(fullpath, basepath)[0:2] == "..":
-        raise ValueError(
-            f'Illegal escape from parent directory "{basepath}": {fullpath}'
-        )
-    return fullpath
+    make_splunkhome_path(parts)
 
 
 def get_splunk_host_info() -> Tuple:
@@ -284,7 +249,7 @@ def get_conf_stanza(
     return stanzas[stanza]
 
 
-def get_conf_stanzas(conf_name: str, app_name: Optional[str] = None) -> dict:
+def get_conf_stanzas(conf_name: str, app_name: str, logger = None) -> dict:
     """Get stanzas of `conf_name`
 
     Arguments:
@@ -299,34 +264,13 @@ def get_conf_stanzas(conf_name: str, app_name: Optional[str] = None) -> dict:
        >>> return: {'serverName': 'testServer', 'sessionTimeout': '1h', ...}
     """
 
-    if conf_name.endswith(".conf"):
-        conf_name = conf_name[:-5]
+    path = make_splunkhome_path(["etc", "apps", app_name])
+    app_conf = getAppConf(confName=conf_name, app=app_name, use_btool=False, app_path=path)
 
-    # TODO: dynamically calculate SPLUNK_HOME
-    btool_cli = [
-        op.join(os.environ["SPLUNK_HOME"], "bin", "splunk"),
-        "cmd",
-        "btool",
-        conf_name,
-        "list",
-    ]
+    if logger:
+        logger.info(f"akakakakakkakakakaka 21 path:  {path}")
 
-    if app_name:
-        btool_cli.append(f"--app={app_name}")
+    if logger:
+        logger.info(f"akakakakakkakakakaka 22 app_conf={type(app_conf)} app_conf:  {app_conf}")
 
-    p = subprocess.Popen(  # nosemgrep: python.lang.security.audit.dangerous-subprocess-use.dangerous-subprocess-use
-        btool_cli, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-    )
-    out, _ = p.communicate()
-
-    if isinstance(out, bytes):
-        out = out.decode()
-
-    parser = ConfigParser(**{"strict": False})
-    parser.optionxform = str
-    parser.read_file(StringIO(out))
-
-    out = {}
-    for section in parser.sections():
-        out[section] = {item[0]: item[1] for item in parser.items(section, raw=True)}
-    return out
+    return app_conf
