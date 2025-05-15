@@ -14,9 +14,12 @@
 # limitations under the License.
 #
 
+import os
 import os.path as op
 import socket
-import subprocess
+
+from configparser import ConfigParser
+from io import StringIO
 
 from splunklib import binding, client
 from splunklib.data import record
@@ -32,50 +35,64 @@ SESSION_KEY = "nU1aB6BntzwREOnGowa7pN6avV3B6JefliAZIzCX9"
 
 
 def mock_splunkhome(monkeypatch):
-    class MockPopen:
-        def __init__(
-            self,
-            args,
-            bufsize=0,
-            executable=None,
-            stdin=None,
-            stdout=None,
-            stderr=None,
-            preexec_fn=None,
-            close_fds=False,
-            shell=False,
-            cwd=None,
-            env=None,
-            universal_newlines=False,
-            startupinfo=None,
-            creationflags=0,
-        ):
-            self._conf = args[3]
+    def get_app_conf(confName, app, use_btool, app_path):
+        if confName == "server":
+            file_path = op.sep.join(
+                [cur_dir, "data/mock_splunk/etc/system/default/server.conf"]
+            )
+        elif confName == "inputs":
+            file_path = op.sep.join(
+                [
+                    cur_dir,
+                    "data/mock_splunk/etc/apps/splunk_httpinput/local/inputs.conf",
+                ]
+            )
+        else:
+            file_path = op.sep.join(
+                [cur_dir, "data/mock_splunk/etc/system/default/web.conf"]
+            )
 
-        def communicate(self, input=None):
-            if self._conf == "server":
-                file_path = op.sep.join(
-                    [cur_dir, "data/mock_splunk/etc/system/default/server.conf"]
-                )
-            elif self._conf == "inputs":
-                file_path = op.sep.join(
-                    [
-                        cur_dir,
-                        "data/mock_splunk/etc/apps/splunk_httpinput/local/inputs.conf",
-                    ]
-                )
-            else:
-                file_path = op.sep.join(
-                    [cur_dir, "data/mock_splunk/etc/system/default/web.conf"]
-                )
+        with open(file_path) as fp:
+            data = fp.read(), None
 
-            with open(file_path) as fp:
-                return fp.read(), None
+        parser = ConfigParser(**{"strict": False})
+        parser.optionxform = str
+        parser.read_file(StringIO(data[0]))
+
+        out = {}
+        for section in parser.sections():
+            out[section] = {
+                item[0]: item[1] for item in parser.items(section, raw=True)
+            }
+        return out
+
+    def make_splunk_gome(parts):
+        relpath = os.path.normpath(os.path.join(*parts))
+        basepath = ""
+        etc_with_trailing_sep = os.path.join("etc", "")
+        if (relpath == "etc") or relpath.startswith(etc_with_trailing_sep):
+            try:
+                basepath = os.environ["SPLUNK_ETC"]
+            except KeyError:
+                basepath = op.join(os.path.normpath(os.environ["SPLUNK_HOME"]), "etc")
+            relpath = relpath[4:]
+        else:
+            basepath = os.path.normpath(os.environ["SPLUNK_HOME"])
+        fullpath = os.path.normpath(os.path.join(basepath, relpath))
+        if os.path.relpath(fullpath, basepath)[0:2] == "..":
+            raise ValueError(
+                'Illegal escape from parent directory "{}": {}'.format(
+                    basepath, fullpath
+                )
+            )
+
+        return fullpath
 
     splunk_home = op.join(cur_dir, "data/mock_splunk/")
     monkeypatch.setenv("SPLUNK_HOME", splunk_home)
     monkeypatch.setenv("SPLUNK_ETC", op.join(splunk_home, "etc"))
-    monkeypatch.setattr(subprocess, "Popen", MockPopen)
+    monkeypatch.setattr("solnlib.splunkenv.getAppConf", get_app_conf)
+    monkeypatch.setattr("solnlib.splunkenv.mksplhomepath", make_splunk_gome)
 
 
 def mock_serverinfo(monkeypatch):

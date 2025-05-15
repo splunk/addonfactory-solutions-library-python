@@ -20,8 +20,22 @@ import os
 import os.path as op
 import socket
 from typing import List, Optional, Tuple, Union
-from splunk.clilib.cli_common import getAppConf
-from splunk.clilib.bundle_paths import make_splunkhome_path as mksplhomepath
+
+try:
+    from splunk.clilib.cli_common import getAppConf
+except ImportError:
+
+    def getAppConf(*args, **kwargs):
+        return None
+
+
+try:
+    from splunk.clilib.bundle_paths import make_splunkhome_path as mksplhomepath
+except ImportError:
+
+    def mksplhomepath(*args, **kwargs):
+        return None
+
 
 from .utils import is_true
 
@@ -34,7 +48,7 @@ __all__ = [
     "get_splunkd_uri",
     "get_conf_key_value",
     "get_conf_stanza",
-    "get_conf_stanzas",
+    "_get_conf_stanzas",
 ]
 
 ETC_LEAF = "etc"
@@ -224,7 +238,7 @@ def get_conf_key_value(
         KeyError: If `stanza` or `key` doesn't exist.
     """
 
-    stanzas = get_conf_stanzas(conf_name, app_name)
+    stanzas = _get_conf_stanzas(conf_name, app_name)
     return stanzas[stanza][key]
 
 
@@ -245,11 +259,11 @@ def get_conf_stanza(
          KeyError: If stanza doesn't exist.
     """
 
-    stanzas = get_conf_stanzas(conf_name, app_name)
+    stanzas = _get_conf_stanzas(conf_name, app_name)
     return stanzas[stanza]
 
 
-def get_conf_stanzas(conf_name: str, app_name: str, logger=None) -> dict:
+def _get_conf_stanzas(conf_name: str, app_name: str, logger=None) -> dict:
     """Get stanzas of `conf_name`
 
     Arguments:
@@ -260,21 +274,16 @@ def get_conf_stanzas(conf_name: str, app_name: str, logger=None) -> dict:
         Config stanzas.
 
     Examples:
-       >>> stanzas = get_conf_stanzas('server')
+       >>> stanzas = _get_conf_stanzas('server')
        >>> return: {'serverName': 'testServer', 'sessionTimeout': '1h', ...}
     """
 
-    path = make_splunkhome_path(["etc", "apps", app_name])
+    if app_name == APP_SYSTEM:
+        path = make_splunkhome_path(["etc", app_name])
+    else:
+        path = make_splunkhome_path(["etc", "apps", app_name])
     app_conf = getAppConf(
         confName=conf_name, app=app_name, use_btool=False, app_path=path
     )
-
-    if logger:
-        logger.info(f"akakakakakkakakakaka 21 path:  {path}")
-
-    if logger:
-        logger.info(
-            f"akakakakakkakakakaka 22 app_conf={type(app_conf)} app_conf:  {app_conf}"
-        )
 
     return app_conf
