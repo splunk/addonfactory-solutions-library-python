@@ -81,8 +81,7 @@ def make_splunkhome_path(parts: Union[List, Tuple]) -> str:
 
 
 def get_splunk_host_info(
-    use_btool: Optional[bool] = False,
-    session_key: Optional[str] = None
+    use_btool: Optional[bool] = False, session_key: Optional[str] = None
 ) -> Tuple:
     """Get splunk host info.
 
@@ -96,7 +95,7 @@ def get_splunk_host_info(
         "serverName",
         use_btool=use_btool,
         session_key=session_key,
-        app_name=APP_SYSTEM
+        app_name=APP_SYSTEM,
     )
     host_name = socket.gethostname()
 
@@ -118,8 +117,7 @@ def get_splunk_bin() -> str:
 
 
 def get_splunkd_access_info(
-    use_btool: Optional[bool] = False,
-    session_key: Optional[str] = None
+    use_btool: Optional[bool] = False, session_key: Optional[str] = None
 ) -> Tuple[str, str, int]:
     """Get splunkd server access info.
 
@@ -132,7 +130,7 @@ def get_splunkd_access_info(
         "enableSplunkdSSL",
         use_btool=use_btool,
         session_key=session_key,
-        app_name=APP_SYSTEM
+        app_name=APP_SYSTEM,
     )
 
     if is_true(enable_splunkd_ssl):
@@ -146,7 +144,7 @@ def get_splunkd_access_info(
         "mgmtHostPort",
         use_btool=use_btool,
         session_key=session_key,
-        app_name=APP_SYSTEM
+        app_name=APP_SYSTEM,
     )
     host_port = host_port.strip()
     host_port_split_parts = host_port.split(":")
@@ -162,8 +160,7 @@ def get_splunkd_access_info(
 
 
 def get_scheme_from_hec_settings(
-    use_btool: Optional[bool] = False,
-    session_key: Optional[str] = None
+    use_btool: Optional[bool] = False, session_key: Optional[str] = None
 ) -> str:
     """Get scheme from HEC global settings.
 
@@ -177,7 +174,7 @@ def get_scheme_from_hec_settings(
             "enableSSL",
             use_btool=use_btool,
             session_key=session_key,
-            app_name=APP_HEC
+            app_name=APP_HEC,
         )
     except KeyError:
         raise KeyError(
@@ -216,7 +213,7 @@ def get_conf_key_value(
     use_btool: Optional[bool] = False,
     app_name: Optional[str] = None,
     session_key: Optional[str] = None,
-    user: Optional[str] = "nobody"
+    user: Optional[str] = "nobody",
 ) -> Union[str, List, dict]:
     """Get value of `key` of `stanza` in `conf_name`.
 
@@ -244,11 +241,7 @@ def get_conf_key_value(
         raise KeyError("app name must be specified if use_btool is True")
 
     stanzas = _get_conf_stanzas_from_splunk_api(
-        conf_name,
-        app_name,
-        session_key=session_key,
-        user=user,
-        stanza=stanza
+        conf_name, app_name, session_key=session_key, user=user, stanza=stanza
     )
 
     stanza = stanzas.get("entry")[0].get("content")
@@ -262,7 +255,7 @@ def get_conf_stanza(
     use_btool: Optional[bool] = False,
     app_name: Optional[str] = None,
     session_key: Optional[str] = None,
-    user: Optional[str] = "nobody"
+    user: Optional[str] = "nobody",
 ) -> dict:
     """Get `stanza` in `conf_name`.
 
@@ -290,11 +283,7 @@ def get_conf_stanza(
         raise KeyError("app name must be specified if use_btool is True")
 
     stanzas = _get_conf_stanzas_from_splunk_api(
-        conf_name,
-        app_name,
-        session_key=session_key,
-        user=user,
-        stanza=stanza
+        conf_name, app_name, session_key=session_key, user=user, stanza=stanza
     )
 
     stanza = stanzas.get("entry")[0].get("content")
@@ -357,6 +346,7 @@ def _get_conf_stanzas_from_splunk_api(
     stanza: Optional[str] = None,
 ) -> dict:
     """Get stanzas of `conf_name` using splunk API:
+
     /servicesNS/{user}/{app_name}/configs/conf-{conf_name}/{stanza}
 
     Arguments:
