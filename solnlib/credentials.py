@@ -373,7 +373,7 @@ def get_session_key(
     validate_scheme_host_port(scheme, host, port)
 
     if any([scheme is None, host is None, port is None]):
-        scheme, host, port = get_splunkd_access_info()
+        scheme, host, port = get_splunkd_access_info(use_btool=True)
 
     uri = "{scheme}://{host}:{port}/{endpoint}".format(
         scheme=scheme, host=host, port=port, endpoint="services/auth/login"

@@ -233,13 +233,13 @@ class HECEventWriter(EventWriter):
             scheme, host, hec_port = utils.extract_http_scheme_host_port(hec_uri)
         else:
             if not all([scheme, host, port]):
-                scheme, host, port = get_splunkd_access_info()
+                scheme, host, port = get_splunkd_access_info(session_key=self._session_key)
             hec_port, hec_token = self._get_hec_config(
                 hec_input_name, session_key, scheme, host, port, **context
             )
 
         if global_settings_schema:
-            scheme = get_scheme_from_hec_settings()
+            scheme = get_scheme_from_hec_settings(session_key=self._session_key)
 
         if not context.get("pool_connections"):
             context["pool_connections"] = 10
