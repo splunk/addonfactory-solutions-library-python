@@ -17,6 +17,8 @@ import os
 from unittest import mock
 
 import pytest
+from splunklib.binding import HTTPError
+
 from solnlib.splunk_rest_client import MAX_REQUEST_RETRIES
 
 from requests.exceptions import ConnectionError
@@ -109,3 +111,67 @@ def test_request_retry(http_conn_pool, http_resp, mock_get_splunkd_access_info):
     http_conn_pool.side_effect = side_effects
     with pytest.raises(ConnectionError):
         rest_client.get("test")
+
+
+@pytest.mark.parametrize("error_code", [429, 500, 503])
+def test_request_throttling(http_mock_server, error_code):
+    @http_mock_server.get
+    def throttling(request):
+        """Mock endpoint to simulate request throttling.
+
+        The endpoint will return an error status code for the first 5
+        requests, and a 200 status code for subsequent requests.
+        """
+        number = getattr(throttling, "call_count", 0)
+        throttling.call_count = number + 1
+
+        if number < 2:
+            request.send_response(error_code)
+            request.send_header("Retry-After", "1")
+            return {"error": f"Error {number}"}
+
+        return {"content": "Success"}
+
+    rest_client = SplunkRestClient(
+        "msg_name_1",
+        "session_key",
+        "_",
+        scheme="http",
+        host="localhost",
+        port=http_mock_server.port,
+    )
+
+    resp = rest_client.get("test")
+    assert resp.status == 200
+    assert resp.body.read().decode("utf-8") == '{"content": "Success"}'
+
+
+@pytest.mark.parametrize("error_code", [429, 500, 503])
+def test_request_throttling_exceeded(http_mock_server, error_code):
+    @http_mock_server.get
+    def throttling(request):
+        """Mock endpoint to simulate request throttling.
+
+        The endpoint will always return an error status code.
+        """
+        number = getattr(throttling, "call_count", 0)
+        throttling.call_count = number + 1
+
+        request.send_response(error_code)
+        request.send_header("Retry-After", "1")
+        return {"error": f"Error {number}"}
+
+    rest_client = SplunkRestClient(
+        "msg_name_1",
+        "session_key",
+        "_",
+        scheme="http",
+        host="localhost",
+        port=http_mock_server.port,
+    )
+
+    with pytest.raises(HTTPError) as ex:
+        rest_client.get("test")
+
+    assert ex.value.status == error_code
+    assert ex.value.body.decode("utf-8") == '{"error": "Error 5"}'
