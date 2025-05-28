@@ -104,28 +104,30 @@ def _request_handler(context):
     else:
         cert = None
 
-    retries = Retry(
-        total=context.get("max_retries", MAX_REQUEST_RETRIES),
-        backoff_factor=0.3,
-        status_forcelist=context.get("retry_status_codes", [500, 502, 503, 504]),
-        allowed_methods=["GET", "POST", "PUT", "DELETE"],
-        raise_on_status=False,
-    )
+    def adapter():
+        retries = Retry(
+            total=context.get("max_retries", MAX_REQUEST_RETRIES),
+            backoff_factor=0.3,
+            status_forcelist=context.get("retry_status_codes", [500, 502, 503, 504]),
+            allowed_methods=["GET", "POST", "PUT", "DELETE"],
+            raise_on_status=False,
+        )
 
-    adapter_args = {
-        "max_retries": retries,
-    }
+        adapter_args = {
+            "max_retries": retries,
+        }
 
-    # By default, pool_connections and pool_maxsize are set to 10 in urllib3
-    if "pool_connections" in context:
-        adapter_args["pool_connections"] = context["pool_connections"]
-    if "pool_maxsize" in context:
-        adapter_args["pool_maxsize"] = context["pool_maxsize"]
+        # By default, pool_connections and pool_maxsize are set to 10 in urllib3
+        if "pool_connections" in context:
+            adapter_args["pool_connections"] = context["pool_connections"]
+        if "pool_maxsize" in context:
+            adapter_args["pool_maxsize"] = context["pool_maxsize"]
+
+        return requests.adapters.HTTPAdapter(**adapter_args)
 
     session = requests.Session()
-    adapter = requests.adapters.HTTPAdapter(**adapter_args)
-    session.mount("http://", adapter)
-    session.mount("https://", adapter)
+    session.mount("http://", adapter())
+    session.mount("https://", adapter())
 
     req_func = session.request
 
