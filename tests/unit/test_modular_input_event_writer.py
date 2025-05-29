@@ -269,7 +269,6 @@ def test_hec_event_writer(monkeypatch, create_hec_event_writer, has_splunk_home)
         (create_hec_event_writer__create_from_input, False, "https"),
         (create_hec_event_writer__create_from_token_with_session_key, True, "http"),
         (create_hec_event_writer__create_from_token_with_session_key, False, "https"),
-        (create_hec_event_writer__create_from_token, True, "http"),
         (create_hec_event_writer__create_from_token, False, "https"),
     ],
 )

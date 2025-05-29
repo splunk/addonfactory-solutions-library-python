@@ -221,7 +221,7 @@ class SplunkRestClient(client.Service):
         """
         # Only do splunkd URI discovery in SPLUNK env (SPLUNK_HOME is set).
         if not all([scheme, host, port]) and os.environ.get("SPLUNK_HOME"):
-            scheme, host, port = get_splunkd_access_info(session_key=session_key)
+            scheme, host, port = get_splunkd_access_info(session_key)
         if os.environ.get("SPLUNK_HOME") is None:
             if not all([scheme, host, port]):
                 raise ValueError(

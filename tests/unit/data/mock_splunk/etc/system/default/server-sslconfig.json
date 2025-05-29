@@ -1,0 +1,32 @@
+{
+  "links": {
+    "create": "/servicesNS/nobody/-/configs/conf-server/_new",
+    "_reload": "/servicesNS/nobody/-/configs/conf-server/_reload",
+    "_acl": "/servicesNS/nobody/-/configs/conf-server/_acl"
+  },
+  "origin": "https://127.0.0.1:8089/servicesNS/nobody/-/configs/conf-server",
+  "updated": "2025-05-29T20:31:49+02:00",
+  "generator": {
+    "build": "51ccf43db5bd",
+    "version": "9.3.0"
+  },
+  "entry": [
+    {
+      "content": {
+          "allowSslCompression": true,
+          "allowSslRenegotiation": true,
+          "caCertFile": "cacert.pem",
+          "caPath": "$SPLUNK_HOME/etc/auth",
+          "certCreateScript": "$SPLUNK_HOME/bin/splunk, createssl, server-cert",
+          "cipherSuite": "TLSv1+HIGH:@STRENGTH",
+          "enableSplunkdSSL": true,
+          "sendStrictTransportSecurityHeader": "false",
+          "sslKeysfile": "server.pem",
+          "sslKeysfilePassword": "password",
+          "sslVersions": "*,-ssl2",
+          "useClientSSLCompression": true,
+          "useSplunkdClientSSLCompression": true
+      }
+    }
+  ]
+}

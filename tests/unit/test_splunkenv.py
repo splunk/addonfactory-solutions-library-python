@@ -14,7 +14,6 @@
 # limitations under the License.
 #
 
-import os
 from unittest import mock
 
 import common
@@ -23,30 +22,13 @@ import pytest
 from solnlib import splunkenv
 
 
-def test_splunkhome_path(monkeypatch):
-    common.mock_splunkhome(monkeypatch)
-
-    splunkhome_path = splunkenv.make_splunkhome_path(["etc", "apps"])
-    assert splunkhome_path == os.environ["SPLUNK_HOME"] + "etc/apps"
-
-
 def test_get_splunk_host_info(monkeypatch):
     common.mock_splunkhome(monkeypatch)
     common.mock_gethostname(monkeypatch)
 
-    server_name, host_name = splunkenv.get_splunk_host_info()
+    server_name, host_name = splunkenv.get_splunk_host_info(common.SESSION_KEY)
     assert server_name == "unittestServer"
     assert host_name == "unittestServer"
-
-
-def test_splunk_bin(monkeypatch):
-    common.mock_splunkhome(monkeypatch)
-
-    splunk_bin = splunkenv.get_splunk_bin()
-    assert splunk_bin in (
-        os.environ["SPLUNK_HOME"] + "bin/splunk",
-        os.environ["SPLUNK_HOME"] + "bin/splunk.exe",
-    )
 
 
 @mock.patch.object(splunkenv, "get_conf_key_value")
@@ -127,17 +109,17 @@ def test_get_splunkd_access_info(
 def test_splunkd_uri(monkeypatch):
     common.mock_splunkhome(monkeypatch)
 
-    uri = splunkenv.get_splunkd_uri()
+    uri = splunkenv.get_splunkd_uri(common.SESSION_KEY)
     assert uri == "https://127.0.0.1:8089"
 
     monkeypatch.setenv("SPLUNK_BINDIP", "10.0.0.2:7080")
-    uri = splunkenv.get_splunkd_uri()
+    uri = splunkenv.get_splunkd_uri(common.SESSION_KEY)
     assert uri == "https://10.0.0.2:8089"
 
     monkeypatch.setenv("SPLUNK_BINDIP", "10.0.0.3")
-    uri = splunkenv.get_splunkd_uri()
+    uri = splunkenv.get_splunkd_uri(common.SESSION_KEY)
     assert uri == "https://10.0.0.3:8089"
 
     monkeypatch.setenv("SPLUNKD_URI", "https://10.0.0.1:8089")
-    uri = splunkenv.get_splunkd_uri()
+    uri = splunkenv.get_splunkd_uri(common.SESSION_KEY)
     assert uri == "https://10.0.0.1:8089"

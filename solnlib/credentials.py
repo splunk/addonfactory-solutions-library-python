@@ -16,7 +16,6 @@
 
 """This module contains Splunk credential related interfaces."""
 
-import json
 import re
 import warnings
 from typing import Dict, List
@@ -24,15 +23,12 @@ from typing import Dict, List
 from splunklib import binding, client
 
 from . import splunk_rest_client as rest_client
-from .net_utils import validate_scheme_host_port
-from .splunkenv import get_splunkd_access_info
 from .utils import retry
 
 __all__ = [
     "CredentialException",
     "CredentialNotExistException",
     "CredentialManager",
-    "get_session_key",
 ]
 
 
@@ -339,56 +335,3 @@ class CredentialManager:
         )
         passwords = self._storage_passwords.list(count=-1)
         return self._get_clear_passwords(passwords)
-
-
-@retry(exceptions=[binding.HTTPError])
-def get_session_key(
-    username: str,
-    password: str,
-    scheme: str = None,
-    host: str = None,
-    port: int = None,
-    **context: dict,
-) -> str:
-    """Get splunkd access token.
-
-    Arguments:
-        username: The Splunk account username, which is used to authenticate the Splunk instance.
-        password: The Splunk account password.
-        scheme: (optional) The access scheme, default is None.
-        host: (optional) The host name, default is None.
-        port: (optional) The port number, default is None.
-        context: Other configurations for Splunk rest client.
-
-    Returns:
-        Splunk session key.
-
-    Raises:
-        CredentialException: If username/password are invalid.
-        ValueError: if scheme, host or port are invalid.
-
-    Examples:
-       >>> get_session_key('user', 'password')
-    """
-    validate_scheme_host_port(scheme, host, port)
-
-    if any([scheme is None, host is None, port is None]):
-        scheme, host, port = get_splunkd_access_info(use_btool=True)
-
-    uri = "{scheme}://{host}:{port}/{endpoint}".format(
-        scheme=scheme, host=host, port=port, endpoint="services/auth/login"
-    )
-    _rest_client = rest_client.SplunkRestClient(
-        None, "-", "nobody", scheme, host, port, **context
-    )
-    try:
-        response = _rest_client.http.post(
-            uri, username=username, password=password, output_mode="json"
-        )
-    except binding.HTTPError as e:
-        if e.status != 401:
-            raise
-
-        raise CredentialException("Invalid username/password.")
-
-    return json.loads(response.body.read())["sessionKey"]
