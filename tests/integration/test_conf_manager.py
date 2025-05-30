@@ -22,8 +22,10 @@ import os
 from solnlib import conf_manager, soln_exceptions
 from unittest import mock
 
-sys.path.insert(0, op.sep.join([os.getenv("SPLUNK_HOME"), "lib", "python3.7", "site-packages"]))
-sys.path.insert(0, op.sep.join([os.getenv("SPLUNK_HOME"), "lib", "python3.9", "site-packages"]))
+if sys.version_info < (3, 9, 0):
+    sys.path.insert(0, op.sep.join([os.getenv("SPLUNK_HOME"), "lib", "python3.7", "site-packages"]))
+else:
+    sys.path.insert(0, op.sep.join([os.getenv("SPLUNK_HOME"), "lib", "python3.9", "site-packages"]))
 from splunk.rest import simpleRequest
 
 
