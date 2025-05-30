@@ -16,8 +16,15 @@
 
 import context
 import pytest
+import sys
+import os.path as op
+import os
 from solnlib import conf_manager, soln_exceptions
 from unittest import mock
+
+sys.path.insert(0, op.sep.join([os.getenv("SPLUNK_HOME"), "lib", "python3.7", "site-packages"]))
+sys.path.insert(0, op.sep.join([os.getenv("SPLUNK_HOME"), "lib", "python3.9", "site-packages"]))
+from splunk.rest import simpleRequest
 
 
 VALID_PROXY_DICT = {
