@@ -177,7 +177,9 @@ def test_get_log_level_incorrect_log_level_field(monkeypatch):
     assert expected_log_level == log_level
 
 
-def test_get_proxy_dict():
+def test_get_proxy_dict(monkeypatch):
+    context.mock_splunk(monkeypatch)
+
     session_key = context.get_session_key()
     expected_proxy_dict = VALID_PROXY_DICT
     proxy_dict = conf_manager.get_proxy_dict(
@@ -189,7 +191,9 @@ def test_get_proxy_dict():
     assert expected_proxy_dict == proxy_dict
 
 
-def test_invalid_proxy_port():
+def test_invalid_proxy_port(monkeypatch):
+    context.mock_splunk(monkeypatch)
+
     session_key = context.get_session_key()
 
     with pytest.raises(soln_exceptions.InvalidPortError):
@@ -203,7 +207,9 @@ def test_invalid_proxy_port():
         )
 
 
-def test_invalid_proxy_host():
+def test_invalid_proxy_host(monkeypatch):
+    context.mock_splunk(monkeypatch)
+
     session_key = context.get_session_key()
 
     with pytest.raises(soln_exceptions.InvalidHostnameError):
@@ -229,7 +235,9 @@ def test_conf_manager_exception():
         )
 
 
-def test_conf_stanza_not_exist_exception():
+def test_conf_stanza_not_exist_exception(monkeypatch):
+    context.mock_splunk(monkeypatch)
+
     session_key = context.get_session_key()
 
     with pytest.raises(soln_exceptions.ConfStanzaNotExistException):

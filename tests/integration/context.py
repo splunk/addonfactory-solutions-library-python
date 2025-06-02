@@ -43,4 +43,10 @@ def mock_splunk(monkeypatch):
 
         return simpleRequest(url, *args, **kwargs)
 
+    def make_splunkn_home(url, *args, **kwargs):
+        from splunk.clilib.bundle_paths import make_splunkhome_path
+
+        return make_splunkhome_path(url, *args, **kwargs)
+
     monkeypatch.setattr("solnlib.splunkenv.simpleRequest", simple_requests)
+    monkeypatch.setattr("solnlib.splunkenv.msp", make_splunkn_home)

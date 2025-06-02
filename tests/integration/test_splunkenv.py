@@ -14,6 +14,7 @@
 # limitations under the License.
 #
 
+import context
 import os
 import os.path as op
 import sys
@@ -22,13 +23,17 @@ from solnlib import splunkenv
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 
 
-def test_splunkenv():
+def test_splunkenv(monkeypatch):
+    context.mock_splunk(monkeypatch)
+
     assert "SPLUNK_HOME" in os.environ
+
+    sk = context.get_session_key()
 
     splunkhome_path = splunkenv.make_splunkhome_path(["etc", "apps"])
     assert splunkhome_path == op.join(os.environ["SPLUNK_HOME"], "etc", "apps")
 
-    server_name, host_name = splunkenv.get_splunk_host_info()
+    server_name, host_name = splunkenv.get_splunk_host_info(sk)
     assert server_name
     assert host_name
 
@@ -38,10 +43,10 @@ def test_splunkenv():
         op.join(os.environ["SPLUNK_HOME"], "bin", "splunk.exe"),
     ]
 
-    scheme, host, port = splunkenv.get_splunkd_access_info()
+    scheme, host, port = splunkenv.get_splunkd_access_info(sk)
     assert scheme
     assert host
     assert port
 
-    uri = splunkenv.get_splunkd_uri()
+    uri = splunkenv.get_splunkd_uri(sk)
     assert uri == f"{scheme}://{host}:{port}"
