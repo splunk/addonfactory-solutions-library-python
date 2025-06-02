@@ -153,7 +153,9 @@ def test_conf_manager_update_conf_with_encrypted_keys():
     assert conf_file.get("stanza")["key2"] == "value2"
 
 
-def test_get_log_level():
+def test_get_log_level(monkeypatch):
+    context.mock_splunk(monkeypatch)
+
     session_key = context.get_session_key()
     expected_log_level = "DEBUG"
 
@@ -168,7 +170,9 @@ def test_get_log_level():
     assert expected_log_level == log_level
 
 
-def test_get_log_level_incorrect_log_level_field():
+def test_get_log_level_incorrect_log_level_field(monkeypatch):
+    context.mock_splunk(monkeypatch)
+
     session_key = context.get_session_key()
     expected_log_level = "INFO"
 

@@ -35,3 +35,11 @@ def get_session_key():
     )
     content = response.json()
     return content["sessionKey"]
+
+
+def mock_splunk(monkeypatch):
+    def simple_requests(url, *args, **kwargs):
+        from splunk.rest import simpleRequest
+        return simpleRequest(url, *args, **kwargs)
+
+    monkeypatch.setattr("solnlib.splunkenv.simpleRequest", simple_requests)
