@@ -14,6 +14,7 @@
 # limitations under the License.
 #
 import context
+import conftest
 import os.path as op
 import sys
 import time
@@ -26,7 +27,7 @@ sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 
 
 def test_hec_event_writer(monkeypatch):
-    context.mock_splunk(monkeypatch)
+    conftest.mock_splunk(monkeypatch)
 
     session_key = context.get_session_key()
 
@@ -43,7 +44,7 @@ def test_hec_event_writer(monkeypatch):
 
 
 def test_hec_event_writes_with_non_utf_8(monkeypatch):
-    context.mock_splunk(monkeypatch)
+    conftest.mock_splunk(monkeypatch)
 
     # To test scenario listed in https://github.com/splunk/addonfactory-solutions-library-python/pull/112.
     test_name = "test_hec_event_writes_with_non_utf_8"

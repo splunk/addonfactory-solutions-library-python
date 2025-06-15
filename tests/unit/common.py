@@ -15,6 +15,7 @@
 #
 import os.path as op
 import socket
+import subprocess
 
 from splunklib import binding, client
 from splunklib.data import record
@@ -30,6 +31,46 @@ SESSION_KEY = "nU1aB6BntzwREOnGowa7pN6avV3B6JefliAZIzCX9"
 
 
 def mock_splunkhome(monkeypatch):
+    class MockPopen:
+        def __init__(
+            self,
+            args,
+            bufsize=0,
+            executable=None,
+            stdin=None,
+            stdout=None,
+            stderr=None,
+            preexec_fn=None,
+            close_fds=False,
+            shell=False,
+            cwd=None,
+            env=None,
+            universal_newlines=False,
+            startupinfo=None,
+            creationflags=0,
+        ):
+            self._conf = args[3]
+
+        def communicate(self, input=None):
+            if self._conf == "server":
+                file_path = op.sep.join(
+                    [cur_dir, "data/mock_splunk/etc/system/default/server.conf"]
+                )
+            elif self._conf == "inputs":
+                file_path = op.sep.join(
+                    [
+                        cur_dir,
+                        "data/mock_splunk/etc/apps/splunk_httpinput/local/inputs.conf",
+                    ]
+                )
+            else:
+                file_path = op.sep.join(
+                    [cur_dir, "data/mock_splunk/etc/system/default/web.conf"]
+                )
+
+            with open(file_path) as fp:
+                return fp.read(), None
+
     def simple_requests(url, *args, **kwargs):
         if "conf-server/sslConfig" in url:
             file_path = op.sep.join(
@@ -64,6 +105,7 @@ def mock_splunkhome(monkeypatch):
     monkeypatch.setenv("SPLUNK_ETC", op.join(splunk_home, "etc"))
     monkeypatch.setattr("solnlib.splunkenv.simpleRequest", simple_requests)
     monkeypatch.setattr("solnlib.splunkenv.getSessionKey", get_session_key)
+    monkeypatch.setattr(subprocess, "Popen", MockPopen)
 
 
 def mock_serverinfo(monkeypatch):

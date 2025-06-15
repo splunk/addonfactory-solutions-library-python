@@ -34,7 +34,7 @@ try:
 except ImportError:
 
     def simpleRequest(*args, **kwargs):
-        return None, None
+        raise ImportError("This module requires Splunk to be installed.")
 
 
 try:
@@ -80,8 +80,6 @@ on_shared_storage = [
     os.path.join("var", "run", "splunk", "scheduler"),
     os.path.join("var", "run", "splunk", "lookup_tmp"),
 ]
-
-use_btool = bool(use_btool)
 
 
 class SessionKeyNotFound(Exception):
@@ -242,7 +240,7 @@ def get_conf_key_value(
     key: str,
     app_name: str,
     session_key: Optional[str] = None,
-    user: Optional[str] = "nobody",
+    user: str = "nobody",
     raw_output: Optional[bool] = False,
 ) -> Union[str, List, dict]:
     """Get value of `key` of `stanza` in `conf_name`.
@@ -288,7 +286,7 @@ def get_conf_stanza(
     stanza: str,
     app_name: str,
     session_key: Optional[str] = None,
-    user: Optional[str] = "nobody",
+    user: str = "nobody",
     raw_output: Optional[bool] = False,
 ) -> dict:
     """Get `stanza` in `conf_name`.
@@ -379,7 +377,7 @@ def _get_conf_stanzas_from_splunk_api(
     conf_name: str,
     app_name: str,
     session_key: Optional[str] = None,
-    user: Optional[str] = "nobody",
+    user: str = "nobody",
     stanza: Optional[str] = None,
 ) -> dict:
     """Get stanzas of `conf_name` using splunk API:

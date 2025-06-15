@@ -15,6 +15,7 @@
 #
 
 import context
+import conftest
 import os.path as op
 import sys
 
@@ -115,7 +116,7 @@ def test_app_capability_manager():
 
 
 def test_check_user_access(monkeypatch):
-    context.mock_splunk(monkeypatch)
+    conftest.mock_splunk(monkeypatch)
 
     session_key = context.get_session_key()
     app_capabilities = {

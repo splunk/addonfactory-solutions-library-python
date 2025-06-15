@@ -15,6 +15,7 @@
 #
 
 import context
+import conftest
 import os
 import os.path as op
 import sys
@@ -24,7 +25,7 @@ sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 
 
 def test_splunkenv(monkeypatch):
-    context.mock_splunk(monkeypatch)
+    conftest.mock_splunk(monkeypatch)
 
     assert "SPLUNK_HOME" in os.environ
 

@@ -20,6 +20,7 @@ import sys
 import common
 import pytest
 from splunklib import binding
+from unittest.mock import patch
 
 from solnlib.modular_input import ClassicEventWriter, HECEventWriter
 
@@ -275,6 +276,37 @@ def test_hec_event_writer(monkeypatch, create_hec_event_writer, has_splunk_home)
 def test_hec_event_writer_gets_scheme_from_global_settings_if_requested(
     monkeypatch, create_hec_event_writer, hec, expected_scheme
 ):
+    common.mock_splunkhome(monkeypatch)
+
+    def mock_get_hec_config(
+        self, hec_input_name, session_key, scheme, host, port, **context
+    ):
+        return "8088", "87de04d1-0823-11e6-9c94-a45e60e"
+
+    monkeypatch.setattr(HECEventWriter, "_get_hec_config", mock_get_hec_config)
+
+    ev = create_hec_event_writer(hec)
+    assert ev._rest_client.scheme == expected_scheme
+
+
+@patch("solnlib.splunkenv.use_btool")
+@pytest.mark.parametrize(
+    "create_hec_event_writer, hec, expected_scheme",
+    [
+        (create_hec_event_writer__constructor, True, "https"),
+        (create_hec_event_writer__constructor, False, "http"),
+        (create_hec_event_writer__create_from_input, True, "https"),
+        (create_hec_event_writer__create_from_input, False, "https"),
+        (create_hec_event_writer__create_from_token_with_session_key, True, "https"),
+        (create_hec_event_writer__create_from_token_with_session_key, False, "https"),
+        (create_hec_event_writer__create_from_token, True, "https"),
+        (create_hec_event_writer__create_from_token, False, "https"),
+    ],
+)
+def test_hec_event_writer_gets_scheme_from_global_settings_if_requested_backdoor(
+    mock_flag, monkeypatch, create_hec_event_writer, hec, expected_scheme
+):
+    mock_flag.return_value = True
     common.mock_splunkhome(monkeypatch)
 
     def mock_get_hec_config(

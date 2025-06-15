@@ -35,18 +35,3 @@ def get_session_key():
     )
     content = response.json()
     return content["sessionKey"]
-
-
-def mock_splunk(monkeypatch):
-    def simple_requests(url, *args, **kwargs):
-        from splunk.rest import simpleRequest
-
-        return simpleRequest(url, *args, **kwargs)
-
-    def make_splunkn_home(url, *args, **kwargs):
-        from splunk.clilib.bundle_paths import make_splunkhome_path
-
-        return make_splunkhome_path(url, *args, **kwargs)
-
-    monkeypatch.setattr("solnlib.splunkenv.simpleRequest", simple_requests)
-    monkeypatch.setattr("solnlib.splunkenv.msp", make_splunkn_home)
