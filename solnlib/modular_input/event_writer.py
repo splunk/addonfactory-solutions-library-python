@@ -293,6 +293,7 @@ class HECEventWriter(EventWriter):
             None,
             None,
             None,
+            None,
             hec_uri=hec_uri,
             hec_token=hec_token,
             global_settings_schema=global_settings_schema,
