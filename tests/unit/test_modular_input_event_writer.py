@@ -23,6 +23,7 @@ from splunklib import binding
 from unittest.mock import patch
 
 from solnlib.modular_input import ClassicEventWriter, HECEventWriter
+from solnlib.modular_input.event_writer import FunctionDeprecated, deprecation_msg
 
 
 def test_classic_event_writer(monkeypatch):
@@ -299,7 +300,6 @@ def test_hec_event_writer_gets_scheme_from_global_settings_if_requested(
         (create_hec_event_writer__create_from_input, False, "https"),
         (create_hec_event_writer__create_from_token_with_session_key, True, "https"),
         (create_hec_event_writer__create_from_token_with_session_key, False, "https"),
-        (create_hec_event_writer__create_from_token, True, "https"),
         (create_hec_event_writer__create_from_token, False, "https"),
     ],
 )
@@ -318,3 +318,24 @@ def test_hec_event_writer_gets_scheme_from_global_settings_if_requested_backdoor
 
     ev = create_hec_event_writer(hec)
     assert ev._rest_client.scheme == expected_scheme
+
+
+@pytest.mark.parametrize("hec", [False, True])
+def test_hec_event_writer_create_from_token_deprecation(hec, monkeypatch, caplog):
+    common.mock_splunkhome(monkeypatch)
+
+    def mock_get_hec_config(
+        self, hec_input_name, session_key, scheme, host, port, **context
+    ):
+        return "8088", "87de04d1-0823-11e6-9c94-a45e60e"
+
+    monkeypatch.setattr(HECEventWriter, "_get_hec_config", mock_get_hec_config)
+
+    if hec:
+        with pytest.raises(FunctionDeprecated) as e:
+            create_hec_event_writer__create_from_token(hec=True)
+        assert e.value.args[0] == deprecation_msg
+    else:
+        with pytest.warns(DeprecationWarning, match=deprecation_msg):
+            ev = create_hec_event_writer__create_from_token(hec=False)
+            assert ev._rest_client.scheme == "https"

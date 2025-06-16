@@ -23,6 +23,7 @@ import sys
 import threading
 import time
 import traceback
+import warnings
 from abc import ABCMeta, abstractmethod
 from random import randint
 from typing import List, Union
@@ -37,6 +38,16 @@ from ..utils import retry
 from .event import HECEvent, XMLEvent
 
 __all__ = ["ClassicEventWriter", "HECEventWriter"]
+
+
+deprecation_msg = (
+    "Function 'create_from_token' is deprecated and incompatible with 'global_settings_schema=True'. "
+    "Use 'create_from_token_with_session_key' instead."
+)
+
+
+class FunctionDeprecated(Exception):
+    pass
 
 
 class EventWriter(metaclass=ABCMeta):
@@ -272,8 +283,12 @@ class HECEventWriter(EventWriter):
             Created HECEventWriter.
         """
 
+        warnings.warn(deprecation_msg, DeprecationWarning, stacklevel=2)
+
+        if global_settings_schema:
+            raise FunctionDeprecated(deprecation_msg)
+
         return HECEventWriter(
-            None,
             None,
             None,
             None,
