@@ -32,6 +32,50 @@ VALID_PROXY_DICT = {
 }
 
 
+# conftest.py or test file
+
+import tempfile
+import shutil
+import re
+import importlib.util
+import sys
+import os
+import pytest
+
+
+@pytest.fixture
+def patch_splunk_cli_common_module():
+    import splunk.clilib.cli_common as comm
+
+    original_path = comm.__file__
+
+    with open(original_path, "r") as f:
+        source = f.read()
+
+    pattern = r'procArgs\s*=\s*\[\s*os\.path\.join\(\s*os\.environ\[\s*["\']SPLUNK_HOME["\']\s*\],\s*["\']bin["\'],\s*["\']splunkd["\']\s*\)\s*,\s*["\']local-rest-uri["\']\s*,\s*["\']-p["\']\s*,\s*mgmtPort\s*\]'
+    replacement = 'procArgs = [os.path.join(os.environ["SPLUNK_HOME"], "bin", "splunk"), "cmd", "splunkd", "local-rest-uri", "-p", mgmtPort]'
+
+    new_content = re.sub(pattern, replacement, source)
+
+    temp_dir = tempfile.mkdtemp()
+    patched_module_path = os.path.join(temp_dir, "module.py")
+
+    with open(patched_module_path, "w") as f:
+        f.write(new_content)
+
+    spec = importlib.util.spec_from_file_location("splunk.clilib.cli_common", patched_module_path)
+    patched_module = importlib.util.module_from_spec(spec)
+    sys.modules["splunk.clilib.cli_common"] = patched_module
+    spec.loader.exec_module(patched_module)
+
+    yield
+
+    shutil.rmtree(temp_dir)
+    importlib.invalidate_caches()
+    sys.modules.pop("splunk.clilib.cli_common", None)
+
+
+
 def _build_conf_manager(session_key: str) -> conf_manager.ConfManager:
     return conf_manager.ConfManager(
         session_key,
@@ -145,7 +189,8 @@ def test_conf_manager_update_conf_with_encrypted_keys():
     assert conf_file.get("stanza")["key2"] == "value2"
 
 
-def test_get_log_level(monkeypatch):
+def test_get_log_level(patch_splunk_cli_common_module, monkeypatch):
+
     conftest.mock_splunk(monkeypatch)
 
     session_key = context.get_session_key()
