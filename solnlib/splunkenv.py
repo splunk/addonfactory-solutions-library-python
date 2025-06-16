@@ -42,7 +42,7 @@ try:
 except ImportError:
 
     def getSessionKey(*args, **kwargs):
-        return None
+        raise ImportError("This module requires Splunk to be installed.")
 
 
 try:
@@ -50,7 +50,7 @@ try:
 except ImportError:
 
     def msp(*args, **kwargs):
-        return None
+        raise ImportError("This module requires Splunk to be installed.")
 
 
 __all__ = [
