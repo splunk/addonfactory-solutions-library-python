@@ -57,10 +57,10 @@ def test_splunkenv(mock_get_session_key, monkeypatch):
     assert uri == f"{scheme}://{host}:{port}"
 
     exp_msg = (
-            "Session key is missing. If you are using 'splunkenv' module in your TA, please ensure you are "
-            "providing session_key to it's functions. For more information "
-            "please see: https://splunk.github.io/addonfactory-solutions-library-python/release_7_0_0/"
-        )
+        "Session key is missing. If you are using 'splunkenv' module in your TA, please ensure you are "
+        "providing session_key to it's functions. For more information "
+        "please see: https://splunk.github.io/addonfactory-solutions-library-python/release_7_0_0/"
+    )
 
     with pytest.raises(splunkenv.SessionKeyNotFound) as e:
         splunkenv.get_splunk_host_info()
