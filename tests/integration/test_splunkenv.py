@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import pytest
 
 import context
 import conftest
@@ -20,12 +21,15 @@ import os
 import os.path as op
 import sys
 from solnlib import splunkenv
+from unittest import mock
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 
 
-def test_splunkenv(monkeypatch):
+@mock.patch("solnlib.splunkenv.getSessionKey")
+def test_splunkenv(mock_get_session_key, monkeypatch):
     conftest.mock_splunk(monkeypatch)
+    mock_get_session_key.return_value = None
 
     assert "SPLUNK_HOME" in os.environ
 
@@ -51,3 +55,13 @@ def test_splunkenv(monkeypatch):
 
     uri = splunkenv.get_splunkd_uri(sk)
     assert uri == f"{scheme}://{host}:{port}"
+
+    exp_msg = (
+            "Session key is missing. If you are using 'splunkenv' module in your TA, please ensure you are "
+            "providing session_key to it's functions. For more information "
+            "please see: https://splunk.github.io/addonfactory-solutions-library-python/release_7_0_0/"
+        )
+
+    with pytest.raises(splunkenv.SessionKeyNotFound) as e:
+        splunkenv.get_splunk_host_info()
+    assert e.value.args[0] == exp_msg

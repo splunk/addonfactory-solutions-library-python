@@ -63,23 +63,11 @@ __all__ = [
     "get_conf_key_value",
     "get_conf_stanza",
     "get_conf_stanzas",
-    "_get_conf_stanzas_from_splunk_api",
 ]
 
 ETC_LEAF = "etc"
 APP_SYSTEM = "system"
 APP_HEC = "splunk_httpinput"
-
-# See validateSearchHeadPooling() in src/libbundle/ConfSettings.cpp
-on_shared_storage = [
-    os.path.join(ETC_LEAF, "apps"),
-    os.path.join(ETC_LEAF, "users"),
-    os.path.join("var", "run", "splunk", "dispatch"),
-    os.path.join("var", "run", "splunk", "srtemp"),
-    os.path.join("var", "run", "splunk", "rss"),
-    os.path.join("var", "run", "splunk", "scheduler"),
-    os.path.join("var", "run", "splunk", "lookup_tmp"),
-]
 
 
 class SessionKeyNotFound(Exception):
@@ -409,7 +397,11 @@ def _get_conf_stanzas_from_splunk_api(
         session_key = getattr(__main__, "___sessionKey")
 
     if not session_key:
-        raise SessionKeyNotFound()
+        raise SessionKeyNotFound(
+            "Session key is missing. If you are using 'splunkenv' module in your TA, please ensure you are "
+            "providing session_key to it's functions. For more information "
+            "please see: https://splunk.github.io/addonfactory-solutions-library-python/release_7_0_0/"
+        )
 
     server_response, server_content = simpleRequest(
         url,
