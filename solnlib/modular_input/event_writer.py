@@ -23,7 +23,6 @@ import sys
 import threading
 import time
 import traceback
-import warnings
 from abc import ABCMeta, abstractmethod
 from random import randint
 from typing import List, Union
@@ -38,16 +37,6 @@ from ..utils import retry
 from .event import HECEvent, XMLEvent
 
 __all__ = ["ClassicEventWriter", "HECEventWriter"]
-
-
-deprecation_msg = (
-    "Function 'create_from_token' is deprecated and incompatible with 'global_settings_schema=True'. "
-    "Use 'create_from_token_with_session_key' instead."
-)
-
-
-class FunctionDeprecated(Exception):
-    pass
 
 
 class EventWriter(metaclass=ABCMeta):
@@ -244,13 +233,13 @@ class HECEventWriter(EventWriter):
             scheme, host, hec_port = utils.extract_http_scheme_host_port(hec_uri)
         else:
             if not all([scheme, host, port]):
-                scheme, host, port = get_splunkd_access_info(self._session_key)
+                scheme, host, port = get_splunkd_access_info()
             hec_port, hec_token = self._get_hec_config(
                 hec_input_name, session_key, scheme, host, port, **context
             )
 
         if global_settings_schema:
-            scheme = get_scheme_from_hec_settings(self._session_key)
+            scheme = get_scheme_from_hec_settings()
 
         if not context.get("pool_connections"):
             context["pool_connections"] = 10
@@ -282,11 +271,6 @@ class HECEventWriter(EventWriter):
         Returns:
             Created HECEventWriter.
         """
-
-        warnings.warn(deprecation_msg, DeprecationWarning, stacklevel=2)
-
-        if global_settings_schema:
-            raise FunctionDeprecated(deprecation_msg)
 
         return HECEventWriter(
             None,

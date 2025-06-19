@@ -15,7 +15,6 @@
 #
 
 import context
-import conftest
 import pytest
 from solnlib import conf_manager, soln_exceptions
 from unittest import mock
@@ -145,11 +144,7 @@ def test_conf_manager_update_conf_with_encrypted_keys():
     assert conf_file.get("stanza")["key2"] == "value2"
 
 
-@mock.patch("splunk.clilib.cli_common.getMgmtUri")
-def test_get_log_level(mock_mgm_uri, monkeypatch):
-    mock_mgm_uri.return_value = "https://127.0.0.1:8089"
-    conftest.mock_splunk(monkeypatch)
-
+def test_get_log_level():
     session_key = context.get_session_key()
     expected_log_level = "DEBUG"
 
@@ -164,9 +159,7 @@ def test_get_log_level(mock_mgm_uri, monkeypatch):
     assert expected_log_level == log_level
 
 
-def test_get_log_level_incorrect_log_level_field(monkeypatch):
-    conftest.mock_splunk(monkeypatch)
-
+def test_get_log_level_incorrect_log_level_field():
     session_key = context.get_session_key()
     expected_log_level = "INFO"
 
@@ -180,9 +173,7 @@ def test_get_log_level_incorrect_log_level_field(monkeypatch):
     assert expected_log_level == log_level
 
 
-def test_get_proxy_dict(monkeypatch):
-    conftest.mock_splunk(monkeypatch)
-
+def test_get_proxy_dict():
     session_key = context.get_session_key()
     expected_proxy_dict = VALID_PROXY_DICT
     proxy_dict = conf_manager.get_proxy_dict(
@@ -194,9 +185,7 @@ def test_get_proxy_dict(monkeypatch):
     assert expected_proxy_dict == proxy_dict
 
 
-def test_invalid_proxy_port(monkeypatch):
-    conftest.mock_splunk(monkeypatch)
-
+def test_invalid_proxy_port():
     session_key = context.get_session_key()
 
     with pytest.raises(soln_exceptions.InvalidPortError):
@@ -210,9 +199,7 @@ def test_invalid_proxy_port(monkeypatch):
         )
 
 
-def test_invalid_proxy_host(monkeypatch):
-    conftest.mock_splunk(monkeypatch)
-
+def test_invalid_proxy_host():
     session_key = context.get_session_key()
 
     with pytest.raises(soln_exceptions.InvalidHostnameError):
@@ -238,9 +225,7 @@ def test_conf_manager_exception():
         )
 
 
-def test_conf_stanza_not_exist_exception(monkeypatch):
-    conftest.mock_splunk(monkeypatch)
-
+def test_conf_stanza_not_exist_exception():
     session_key = context.get_session_key()
 
     with pytest.raises(soln_exceptions.ConfStanzaNotExistException):

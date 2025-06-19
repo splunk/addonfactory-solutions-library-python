@@ -13,32 +13,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import pytest
 
-import context
-import conftest
 import os
 import os.path as op
 import sys
 from solnlib import splunkenv
-from unittest import mock
 
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 
 
-@mock.patch("solnlib.splunkenv.getSessionKey")
-def test_splunkenv(mock_get_session_key, monkeypatch):
-    conftest.mock_splunk(monkeypatch)
-    mock_get_session_key.return_value = None
-
+def test_splunkenv():
     assert "SPLUNK_HOME" in os.environ
-
-    sk = context.get_session_key()
 
     splunkhome_path = splunkenv.make_splunkhome_path(["etc", "apps"])
     assert splunkhome_path == op.join(os.environ["SPLUNK_HOME"], "etc", "apps")
 
-    server_name, host_name = splunkenv.get_splunk_host_info(sk)
+    server_name, host_name = splunkenv.get_splunk_host_info()
     assert server_name
     assert host_name
 
@@ -48,20 +38,10 @@ def test_splunkenv(mock_get_session_key, monkeypatch):
         op.join(os.environ["SPLUNK_HOME"], "bin", "splunk.exe"),
     ]
 
-    scheme, host, port = splunkenv.get_splunkd_access_info(sk)
+    scheme, host, port = splunkenv.get_splunkd_access_info()
     assert scheme
     assert host
     assert port
 
-    uri = splunkenv.get_splunkd_uri(sk)
+    uri = splunkenv.get_splunkd_uri()
     assert uri == f"{scheme}://{host}:{port}"
-
-    exp_msg = (
-        "Session key is missing. If you are using 'splunkenv' module in your TA, please ensure you are "
-        "providing session_key to it's functions. For more information "
-        "please see: https://splunk.github.io/addonfactory-solutions-library-python/release_7_0_0/"
-    )
-
-    with pytest.raises(splunkenv.SessionKeyNotFound) as e:
-        splunkenv.get_splunk_host_info()
-    assert e.value.args[0] == exp_msg

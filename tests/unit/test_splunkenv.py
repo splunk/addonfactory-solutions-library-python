@@ -14,6 +14,7 @@
 # limitations under the License.
 #
 
+import os
 from unittest import mock
 
 import common
@@ -22,24 +23,30 @@ import pytest
 from solnlib import splunkenv
 
 
+def test_splunkhome_path(monkeypatch):
+    common.mock_splunkhome(monkeypatch)
+
+    splunkhome_path = splunkenv.make_splunkhome_path(["etc", "apps"])
+    assert splunkhome_path == os.environ["SPLUNK_HOME"] + "etc/apps"
+
+
 def test_get_splunk_host_info(monkeypatch):
     common.mock_splunkhome(monkeypatch)
     common.mock_gethostname(monkeypatch)
 
-    server_name, host_name = splunkenv.get_splunk_host_info("session_key")
+    server_name, host_name = splunkenv.get_splunk_host_info()
     assert server_name == "unittestServer"
     assert host_name == "unittestServer"
 
 
-@mock.patch("solnlib.splunkenv.use_btool")
-def test_get_splunk_host_info_backdoor(mock_flag, monkeypatch):
-    mock_flag.return_value = True
+def test_splunk_bin(monkeypatch):
     common.mock_splunkhome(monkeypatch)
-    common.mock_gethostname(monkeypatch)
 
-    server_name, host_name = splunkenv.get_splunk_host_info("session_key")
-    assert server_name == "unittestServerBtool"
-    assert host_name == "unittestServer"
+    splunk_bin = splunkenv.get_splunk_bin()
+    assert splunk_bin in (
+        os.environ["SPLUNK_HOME"] + "bin/splunk",
+        os.environ["SPLUNK_HOME"] + "bin/splunk.exe",
+    )
 
 
 @mock.patch.object(splunkenv, "get_conf_key_value")
@@ -120,47 +127,17 @@ def test_get_splunkd_access_info(
 def test_splunkd_uri(monkeypatch):
     common.mock_splunkhome(monkeypatch)
 
-    uri = splunkenv.get_splunkd_uri("session_key")
+    uri = splunkenv.get_splunkd_uri()
     assert uri == "https://127.0.0.1:8089"
 
     monkeypatch.setenv("SPLUNK_BINDIP", "10.0.0.2:7080")
-    uri = splunkenv.get_splunkd_uri("session_key")
+    uri = splunkenv.get_splunkd_uri()
     assert uri == "https://10.0.0.2:8089"
 
     monkeypatch.setenv("SPLUNK_BINDIP", "10.0.0.3")
-    uri = splunkenv.get_splunkd_uri("session_key")
+    uri = splunkenv.get_splunkd_uri()
     assert uri == "https://10.0.0.3:8089"
 
     monkeypatch.setenv("SPLUNKD_URI", "https://10.0.0.1:8089")
-    uri = splunkenv.get_splunkd_uri("session_key")
+    uri = splunkenv.get_splunkd_uri()
     assert uri == "https://10.0.0.1:8089"
-
-
-@mock.patch("solnlib.splunkenv.use_btool")
-def test_splunkd_uri_backdoor(mock_flag, monkeypatch):
-    mock_flag.return_value = True
-
-    common.mock_splunkhome(monkeypatch)
-
-    uri = splunkenv.get_splunkd_uri("session_key")
-    assert uri == "http://127.0.0.2:8079"
-
-    monkeypatch.setenv("SPLUNK_BINDIP", "10.0.0.2:7080")
-    uri = splunkenv.get_splunkd_uri("session_key")
-    assert uri == "http://10.0.0.2:8079"
-
-    monkeypatch.setenv("SPLUNK_BINDIP", "10.0.0.3")
-    uri = splunkenv.get_splunkd_uri("session_key")
-    assert uri == "http://10.0.0.3:8079"
-
-    monkeypatch.setenv("SPLUNKD_URI", "https://10.0.0.1:8089")
-    uri = splunkenv.get_splunkd_uri("session_key")
-    assert uri == "https://10.0.0.1:8089"
-
-
-def test_splunkenv_used_outside_splunk_env():
-    with pytest.raises(ImportError) as exc_info:
-        splunkenv._get_conf_stanzas_from_splunk_api(
-            "server", "app", session_key="session_key"
-        )
-    assert exc_info.value.args[0] == "This module requires Splunk to be installed."

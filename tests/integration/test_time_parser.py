@@ -15,7 +15,6 @@
 #
 
 import context
-import conftest
 import datetime
 import os.path as op
 import sys
@@ -25,9 +24,7 @@ from solnlib import time_parser
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 
 
-def test_time_parser(monkeypatch):
-    conftest.mock_splunk(monkeypatch)
-
+def test_time_parser():
     session_key = context.get_session_key()
     tp = time_parser.TimeParser(session_key)
 

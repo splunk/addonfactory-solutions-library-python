@@ -31,7 +31,6 @@ plugins:
 nav:
   - Home: index.md
   - Release 6.0.0: release_6_0_0.md
-  - Release 7.0.0: release_7_0_0.md
   - References:
       - modular_input:
           - "checkpointer.py": modular_input/checkpointer.md
