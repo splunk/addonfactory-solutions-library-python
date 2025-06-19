@@ -27,13 +27,7 @@ sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 def _build_credential_manager(
     realm: Optional[str] = None,
 ) -> credentials.CredentialManager:
-    session_key = credentials.get_session_key(
-        context.username,
-        context.password,
-        scheme=context.scheme,
-        host=context.host,
-        port=context.port,
-    )
+    session_key = context.get_session_key()
     return credentials.CredentialManager(
         session_key,
         context.app,
