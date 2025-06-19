@@ -78,7 +78,7 @@ class ServerInfo:
         """
         is_localhost = False
         if not all([scheme, host, port]) and os.environ.get("SPLUNK_HOME"):
-            scheme, host, port = get_splunkd_access_info()
+            scheme, host, port = get_splunkd_access_info(session_key)
             is_localhost = (
                 host == "localhost" or host == "127.0.0.1" or host in ("::1", "[::1]")
             )

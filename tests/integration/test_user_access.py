@@ -15,6 +15,7 @@
 #
 
 import context
+import conftest
 import os.path as op
 import sys
 
@@ -114,7 +115,9 @@ def test_app_capability_manager():
     assert not acm.capabilities_are_registered()
 
 
-def test_check_user_access():
+def test_check_user_access(monkeypatch):
+    conftest.mock_splunk(monkeypatch)
+
     session_key = context.get_session_key()
     app_capabilities = {
         "object_type1": {
@@ -179,10 +182,10 @@ def test_get_user_roles():
     )
 
 
-def test_user_access():
+def test_user_access(monkeypatch):
     test_object_acl_manager()
     test_app_capability_manager()
-    test_check_user_access()
+    test_check_user_access(monkeypatch)
     test_get_current_username()
     test_get_user_capabilities()
     test_user_is_capable()

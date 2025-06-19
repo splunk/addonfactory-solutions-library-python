@@ -1,0 +1,21 @@
+{
+  "links": {
+    "create": "/servicesNS/nobody/-/configs/conf-server/_new",
+    "_reload": "/servicesNS/nobody/-/configs/conf-server/_reload",
+    "_acl": "/servicesNS/nobody/-/configs/conf-server/_acl"
+  },
+  "origin": "https://127.0.0.1:8089/servicesNS/nobody/-/configs/conf-server",
+  "updated": "2025-05-29T20:31:49+02:00",
+  "generator": {
+    "build": "51ccf43db5bd",
+    "version": "9.3.0"
+  },
+  "entry": [
+    {
+      "content": {
+        "disabled": 0,
+        "enableSSL": 0
+      }
+    }
+  ]
+}

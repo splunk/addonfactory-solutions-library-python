@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 import os.path as op
 import socket
 import subprocess
@@ -72,9 +71,40 @@ def mock_splunkhome(monkeypatch):
             with open(file_path) as fp:
                 return fp.read(), None
 
+    def simple_requests(url, *args, **kwargs):
+        if "conf-server/sslConfig" in url:
+            file_path = op.sep.join(
+                [cur_dir, "data/mock_splunk/etc/system/default/server-sslconfig.json"]
+            )
+        elif "conf-server/general" in url:
+            file_path = op.sep.join(
+                [cur_dir, "data/mock_splunk/etc/system/default/server-general.json"]
+            )
+        elif "conf-inputs" in url:
+            file_path = op.sep.join(
+                [
+                    cur_dir,
+                    "data/mock_splunk/etc/apps/splunk_httpinput/local/inputs.json",
+                ]
+            )
+        else:
+            file_path = op.sep.join(
+                [cur_dir, "data/mock_splunk/etc/system/default/web.json"]
+            )
+        with open(file_path) as fp:
+            data = fp.read(), None
+
+        out = data[0]
+        return "200", out.encode("utf8")
+
+    def get_session_key():
+        return None
+
     splunk_home = op.join(cur_dir, "data/mock_splunk/")
     monkeypatch.setenv("SPLUNK_HOME", splunk_home)
     monkeypatch.setenv("SPLUNK_ETC", op.join(splunk_home, "etc"))
+    monkeypatch.setattr("solnlib.splunkenv.simpleRequest", simple_requests)
+    monkeypatch.setattr("solnlib.splunkenv.getSessionKey", get_session_key)
     monkeypatch.setattr(subprocess, "Popen", MockPopen)
 
 

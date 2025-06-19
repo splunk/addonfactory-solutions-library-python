@@ -15,6 +15,7 @@
 #
 
 import context
+import conftest
 import os.path as op
 import sys
 
@@ -23,7 +24,9 @@ from solnlib import hec_config
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 
 
-def test_hec_config():
+def test_hec_config(monkeypatch):
+    conftest.mock_splunk(monkeypatch)
+
     session_key = context.get_session_key()
     config = hec_config.HECConfig(session_key)
     stanza = {

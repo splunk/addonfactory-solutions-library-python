@@ -16,15 +16,42 @@
 
 """Splunk platform related utilities."""
 
+
 import os
 import os.path as op
 import socket
 import subprocess
+import json
 from configparser import ConfigParser
 from io import StringIO
 from typing import List, Optional, Tuple, Union
-
+import __main__
+from solnlib._settings import use_btool
 from .utils import is_true
+
+try:
+    from splunk.rest import simpleRequest
+except ImportError:
+
+    def simpleRequest(*args, **kwargs):
+        raise ImportError("This module requires Splunk to be installed.")
+
+
+try:
+    from splunk import getSessionKey
+except ImportError:
+
+    def getSessionKey(*args, **kwargs):
+        raise ImportError("This module requires Splunk to be installed.")
+
+
+try:
+    from splunk.clilib.bundle_paths import make_splunkhome_path as msp
+except ImportError:
+
+    def msp(*args, **kwargs):
+        raise ImportError("This module requires Splunk to be installed.")
+
 
 __all__ = [
     "make_splunkhome_path",
@@ -42,56 +69,9 @@ ETC_LEAF = "etc"
 APP_SYSTEM = "system"
 APP_HEC = "splunk_httpinput"
 
-# See validateSearchHeadPooling() in src/libbundle/ConfSettings.cpp
-on_shared_storage = [
-    os.path.join(ETC_LEAF, "apps"),
-    os.path.join(ETC_LEAF, "users"),
-    os.path.join("var", "run", "splunk", "dispatch"),
-    os.path.join("var", "run", "splunk", "srtemp"),
-    os.path.join("var", "run", "splunk", "rss"),
-    os.path.join("var", "run", "splunk", "scheduler"),
-    os.path.join("var", "run", "splunk", "lookup_tmp"),
-]
 
-
-def _splunk_home():
-    return os.path.normpath(os.environ["SPLUNK_HOME"])
-
-
-def _splunk_etc():
-    try:
-        result = os.environ["SPLUNK_ETC"]
-    except KeyError:
-        result = op.join(_splunk_home(), ETC_LEAF)
-
-    return os.path.normpath(result)
-
-
-def _get_shared_storage() -> Optional[str]:
-    """Get splunk shared storage name.
-
-    Returns:
-        Splunk shared storage name.
-    """
-
-    try:
-        state = get_conf_key_value("server", "pooling", "state", APP_SYSTEM)
-        storage = get_conf_key_value("server", "pooling", "storage", APP_SYSTEM)
-    except KeyError:
-        state = "disabled"
-        storage = None
-
-    if state == "enabled" and storage:
-        return storage
-
-    return None
-
-
-# Verify path prefix and return true if both paths have drives
-def _verify_path_prefix(path, start):
-    path_drive = os.path.splitdrive(path)[0]
-    start_drive = os.path.splitdrive(start)[0]
-    return len(path_drive) == len(start_drive)
+class SessionKeyNotFound(Exception):
+    pass
 
 
 def make_splunkhome_path(parts: Union[List, Tuple]) -> str:
@@ -111,53 +91,28 @@ def make_splunkhome_path(parts: Union[List, Tuple]) -> str:
     Raises:
         ValueError: Escape from intended parent directories.
     """
-
-    relpath = os.path.normpath(os.path.join(*parts))
-
-    basepath = None
-    shared_storage = _get_shared_storage()
-    if shared_storage:
-        for candidate in on_shared_storage:
-            # SPL-100508 On windows if the path is missing the drive letter,
-            # construct fullpath manually and call relpath
-            if os.name == "nt" and not _verify_path_prefix(relpath, candidate):
-                break
-
-            if os.path.relpath(relpath, candidate)[0:2] != "..":
-                basepath = shared_storage
-                break
-
-    if basepath is None:
-        etc_with_trailing_sep = os.path.join(ETC_LEAF, "")
-        if relpath == ETC_LEAF or relpath.startswith(etc_with_trailing_sep):
-            # Redirect $SPLUNK_HOME/etc to $SPLUNK_ETC.
-            basepath = _splunk_etc()
-            # Remove leading etc (and path separator, if present). Note: when
-            # emitting $SPLUNK_ETC exactly, with no additional path parts, we
-            # set <relpath> to the empty string.
-            relpath = relpath[4:]
-        else:
-            basepath = _splunk_home()
-
-    fullpath = os.path.normpath(os.path.join(basepath, relpath))
-
-    # Check that we haven't escaped from intended parent directories.
-    if os.path.relpath(fullpath, basepath)[0:2] == "..":
-        raise ValueError(
-            f'Illegal escape from parent directory "{basepath}": {fullpath}'
-        )
-    return fullpath
+    return msp(parts)
 
 
-def get_splunk_host_info() -> Tuple:
+def get_splunk_host_info(session_key: Optional[str] = None) -> Tuple:
     """Get splunk host info.
 
+    Arguments:
+        session_key: Needed to make a call to config endpoint. If 'None', solnlib will try to get it from
+            splunk.getSessionKey() and/or __main__ module and if it won't get it, SessionKeyNotFound will be raised.
     Returns:
         Tuple of (server_name, host_name).
     """
 
-    server_name = get_conf_key_value("server", "general", "serverName", APP_SYSTEM)
+    server_name = get_conf_key_value(
+        "server",
+        "general",
+        "serverName",
+        APP_SYSTEM,
+        session_key=session_key,
+    )
     host_name = socket.gethostname()
+
     return server_name, host_name
 
 
@@ -175,21 +130,35 @@ def get_splunk_bin() -> str:
     return make_splunkhome_path(("bin", splunk_bin))
 
 
-def get_splunkd_access_info() -> Tuple[str, str, int]:
+def get_splunkd_access_info(session_key: Optional[str] = None) -> Tuple[str, str, int]:
     """Get splunkd server access info.
 
+    Arguments:
+        session_key: Needed to make a call to config endpoint. If 'None', solnlib will try to get it from
+            splunk.getSessionKey() and/or __main__ module and if it won't get it, SessionKeyNotFound will be raised.
     Returns:
         Tuple of (scheme, host, port).
     """
+    enable_splunkd_ssl = get_conf_key_value(
+        "server",
+        "sslConfig",
+        "enableSplunkdSSL",
+        APP_SYSTEM,
+        session_key=session_key,
+    )
 
-    if is_true(
-        get_conf_key_value("server", "sslConfig", "enableSplunkdSSL", APP_SYSTEM)
-    ):
+    if is_true(enable_splunkd_ssl):
         scheme = "https"
     else:
         scheme = "http"
 
-    host_port = get_conf_key_value("web", "settings", "mgmtHostPort", APP_SYSTEM)
+    host_port = get_conf_key_value(
+        "web",
+        "settings",
+        "mgmtHostPort",
+        APP_SYSTEM,
+        session_key=session_key,
+    )
     host_port = host_port.strip()
     host_port_split_parts = host_port.split(":")
     host = ":".join(host_port_split_parts[:-1])
@@ -203,14 +172,23 @@ def get_splunkd_access_info() -> Tuple[str, str, int]:
     return scheme, host, port
 
 
-def get_scheme_from_hec_settings() -> str:
+def get_scheme_from_hec_settings(session_key: Optional[str] = None) -> str:
     """Get scheme from HEC global settings.
 
+    Arguments:
+        session_key: Needed to make a call to config endpoint. If 'None', solnlib will try to get it from
+            splunk.getSessionKey() and/or __main__ module and if it won't get it, SessionKeyNotFound will be raised.
     Returns:
         scheme (str)
     """
     try:
-        ssl_enabled = get_conf_key_value("inputs", "http", "enableSSL", APP_HEC)
+        ssl_enabled = get_conf_key_value(
+            "inputs",
+            "http",
+            "enableSSL",
+            APP_HEC,
+            session_key=session_key,
+        )
     except KeyError:
         raise KeyError(
             "Cannot get enableSSL setting form conf: 'inputs' and stanza: '[http]'. "
@@ -227,9 +205,12 @@ def get_scheme_from_hec_settings() -> str:
     return scheme
 
 
-def get_splunkd_uri() -> str:
+def get_splunkd_uri(session_key: Optional[str] = None) -> str:
     """Get splunkd uri.
 
+    Arguments:
+        session_key: Needed to make a call to config endpoint. If 'None', solnlib will try to get it from
+            splunk.getSessionKey() and/or __main__ module and if it won't get it, SessionKeyNotFound will be raised.
     Returns:
         Splunkd uri.
     """
@@ -237,20 +218,32 @@ def get_splunkd_uri() -> str:
     if os.environ.get("SPLUNKD_URI"):
         return os.environ["SPLUNKD_URI"]
 
-    scheme, host, port = get_splunkd_access_info()
+    scheme, host, port = get_splunkd_access_info(session_key)
     return f"{scheme}://{host}:{port}"
 
 
 def get_conf_key_value(
-    conf_name: str, stanza: str, key: str, app_name: Optional[str] = None
+    conf_name: str,
+    stanza: str,
+    key: str,
+    app_name: str,
+    session_key: Optional[str] = None,
+    user: str = "nobody",
+    raw_output: Optional[bool] = False,
 ) -> Union[str, List, dict]:
     """Get value of `key` of `stanza` in `conf_name`.
 
     Arguments:
         conf_name: Config file.
         stanza: Stanza name.
-        key: Key name.
-        app_name: Application name. Optional.
+        key: Key name in the stanza.
+        app_name: Application name. To make a call to global context use '-' as app_name and set raw_output=True.
+            In that case manual parsing is needed as response may be the list with multiple entries.
+        session_key: Needed to make a call to config endpoint. If 'None', solnlib will try to get it from
+            splunk.getSessionKey() and/or __main__ module and if it won't get it, SessionKeyNotFound will be raised.
+        user: used for set user context in API call. Optional.
+        raw_output: if 'true' full, decoded response in json format will be returned. It should be set to True when
+            app_name is a global context '/-/'. In that case splunk API may return multiple entries.
 
     Returns:
         Config value.
@@ -259,19 +252,43 @@ def get_conf_key_value(
         KeyError: If `stanza` or `key` doesn't exist.
     """
 
-    stanzas = get_conf_stanzas(conf_name, app_name)
-    return stanzas[stanza][key]
+    if use_btool:
+        app = None if app_name == "-" else app_name
+        stanzas = get_conf_stanzas(conf_name, app)
+        return stanzas[stanza][key]
+
+    stanzas = _get_conf_stanzas_from_splunk_api(
+        conf_name, app_name, session_key=session_key, user=user, stanza=stanza
+    )
+
+    if raw_output:
+        return stanzas
+
+    stanza = stanzas.get("entry")[0].get("content")
+    requested_key = stanza[key]
+    return requested_key
 
 
 def get_conf_stanza(
-    conf_name: str, stanza: str, app_name: Optional[str] = None
+    conf_name: str,
+    stanza: str,
+    app_name: str,
+    session_key: Optional[str] = None,
+    user: str = "nobody",
+    raw_output: Optional[bool] = False,
 ) -> dict:
     """Get `stanza` in `conf_name`.
 
     Arguments:
         conf_name: Config file.
         stanza: Stanza name.
-        app_name: Application name. Optional.
+        app_name: Application name. To make a call to global context use '-' as app_name and set raw_output=True.
+            In that case manual parsing is needed as response may be the list with multiple entries.
+        session_key: Needed to make a call to config endpoint. If 'None', solnlib will try to get it from
+            splunk.getSessionKey() and/or __main__ module and if it won't get it, SessionKeyNotFound will be raised.
+        user: used for set user context in API call. Optional.
+        raw_output: if 'true' full, decoded response in json format will be returned. It should be set to True when
+            app_name is a global context '/-/'. In that case splunk API may return multiple entries.
 
     Returns:
         Config stanza.
@@ -280,8 +297,20 @@ def get_conf_stanza(
          KeyError: If stanza doesn't exist.
     """
 
-    stanzas = get_conf_stanzas(conf_name, app_name)
-    return stanzas[stanza]
+    if use_btool:
+        app = None if app_name == "-" else app_name
+        stanzas = get_conf_stanzas(conf_name, app)
+        return stanzas[stanza]
+
+    stanzas = _get_conf_stanzas_from_splunk_api(
+        conf_name, app_name, session_key=session_key, user=user, stanza=stanza
+    )
+
+    if raw_output:
+        return stanzas
+
+    stanza = stanzas.get("entry")[0].get("content")
+    return stanza
 
 
 def get_conf_stanzas(conf_name: str, app_name: Optional[str] = None) -> dict:
@@ -330,3 +359,56 @@ def get_conf_stanzas(conf_name: str, app_name: Optional[str] = None) -> dict:
     for section in parser.sections():
         out[section] = {item[0]: item[1] for item in parser.items(section, raw=True)}
     return out
+
+
+def _get_conf_stanzas_from_splunk_api(
+    conf_name: str,
+    app_name: str,
+    session_key: Optional[str] = None,
+    user: str = "nobody",
+    stanza: Optional[str] = None,
+) -> dict:
+    """Get stanzas of `conf_name` using splunk API:
+
+    /servicesNS/{user}/{app_name}/configs/conf-{conf_name}/{stanza}
+
+    Arguments:
+        conf_name: Config file.
+        app_name: Application name. To make a call to global context use '-' as app_name and set raw_output=True.
+            In that case manual parsing is needed as response may be the list with multiple entries.
+        session_key: Needed to make a call to config endpoint. If 'None', solnlib will try to get it from
+            splunk.getSessionKey() and/or __main__ module and if it won't get it, SessionKeyNotFound will be raised.
+        user: used for set user context in API call. Optional.
+        stanza: Stanza name. Optional.
+
+    Returns:
+        json response.
+    """
+
+    url = f"/servicesNS/{user}/{app_name}/configs/conf-{conf_name}"
+
+    if stanza:
+        url = url + "/" + stanza
+
+    if not session_key:
+        session_key = getSessionKey()
+
+    if not session_key and hasattr(__main__, "___sessionKey"):
+        session_key = getattr(__main__, "___sessionKey")
+
+    if not session_key:
+        raise SessionKeyNotFound(
+            "Session key is missing. If you are using 'splunkenv' module in your TA, please ensure you are "
+            "providing session_key to it's functions. For more information "
+            "please see: https://splunk.github.io/addonfactory-solutions-library-python/release_7_0_0/"
+        )
+
+    server_response, server_content = simpleRequest(
+        url,
+        sessionKey=session_key,
+        getargs={"output_mode": "json"},
+    )
+
+    result = json.loads(server_content.decode())
+
+    return result
