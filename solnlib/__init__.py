@@ -56,4 +56,4 @@ __all__ = [
     "utils",
 ]
 
-__version__ = "6.3.0-beta.2"
+__version__ = "6.3.0"
