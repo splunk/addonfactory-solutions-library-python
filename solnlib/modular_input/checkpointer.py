@@ -19,7 +19,6 @@ FileCheckpointer for modular input to save checkpoint."""
 
 import base64
 import json
-import logging
 import os
 import os.path as op
 import traceback
@@ -30,6 +29,9 @@ from typing import Any, Dict, Iterable, Optional
 from splunklib import binding
 
 from solnlib import _utils, utils
+
+from solnlib.log import Logs
+logger = Logs().get_logger(__name__)
 
 __all__ = ["CheckpointerException", "KVStoreCheckpointer", "FileCheckpointer"]
 
@@ -178,7 +180,7 @@ class KVStoreCheckpointer(Checkpointer):
             record = self._collection_data.query_by_id(key)
         except binding.HTTPError as e:
             if e.status != 404:
-                logging.error(f"Get checkpoint failed: {traceback.format_exc()}.")
+                logger.error(f"Get checkpoint failed: {traceback.format_exc()}.")
                 raise
             return None
         return json.loads(record["state"])
@@ -199,7 +201,7 @@ class KVStoreCheckpointer(Checkpointer):
             self._collection_data.delete_by_id(key)
         except binding.HTTPError as e:
             if e.status != 404:
-                logging.error(f"Delete checkpoint failed: {traceback.format_exc()}.")
+                logger.error(f"Delete checkpoint failed: {traceback.format_exc()}.")
                 raise
 
 

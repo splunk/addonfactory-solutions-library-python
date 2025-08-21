@@ -24,6 +24,10 @@ import time
 import traceback
 from typing import Any, Callable, List
 
+from solnlib.log import Logs
+logger = Logs().get_logger(__name__)
+
+
 __all__ = ["FileChangesChecker", "FileMonitor"]
 
 
@@ -45,7 +49,8 @@ class FileChangesChecker:
             try:
                 self.file_mtimes[k] = op.getmtime(k)
             except OSError:
-                logging.debug(f"Getmtime for {k}, failed: {traceback.format_exc()}")
+                logging.debug(f"Getmtime for {k}, failed: {traceback.format_exc()}")  # deprecated
+                logger.debug(f"Getmtime for {k}, failed: {traceback.format_exc()}")
 
     def check_changes(self) -> bool:
         """Check files change.
@@ -56,7 +61,7 @@ class FileChangesChecker:
         Returns:
             True if files changed else False
         """
-        logging.debug(f"Checking files={self._files}")
+        logger.debug(f"Checking files={self._files}")
         file_mtimes = self.file_mtimes
         changed_files = []
         for f, last_mtime in list(file_mtimes.items()):
@@ -65,7 +70,7 @@ class FileChangesChecker:
                 if current_mtime != last_mtime:
                     file_mtimes[f] = current_mtime
                     changed_files.append(f)
-                    logging.info(f"Detect {f} has changed", f)
+                    logger.info(f"Detect {f} has changed", f)
             except OSError:
                 pass
         if changed_files:

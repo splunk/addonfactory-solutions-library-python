@@ -17,7 +17,6 @@
 """Common utilities."""
 
 import datetime
-import logging
 import os
 import signal
 import time
@@ -25,6 +24,10 @@ import traceback
 from functools import wraps
 from typing import Any, Callable, List, Tuple, Union
 from urllib import parse as urlparse
+
+
+from solnlib.log import Logs
+logger = Logs().get_logger(__name__)
 
 __all__ = [
     "handle_teardown_signals",
@@ -152,7 +155,7 @@ def retry(
                 try:
                     return func(*args, **kwargs)
                 except Exception as e:
-                    logging.warning(
+                    logger.warning(
                         "Run function: %s failed: %s.",
                         func.__name__,
                         traceback.format_exc(),

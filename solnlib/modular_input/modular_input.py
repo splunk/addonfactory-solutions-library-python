@@ -16,7 +16,6 @@
 
 """This module provides a base class of Splunk modular input."""
 
-import logging
 import sys
 import traceback
 from abc import ABCMeta, abstractmethod
@@ -34,6 +33,9 @@ from splunklib.modularinput.validation_definition import ValidationDefinition
 from .. import utils
 from ..orphan_process_monitor import OrphanProcessMonitor
 from . import checkpointer, event_writer
+
+from solnlib.log import Logs
+logger = Logs().get_logger(__name__)
 
 __all__ = ["ModularInputException", "ModularInput"]
 
@@ -196,7 +198,7 @@ class ModularInput(metaclass=ABCMeta):
                     port=self.server_port,
                 )
             except binding.HTTPError:
-                logging.error(
+                logger.error(
                     "Failed to init kvstore checkpointer: %s.", traceback.format_exc()
                 )
                 raise
@@ -234,7 +236,7 @@ class ModularInput(metaclass=ABCMeta):
                     global_settings_schema=self.hec_global_settings_schema,
                 )
             except binding.HTTPError:
-                logging.error(
+                logger.error(
                     "Failed to init HECEventWriter: %s.", traceback.format_exc()
                 )
                 raise
@@ -464,10 +466,10 @@ class ModularInput(metaclass=ABCMeta):
                 else:
                     self.config_name = list(input_definition["inputs"].keys())[0]
                 self.do_run(input_definition["inputs"])
-                logging.info("Modular input: %s exit normally.", self.name)
+                logger.info("Modular input: %s exit normally.", self.name)
                 return 0
             except Exception:
-                logging.error(
+                logger.error(
                     "Modular input: %s exit with exception: %s.",
                     self.name,
                     traceback.format_exc(),
@@ -490,7 +492,7 @@ class ModularInput(metaclass=ABCMeta):
                 self.do_validation(validation_definition["parameters"])
                 return 0
             except Exception as e:
-                logging.error(
+                logger.error(
                     "Modular input: %s validate arguments with exception: %s.",
                     self.name,
                     traceback.format_exc(),
@@ -501,7 +503,7 @@ class ModularInput(metaclass=ABCMeta):
                 sys.stderr.flush()
                 return 1
         else:
-            logging.error(
+            logger.error(
                 'Modular input: %s run with invalid arguments: "%s".',
                 self.name,
                 " ".join(sys.argv[1:]),

@@ -25,6 +25,10 @@ from typing import Callable, List, Tuple
 
 import sortedcontainers as sc
 
+from solnlib.log import Logs
+logger = Logs().get_logger(__name__)
+
+
 __all__ = ["Timer", "TimerQueueStruct", "TimerQueue"]
 
 
@@ -123,6 +127,9 @@ class TimerQueueStruct:
         except ValueError:
             logging.info(
                 "Timer=%s is not in queue, move it to cancelling " "list", timer.ident
+            )  # deprecated
+            logger.info(
+                "Timer=%s is not in queue, move it to cancelling " "list", timer.ident
             )
         else:
             self._cancelling_timers[timer.ident] = timer
@@ -184,7 +191,8 @@ class TimerQueueStruct:
             try:
                 timer()
             except Exception:
-                logging.error(traceback.format_exc())
+                logging.error(traceback.format_exc())  # deprecated
+                logger.error(traceback.format_exc())
 
         self.reset_timers(expired_timers)
         return _calc_sleep_time(next_expired_time)
@@ -231,7 +239,7 @@ class TimerQueue:
         self._started = True
 
         self._thr.start()
-        logging.info("TimerQueue started.")
+        logger.info("TimerQueue started.")
 
     def stop(self):
         """Stop the timer queue."""
@@ -284,7 +292,8 @@ class TimerQueue:
                     # Note, please make timer callback effective/short
                     timer()
                 except Exception:
-                    logging.error(traceback.format_exc())
+                    logging.error(traceback.format_exc())  # deprecated
+                    logger.error(traceback.format_exc())
 
             self._reset_timers(expired_timers)
 
@@ -295,7 +304,7 @@ class TimerQueue:
                     break
             except Queue.Empty:
                 pass
-        logging.info("TimerQueue stopped.")
+        logger.info("TimerQueue stopped.")
 
     def _get_expired_timers(self):
         with self._lock:

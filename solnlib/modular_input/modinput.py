@@ -19,7 +19,9 @@ import sys
 import traceback
 
 import solnlib.splunkenv as sp
-import logging
+
+from solnlib.log import Logs
+logger = Logs().get_logger(__name__)
 
 
 def _parse_modinput_configs(root, outer_block, inner_block):
@@ -62,7 +64,7 @@ def _parse_modinput_configs(root, outer_block, inner_block):
 
     confs = root.getElementsByTagName(outer_block)
     if not confs:
-        logging.error("Invalid config, missing %s section", outer_block)
+        logger.error("Invalid config, missing %s section", outer_block)
         raise Exception(f"Invalid config, missing {outer_block} section")
 
     configs = []
@@ -71,7 +73,7 @@ def _parse_modinput_configs(root, outer_block, inner_block):
         config = {}
         stanza_name = stanza.getAttribute("name")
         if not stanza_name:
-            logging.error("Invalid config, missing name")
+            logger.error("Invalid config, missing name")
             raise Exception("Invalid config, missing name")
 
         config["name"] = stanza_name
@@ -107,13 +109,13 @@ def parse_modinput_configs(config_str):
     for tag in meta_configs.keys():
         nodes = doc.getElementsByTagName(tag)
         if not nodes:
-            logging.error("Invalid config, missing %s section", tag)
+            logger.error("Invalid config, missing %s section", tag)
             raise Exception("Invalid config, missing %s section", tag)
 
         if nodes[0].firstChild and nodes[0].firstChild.nodeType == nodes[0].TEXT_NODE:
             meta_configs[tag] = nodes[0].firstChild.data
         else:
-            logging.error("Invalid config, expect text ndoe")
+            logger.error("Invalid config, expect text ndoe")
             raise Exception("Invalid config, expect text ndoe")
 
     if doc.nodeName == "input":
@@ -140,7 +142,7 @@ def get_modinput_configs_from_cli(modinput, modinput_stanza=None):
         cli, stdout=subprocess.PIPE, stderr=subprocess.PIPE
     ).communicate()
     if err:
-        logging.error("Failed to get modinput configs with error: %s", err)
+        logger.error("Failed to get modinput configs with error: %s", err)
         return None, None
     else:
         return parse_modinput_configs(out)
@@ -152,7 +154,7 @@ def get_modinput_config_str_from_stdin():
     try:
         return sys.stdin.read(5000)
     except Exception:
-        logging.error(traceback.format_exc())
+        logger.error(traceback.format_exc())
         raise
 
 
