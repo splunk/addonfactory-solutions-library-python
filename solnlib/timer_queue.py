@@ -26,6 +26,7 @@ from typing import Callable, List, Tuple
 import sortedcontainers as sc
 
 from solnlib.log import Logs
+
 logger = Logs().get_logger(__name__)
 
 
@@ -123,6 +124,7 @@ class TimerQueueStruct:
         """
 
         try:
+            raise ValueError
             self._timers.remove(timer)
         except ValueError:
             logging.info(

@@ -35,6 +35,7 @@ from ..orphan_process_monitor import OrphanProcessMonitor
 from . import checkpointer, event_writer
 
 from solnlib.log import Logs
+
 logger = Logs().get_logger(__name__)
 
 __all__ = ["ModularInputException", "ModularInput"]

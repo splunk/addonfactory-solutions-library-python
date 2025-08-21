@@ -21,6 +21,7 @@ import traceback
 import solnlib.splunkenv as sp
 
 from solnlib.log import Logs
+
 logger = Logs().get_logger(__name__)
 
 

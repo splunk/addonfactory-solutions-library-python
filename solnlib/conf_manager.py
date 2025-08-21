@@ -37,6 +37,7 @@ from .soln_exceptions import (
 )
 
 from solnlib.log import Logs
+
 logger = Logs().get_logger(__name__)
 
 __all__ = [

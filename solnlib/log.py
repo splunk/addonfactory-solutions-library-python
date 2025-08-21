@@ -25,7 +25,14 @@ from threading import Lock
 from typing import Dict, Any
 
 from .pattern import Singleton
-from .splunkenv import make_splunkhome_path
+
+try:
+    from splunk.clilib.bundle_paths import make_splunkhome_path as msp
+except ImportError:
+
+    def msp(*args, **kwargs):
+        raise ImportError("This module requires Splunk to be installed.")
+
 
 __all__ = ["log_enter_exit", "LogException", "Logs"]
 
@@ -147,7 +154,7 @@ class Logs(metaclass=Singleton):
             directory = cls._default_directory
         else:
             try:
-                directory = make_splunkhome_path(["var", "log", "splunk"])
+                directory = msp(["var", "log", "splunk"])
             except KeyError:
                 raise LogException(
                     "Log directory is empty, please set log directory "

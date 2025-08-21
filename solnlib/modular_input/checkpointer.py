@@ -31,6 +31,7 @@ from splunklib import binding
 from solnlib import _utils, utils
 
 from solnlib.log import Logs
+
 logger = Logs().get_logger(__name__)
 
 __all__ = ["CheckpointerException", "KVStoreCheckpointer", "FileCheckpointer"]

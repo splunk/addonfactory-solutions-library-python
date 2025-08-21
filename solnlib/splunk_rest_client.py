@@ -35,6 +35,7 @@ from .net_utils import validate_scheme_host_port
 from .splunkenv import get_splunkd_access_info
 
 from solnlib.log import Logs
+
 logger = Logs().get_logger(__name__)
 
 __all__ = ["SplunkRestClient"]

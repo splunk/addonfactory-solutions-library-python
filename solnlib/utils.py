@@ -27,6 +27,7 @@ from urllib import parse as urlparse
 
 
 from solnlib.log import Logs
+
 logger = Logs().get_logger(__name__)
 
 __all__ = [

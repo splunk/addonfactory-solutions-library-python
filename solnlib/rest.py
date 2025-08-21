@@ -29,14 +29,14 @@ logger = Logs().get_logger(__name__)
 
 
 def splunkd_request(
-        splunkd_uri,
-        session_key,
-        method="GET",
-        headers=None,
-        data=None,
-        timeout=300,
-        retry=1,
-        verify=False,
+    splunkd_uri,
+    session_key,
+    method="GET",
+    headers=None,
+    data=None,
+    timeout=300,
+    retry=1,
+    verify=False,
 ) -> Optional[requests.Response]:
     headers = headers if headers is not None else {}
     headers["Authorization"] = f"Splunk {session_key}"
@@ -68,15 +68,21 @@ def splunkd_request(
             )
         except Exception as e:
             logging.error(msg_temp, splunkd_uri, "unknown", format_exc())  # deprecated
-            log_exception(logger, e, exc_label="unknown",
-                          msg_before=f"Failed to send rest request={splunkd_uri}, errcode=unknown")
+            log_exception(
+                logger,
+                e,
+                exc_label="unknown",
+                msg_before=f"Failed to send rest request={splunkd_uri}, errcode=unknown",
+            )
         else:
             if resp.status_code not in (200, 201):
                 if not (method == "GET" and resp.status_code == 404):
                     logging.debug(
                         msg_temp, splunkd_uri, resp.status_code, code_to_msg(resp)
                     )  # deprecated
-                    logger.debug(msg_temp, splunkd_uri, resp.status_code, code_to_msg(resp))
+                    logger.debug(
+                        msg_temp, splunkd_uri, resp.status_code, code_to_msg(resp)
+                    )
             else:
                 return resp
     else:
