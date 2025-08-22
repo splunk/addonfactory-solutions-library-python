@@ -17,6 +17,7 @@
 """Common utilities."""
 
 import datetime
+import logging
 import os
 import signal
 import time
@@ -156,6 +157,11 @@ def retry(
                 try:
                     return func(*args, **kwargs)
                 except Exception as e:
+                    logging.warning(
+                        "Run function: %s failed: %s.",
+                        func.__name__,
+                        traceback.format_exc(),
+                    )  # deprecated
                     logger.warning(
                         "Run function: %s failed: %s.",
                         func.__name__,
