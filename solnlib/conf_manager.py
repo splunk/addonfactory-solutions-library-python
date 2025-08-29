@@ -36,9 +36,11 @@ from .soln_exceptions import (
     InvalidHostnameError,
 )
 
-from solnlib.log import Logs
+from solnlib.utils import get_solnlib_logger
 
-logger = Logs().get_logger(__name__)
+logger = get_solnlib_logger(__name__)
+
+
 
 __all__ = [
     "ConfFile",
@@ -342,7 +344,7 @@ class ConfFile:
         try:
             self._conf.delete(stanza_name)
         except KeyError:
-            logger.error(
+            logger().error(
                 "Delete stanza: %s error: %s.", stanza_name, traceback.format_exc()
             )
             raise ConfStanzaNotExistException(

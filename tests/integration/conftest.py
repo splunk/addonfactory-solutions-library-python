@@ -1,31 +1,9 @@
 import os
 import sys
-import os.path as op
-from unittest.mock import MagicMock
 
 import pytest
 
 import context
-
-
-cur_dir = op.dirname(op.abspath(__file__))
-
-
-# Mock only once globally, before anything imports `log.py`
-mock_msp = MagicMock(return_value=op.sep.join([cur_dir, "data/mock_log"]))
-mock_bundle_paths = MagicMock()
-mock_bundle_paths.make_splunkhome_path = mock_msp
-
-sys.modules["splunk"] = MagicMock()
-sys.modules["splunk.clilib"] = MagicMock()
-sys.modules["splunk.clilib.bundle_paths"] = mock_bundle_paths
-
-
-@pytest.fixture(autouse=True)
-def patch_log_msp(monkeypatch):
-    """Ensure log.msp is patched in all tests after mocking sys.modules."""
-    from solnlib import log  # only import after sys.modules is patched
-    monkeypatch.setattr(log, "msp", mock_msp)
 
 
 @pytest.fixture(autouse=True, scope="session")

@@ -30,7 +30,9 @@ from unittest import mock
 
 from solnlib import log
 
-reset_root_log_path = os.path.join(".", ".root_log")
+cur_dir = os.path.dirname(os.path.abspath(__file__))
+
+reset_root_log_path = os.path.sep.join([cur_dir, "data/mock_log"])
 
 
 def setup_module(module):
@@ -45,7 +47,6 @@ def setup_module(module):
 
 def teardown_module(module):
     shutil.rmtree("./.log")
-    shutil.rmtree(reset_root_log_path)
 
 
 def multiprocess_worker(logger_ref):

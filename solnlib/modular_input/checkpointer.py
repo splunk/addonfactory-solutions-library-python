@@ -30,9 +30,9 @@ from splunklib import binding
 
 from solnlib import _utils, utils
 
-from solnlib.log import Logs
+from solnlib.utils import get_solnlib_logger
 
-logger = Logs().get_logger(__name__)
+logger = get_solnlib_logger(__name__)
 
 __all__ = ["CheckpointerException", "KVStoreCheckpointer", "FileCheckpointer"]
 
@@ -181,7 +181,7 @@ class KVStoreCheckpointer(Checkpointer):
             record = self._collection_data.query_by_id(key)
         except binding.HTTPError as e:
             if e.status != 404:
-                logger.error(f"Get checkpoint failed: {traceback.format_exc()}.")
+                logger().error(f"Get checkpoint failed: {traceback.format_exc()}.")
                 raise
             return None
         return json.loads(record["state"])
@@ -202,7 +202,7 @@ class KVStoreCheckpointer(Checkpointer):
             self._collection_data.delete_by_id(key)
         except binding.HTTPError as e:
             if e.status != 404:
-                logger.error(f"Delete checkpoint failed: {traceback.format_exc()}.")
+                logger().error(f"Delete checkpoint failed: {traceback.format_exc()}.")
                 raise
 
 

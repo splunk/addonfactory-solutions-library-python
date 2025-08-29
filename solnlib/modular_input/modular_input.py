@@ -34,9 +34,9 @@ from .. import utils
 from ..orphan_process_monitor import OrphanProcessMonitor
 from . import checkpointer, event_writer
 
-from solnlib.log import Logs
+from solnlib.utils import get_solnlib_logger
 
-logger = Logs().get_logger(__name__)
+logger = get_solnlib_logger(__name__)
 
 __all__ = ["ModularInputException", "ModularInput"]
 
@@ -199,7 +199,7 @@ class ModularInput(metaclass=ABCMeta):
                     port=self.server_port,
                 )
             except binding.HTTPError:
-                logger.error(
+                logger().error(
                     "Failed to init kvstore checkpointer: %s.", traceback.format_exc()
                 )
                 raise
@@ -237,7 +237,7 @@ class ModularInput(metaclass=ABCMeta):
                     global_settings_schema=self.hec_global_settings_schema,
                 )
             except binding.HTTPError:
-                logger.error(
+                logger().error(
                     "Failed to init HECEventWriter: %s.", traceback.format_exc()
                 )
                 raise
@@ -467,10 +467,10 @@ class ModularInput(metaclass=ABCMeta):
                 else:
                     self.config_name = list(input_definition["inputs"].keys())[0]
                 self.do_run(input_definition["inputs"])
-                logger.info("Modular input: %s exit normally.", self.name)
+                logger().info("Modular input: %s exit normally.", self.name)
                 return 0
             except Exception:
-                logger.error(
+                logger().error(
                     "Modular input: %s exit with exception: %s.",
                     self.name,
                     traceback.format_exc(),
@@ -493,7 +493,7 @@ class ModularInput(metaclass=ABCMeta):
                 self.do_validation(validation_definition["parameters"])
                 return 0
             except Exception as e:
-                logger.error(
+                logger().error(
                     "Modular input: %s validate arguments with exception: %s.",
                     self.name,
                     traceback.format_exc(),
@@ -504,7 +504,7 @@ class ModularInput(metaclass=ABCMeta):
                 sys.stderr.flush()
                 return 1
         else:
-            logger.error(
+            logger().error(
                 'Modular input: %s run with invalid arguments: "%s".',
                 self.name,
                 " ".join(sys.argv[1:]),

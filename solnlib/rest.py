@@ -23,9 +23,11 @@ import requests
 
 import logging
 
-from solnlib.log import Logs, log_exception
+from solnlib.log import log_exception
 
-logger = Logs().get_logger(__name__)
+from solnlib.utils import get_solnlib_logger
+
+logger = get_solnlib_logger(__name__)
 
 
 def splunkd_request(
@@ -69,7 +71,7 @@ def splunkd_request(
         except Exception as e:
             logging.error(msg_temp, splunkd_uri, "unknown", format_exc())  # deprecated
             log_exception(
-                logger,
+                logger(),
                 e,
                 exc_label="unknown",
                 msg_before=f"Failed to send rest request={splunkd_uri}, errcode=unknown",
@@ -80,7 +82,7 @@ def splunkd_request(
                     logging.debug(
                         msg_temp, splunkd_uri, resp.status_code, code_to_msg(resp)
                     )  # deprecated
-                    logger.debug(
+                    logger().debug(
                         msg_temp, splunkd_uri, resp.status_code, code_to_msg(resp)
                     )
             else:
