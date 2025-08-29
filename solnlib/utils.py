@@ -30,6 +30,7 @@ from solnlib.log import Logs
 
 
 __all__ = [
+    "get_solnlib_logger",
     "handle_teardown_signals",
     "datetime_to_seconds",
     "is_true",
@@ -232,4 +233,5 @@ def get_solnlib_logger(name):
         if _logger is None:
             _logger = Logs().get_logger(name)
         return _logger
+
     return logger

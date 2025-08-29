@@ -18,7 +18,6 @@ import context
 import conftest
 import os.path as op
 import sys
-from unittest import mock
 import pytest
 
 from solnlib import user_access

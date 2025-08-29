@@ -29,8 +29,6 @@ from solnlib.utils import get_solnlib_logger
 logger = get_solnlib_logger(__name__)
 
 
-
-
 __all__ = ["FileChangesChecker", "FileMonitor"]
 
 

@@ -25,9 +25,9 @@ from typing import Callable, List, Tuple
 
 import sortedcontainers as sc
 
-from solnlib.log import Logs
+from solnlib.utils import get_solnlib_logger
 
-
+logger = get_solnlib_logger(__name__)
 
 
 __all__ = ["Timer", "TimerQueueStruct", "TimerQueue"]
@@ -193,8 +193,7 @@ class TimerQueueStruct:
             try:
                 timer()
             except Exception:
-                logging.error(traceback.format_exc())
-                logger = Logs().get_logger(__name__)# deprecated
+                logging.error(traceback.format_exc())  # deprecated
                 logger.error(traceback.format_exc())
 
         self.reset_timers(expired_timers)
@@ -242,7 +241,6 @@ class TimerQueue:
         self._started = True
 
         self._thr.start()
-        logger = Logs().get_logger(__name__)
         logger.info("TimerQueue started.")
 
     def stop(self):
@@ -296,8 +294,7 @@ class TimerQueue:
                     # Note, please make timer callback effective/short
                     timer()
                 except Exception:
-                    logging.error(traceback.format_exc())
-                    logger = Logs().get_logger(__name__)# deprecated
+                    logging.error(traceback.format_exc())  # deprecated
                     logger.error(traceback.format_exc())
 
             self._reset_timers(expired_timers)
