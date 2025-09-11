@@ -219,4 +219,3 @@ def get_appname_from_path(absolute_path):
                 pass
             continue
     return "-"
-

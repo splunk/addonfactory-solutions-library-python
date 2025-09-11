@@ -21,10 +21,9 @@ from types import ModuleType
 import shutil
 import importlib
 
+
 def _is_module_from_splunk_core(lib_module: ModuleType) -> bool:
-    """
-    Check if the imported module is from the Splunk-provided libraries.
-    """
+    """Check if the imported module is from the Splunk-provided libraries."""
     core_site_packages_regex = _get_core_site_packages_regex()
 
     splunk_site_packages_paths = [
@@ -42,16 +41,13 @@ def _is_module_from_splunk_core(lib_module: ModuleType) -> bool:
 def _is_core_site_package_path(
     core_site_packages_directory: str, module_name: str, module_path: str
 ) -> bool:
-    """
-    Check if the module path originates from a core site-packages directory.
-    """
+    """Check if the module path originates from a core site-packages
+    directory."""
     return os.path.join(core_site_packages_directory, module_name) in module_path
 
 
 def _get_core_site_packages_regex() -> re.Pattern:
-    """
-    Get the regex pattern for matching site-packages directories.
-    """
+    """Get the regex pattern for matching site-packages directories."""
     sep = os.path.sep
     sep_escaped = re.escape(sep)
 
@@ -78,15 +74,18 @@ def _get_core_site_packages_regex() -> re.Pattern:
 
 
 def _cache_lib(lib_name: str):
-    """
-    Import the Splunk-shipped library first, before adding TA paths to sys.path, to ensure it is cached.
-    This way, even if the TA path added to sys.path contains the specified library,
-    Python will always reference the already cached library from the Splunk Python path.
+    """Import the Splunk-shipped library first, before adding TA paths to
+    sys.path, to ensure it is cached.
+
+    This way, even if the TA path added to sys.path contains the
+    specified library, Python will always reference the already cached
+    library from the Splunk Python path.
     """
     lib_module = importlib.import_module(lib_name)
     assert _is_module_from_splunk_core(
         lib_module
     ), f"The module {lib_name} is not from Splunk core site-packages."
+
 
 def _get_app_path(absolute_path: str, current_script_folder: str = "lib") -> str:
     """Returns app path."""
@@ -101,27 +100,32 @@ def _get_app_path(absolute_path: str, current_script_folder: str = "lib") -> str
     path = absolute_path[:end]
     return path
 
+
 def _remove_lib_folder(lib_name: str):
+    """List and attempt to remove any folders directly under the 'lib'
+    directory that contain lib_name in their name.
+
+    Handles exceptions during removal, allowing the script to proceed
+    even if errors occur.
     """
-    List and attempt to remove any folders directly under the 'lib' directory that contain lib_name in their name.
-    Handles exceptions during removal, allowing the script to proceed even if errors occur.
-    """
+
+    app_dir = _get_app_path(os.path.abspath(__file__))
+    if app_dir is None:
+        print(f"WARNING: Unable to determine app directory path for {lib_name}")
+        return
+
+    lib_dir = os.path.join(app_dir, "lib")
 
     try:
-        app_dir = _get_app_path(os.path.abspath(__file__))
-        lib_dir = os.path.join(app_dir, "lib")
-
         for entry in os.listdir(lib_dir):
             entry_path = os.path.join(lib_dir, entry)
             if os.path.isdir(entry_path) and lib_name in entry:
                 try:
                     shutil.rmtree(entry_path)
-                except Exception:
-                    # Bypassing exceptions to ensure uninterrupted execution
-                    pass
-    except Exception:
-        # Bypassing exceptions to ensure uninterrupted execution
-        pass
+                except Exception as e:
+                    print(f"ERROR: Failed to remove library folder {entry_path}: {e}")
+    except Exception as e:
+        print(f"ERROR: Error in _remove_lib_folder for {lib_name}: {e}")
 
 
 def handle_splunk_provided_lib(lib_name: str):
