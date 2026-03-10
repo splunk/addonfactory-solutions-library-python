@@ -14,7 +14,46 @@
 # limitations under the License.
 #
 
-"""OpenTelemetry observability utilities for Splunk add-ons."""
+"""OpenTelemetry observability utilities for Splunk add-ons.
+
+This module provides two public components:
+
+- :class:`LoggerMetricExporter` — an OpenTelemetry ``MetricExporter`` that
+  writes every exported data point to a standard Python logger.  It is useful
+  for local development, debugging, and as a fallback when the Spotlight
+  collector is not available.
+
+- :class:`ObservabilityService` — a high-level wrapper that wires up a
+  ``MeterProvider`` and creates the two mandatory event counters required by
+  every Splunk add-on modular input.  It automatically tries to connect to the
+  Splunk Spotlight OTLP collector and falls back silently when it is not
+  reachable, so callers never have to handle observability failures themselves.
+
+Typical usage::
+
+    import logging
+    from solnlib.observability import LoggerMetricExporter, ObservabilityService, ATTR_MODINPUT_NAME
+
+    logger = logging.getLogger(__name__)
+
+    obs = ObservabilityService(
+        modinput_type="my-input",
+        logger=logger,
+        ta_name="my_ta",
+        ta_version="1.0.0",
+        extra_exporters=[LoggerMetricExporter(logger)],
+    )
+
+    # In your event collection loop:
+    if obs.event_count_counter:
+        obs.event_count_counter.add(
+            len(events), {ATTR_MODINPUT_NAME: stanza_name}
+        )
+    if obs.event_bytes_counter:
+        obs.event_bytes_counter.add(
+            total_bytes, {ATTR_MODINPUT_NAME: stanza_name}
+        )
+"""
 
 import json
 import logging
@@ -47,8 +86,31 @@ ATTR_MODINPUT_NAME = "splunk.modinput.name"
 
 
 class LoggerMetricExporter(MetricExporter):
-    """MetricExporter that writes each data point to a standard Python
-    logger."""
+    """An OpenTelemetry ``MetricExporter`` that logs every data point.
+
+    Each exported data point is written to a standard Python logger at INFO
+    level.  Counters are logged as ``value``, histograms as ``count``,
+    ``sum``, ``min``, ``max``, ``bucket_counts``, and ``explicit_bounds``.
+
+    This exporter is always available without any external infrastructure, so
+    it is suitable for local development, CI environments, and as a fallback
+    alongside the OTLP exporter.
+
+    Both ``Counter`` and ``Histogram`` instruments use **delta** temporality,
+    meaning each export interval reports only the change since the previous
+    interval, not a cumulative total.
+
+    Example::
+
+        import logging
+        from solnlib.observability import LoggerMetricExporter
+
+        logger = logging.getLogger(__name__)
+        exporter = LoggerMetricExporter(logger)
+
+    Args:
+        logger: The Python logger (or ``LoggerAdapter``) to write metrics to.
+    """
 
     def __init__(self, logger: _Logger) -> None:
         super().__init__(
@@ -65,6 +127,15 @@ class LoggerMetricExporter(MetricExporter):
         timeout_millis: float = 10_000,
         **kwargs,
     ) -> MetricExportResult:
+        """Export metrics by writing each data point to the logger.
+
+        Called automatically by the ``PeriodicExportingMetricReader`` on each
+        export interval.  You do not need to call this method directly.
+
+        Returns:
+            ``MetricExportResult.SUCCESS`` on success, or
+            ``MetricExportResult.FAILURE`` if an unexpected exception occurs.
+        """
         try:
             metric_count = 0
             for resource_metrics in metrics_data.resource_metrics:
@@ -112,33 +183,69 @@ class LoggerMetricExporter(MetricExporter):
             return MetricExportResult.FAILURE
 
     def shutdown(self, timeout_millis: float = 30_000, **kwargs) -> None:
-        pass
+        """No-op shutdown — the underlying logger needs no teardown."""
 
     def force_flush(self, timeout_millis: float = 10_000) -> bool:
+        """Flush is a no-op for a synchronous logger; always returns
+        ``True``."""
         return True
 
 
 class ObservabilityService:
-    """OpenTelemetry observability service for a Splunk modular input instance.
+    """OpenTelemetry observability service for a Splunk modular input.
 
-    Initialises a MeterProvider backed by a logger exporter (always on) and,
-    when available, an OTLP gRPC exporter targeting the Spotlight collector.
+    Sets up a ``MeterProvider`` with two built-in event counters and,
+    when the Spotlight collector is reachable, an OTLP gRPC exporter.
+    Initialisation failures are caught and logged as warnings so that a
+    missing or misconfigured observability stack never breaks the add-on.
 
-    Resource attributes (constant per process, set at construction time):
-        splunk.addon.name     = ta_name
-        service.namespace     = "splunk.addon"
-        splunk.addon.version  = ta_version
-        splunk.modinput.type  = modinput_type
+    **Resource attributes** (fixed for the lifetime of the process):
 
-    Mandatory instruments (accessible as attributes):
-        event_count_counter   -- splunk.addon.events       (Counter, unit "1")
-        event_bytes_counter   -- splunk.addon.events.bytes (Counter, unit "By")
+    | Attribute                  | Value                  |
+    |----------------------------|------------------------|
+    | ``splunk.addon.name``      | *ta_name*              |
+    | ``service.namespace``      | ``"splunk.addon"``     |
+    | ``splunk.addon.version``   | *ta_version*           |
+    | ``splunk.modinput.type``   | *modinput_type*        |
 
-    Both counters accept a ``splunk.modinput.name`` data-point attribute that
-    callers supply on each ``add()`` call to identify the stanza.  No other
-    high-cardinality attributes should be added to these metrics.
+    **Built-in counters** (``None`` if initialisation failed):
 
-    Additional instruments can be created via the public ``meter`` attribute.
+    | Attribute               | Metric name                    | Unit  |
+    |-------------------------|--------------------------------|-------|
+    | ``event_count_counter`` | ``splunk.addon.events``        | ``1`` |
+    | ``event_bytes_counter`` | ``splunk.addon.events.bytes``  | ``By``|
+
+    Both counters accept ``ATTR_MODINPUT_NAME`` (``"splunk.modinput.name"``)
+    as the only recommended data-point attribute.  Avoid adding other
+    high-cardinality labels to these metrics.
+
+    Additional instruments can be created with :meth:`register_instrument`.
+
+    Example::
+
+        import logging
+        from solnlib.observability import (
+            LoggerMetricExporter,
+            ObservabilityService,
+            ATTR_MODINPUT_NAME,
+        )
+
+        logger = logging.getLogger(__name__)
+
+        obs = ObservabilityService(
+            modinput_type="my-input",
+            logger=logger,
+            ta_name="my_ta",
+            ta_version="1.0.0",
+            extra_exporters=[LoggerMetricExporter(logger)],
+        )
+
+        # Record ingested events in your collection loop:
+        attrs = {ATTR_MODINPUT_NAME: stanza_name}
+        if obs.event_count_counter:
+            obs.event_count_counter.add(len(events), attrs)
+        if obs.event_bytes_counter:
+            obs.event_bytes_counter.add(total_bytes, attrs)
     """
 
     def __init__(
@@ -152,19 +259,27 @@ class ObservabilityService:
         """Initialise the observability service.
 
         Args:
-            modinput_type: Low-cardinality type string for the modular input,
-                e.g. ``"event-hub"``.  Used as the ``splunk.modinput.type``
-                resource attribute.
-            logger: Standard Python logger used for all diagnostic output.
-                Typically the caller's own module logger.
-            ta_name: TA identifier for ``splunk.addon.name``.  When *None* the
-                value is read automatically from ``app.conf``.
-            ta_version: TA version for ``splunk.addon.version``.  When *None*
-                the value is read automatically from ``app.conf``.
-            extra_exporters: Additional MetricExporter instances to include
-                alongside the OTLP exporter (e.g. LoggerMetricExporter for
-                local debug logging).  Each is wrapped in a
-                PeriodicExportingMetricReader automatically.
+            modinput_type: Low-cardinality string identifying the modular input
+                type, e.g. ``"event-hub"`` or ``"aws-s3"``.  Used as the
+                ``splunk.modinput.type`` resource attribute.  Keep this value
+                stable across restarts — it is a resource attribute, not a
+                data-point label.
+            logger: Python logger (or ``LoggerAdapter``) for all diagnostic
+                output.  Typically the caller's own module-level logger.
+            ta_name: Add-on identifier, e.g. ``"Splunk_TA_myapp"``.  When
+                *None* the value is read from the ``[id]`` stanza of
+                ``app.conf`` via :func:`~solnlib.splunkenv.get_conf_stanzas`.
+                Pass it explicitly when the add-on runs outside a full Splunk
+                environment or to avoid the ``app.conf`` lookup.
+            ta_version: Add-on version string, e.g. ``"3.1.0"``.  When *None*
+                the value is read from the ``[launcher]`` stanza of
+                ``app.conf``.  Falls back to ``"unknown"`` if it cannot be
+                determined.
+            extra_exporters: Optional list of additional
+                ``MetricExporter`` instances (e.g. :class:`LoggerMetricExporter`
+                for local debug logging).  Each is wrapped in a
+                ``PeriodicExportingMetricReader`` automatically, identical to
+                how the OTLP exporter is handled.
         """
         self._logger: _Logger = logger
         self.event_count_counter: Optional[Counter] = None
@@ -225,10 +340,11 @@ class ObservabilityService:
             self._logger.warning("Failed to initialise ObservabilityService: %s", e)
 
     def _read_ta_info(self) -> Tuple[Optional[str], Optional[str]]:
-        """Read TA name and version from app.conf via solnlib btool.
+        """Read the add-on name and version from ``app.conf``.
 
-        Returns (ta_name, ta_version).  Either value is None when it
-        cannot be read (e.g. outside a real Splunk environment).
+        Returns a ``(ta_name, ta_version)`` tuple.  Either value is
+        ``None`` when the corresponding key is missing or when
+        ``app.conf`` cannot be read (e.g. outside a Splunk environment).
         """
         try:
             stanzas = get_conf_stanzas("app")
@@ -243,8 +359,12 @@ class ObservabilityService:
             return None, None
 
     def _get_ipc_broker_port(self) -> Optional[int]:
-        """Read the IPC broker port from Splunk's server.conf via solnlib
-        btool."""
+        """Read the Spotlight IPC broker port from ``server.conf``.
+
+        Returns the integer port number from the ``[ipc_broker]``
+        stanza, or ``None`` if the stanza is absent or the file cannot
+        be read.
+        """
         try:
             stanzas = get_conf_stanzas("server")
             return int(stanzas["ipc_broker"]["port"])
@@ -255,8 +375,14 @@ class ObservabilityService:
             return None
 
     def _discover_otlp_port_via_ipc_broker(self) -> Optional[str]:
-        """Discover the OTLP receiver port via the Spotlight IPC broker
-        discovery endpoint."""
+        """Query the Spotlight IPC broker to discover the OTLP receiver port.
+
+        Makes an HTTPS request to the local IPC broker's ``/v2/discover``
+        endpoint (TLS verification disabled because the broker uses a
+        self-signed certificate).  Returns the port as a string on success, or
+        ``None`` if the broker is unreachable, returns an error, or reports
+        ``"success": false``.
+        """
         ipc_broker_port = self._get_ipc_broker_port()
         if ipc_broker_port is None:
             self._logger.warning("IPC broker port not found in server.conf")
@@ -292,10 +418,14 @@ class ObservabilityService:
             return None
 
     def _resolve_otlp_port(self) -> Optional[str]:
-        """Resolve the OTLP receiver port.
+        """Resolve the OTLP receiver port using a two-step lookup.
 
-        Checks SPOTLIGHT_OTEL_RECEIVER_PORT env var first; falls back to
-        IPC broker discovery.
+        1. Reads the ``SPOTLIGHT_OTEL_RECEIVER_PORT`` environment variable.
+           Set this during development or testing to skip IPC broker discovery.
+        2. Falls back to :meth:`_discover_otlp_port_via_ipc_broker`.
+
+        Returns the port as a string, or ``None`` if neither source provides
+        a value.
         """
         port = os.environ.get("SPOTLIGHT_OTEL_RECEIVER_PORT")
         if port:
@@ -307,10 +437,18 @@ class ObservabilityService:
         return self._discover_otlp_port_via_ipc_broker()
 
     def _create_otlp_exporter(self) -> Optional[MetricExporter]:
-        """Create an OTLP gRPC exporter for the OTel Collector.
+        """Create a TLS-secured OTLP gRPC exporter targeting the Spotlight
+        collector.
 
-        Returns a wrapped exporter on success, or None if the endpoint
-        cannot be determined or the exporter fails to initialise.
+        The collector's server certificate is read from
+        ``$SPLUNK_HOME/var/packages/data/spotlight-collector/server.crt``
+        (defaults to ``/opt/splunk`` when ``SPLUNK_HOME`` is not set).
+
+        Returns the configured exporter, or ``None`` when:
+
+        - The OTLP port cannot be resolved (see :meth:`_resolve_otlp_port`).
+        - The certificate file does not exist.
+        - Any other exception occurs during exporter construction.
         """
         try:
             splunk_home = os.environ.get("SPLUNK_HOME", "/opt/splunk")
@@ -361,21 +499,36 @@ class ObservabilityService:
     def register_instrument(
         self, callback: Callable[[Meter], Instrument]
     ) -> Optional[Instrument]:
-        """Create an additional instrument using the meter.
+        """Create a custom instrument using the service's meter.
 
-        Calls ``callback(meter)`` and returns the result.  If the meter is not
-        available (e.g. initialisation failed), returns ``None`` without calling
-        the callback.
+        Passes the internal ``Meter`` to *callback* and returns whatever the
+        callback creates.  If the service failed to initialise (e.g. because
+        ``ta_name`` could not be determined), the meter is ``None`` and this
+        method returns ``None`` without invoking the callback.
 
-        Usage::
+        Always guard the returned value against ``None`` before calling it, for
+        the same reason you guard ``event_count_counter``.
 
-            histogram = observability.register_instrument(
+        Args:
+            callback: A callable that receives the ``Meter`` and returns a new
+                instrument (Counter, Histogram, Gauge, etc.).
+
+        Returns:
+            The instrument created by *callback*, or ``None`` if the meter is
+            not available.
+
+        Example::
+
+            latency = obs.register_instrument(
                 lambda meter: meter.create_histogram(
-                    name="eventhub.events.latency",
-                    description="...",
+                    name="my_ta.request.latency",
+                    description="Latency of outbound API requests",
                     unit="s",
                 )
             )
+
+            if latency:
+                latency.record(elapsed, {ATTR_MODINPUT_NAME: stanza_name})
         """
         if self._meter is None:
             return None
