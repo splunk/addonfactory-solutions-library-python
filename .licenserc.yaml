@@ -17,6 +17,7 @@ header:
   license:
     spdx-id: Apache-2.0
     copyright-owner: Splunk Inc.
+    pattern: "Copyright \\d{4} Splunk Inc"
 
   paths-ignore:
     - ".github/"
