@@ -133,7 +133,7 @@ jobs:
           echo -e "[user_info]\nUSERNAME=Admin\nPASSWORD=Chang3d"'!' | tee -a $SPLUNK_HOME/etc/system/local/user-seed.conf
           echo 'OPTIMISTIC_ABOUT_FILE_LOCKING=1' | tee -a $SPLUNK_HOME/etc/splunk-launch.conf
           $SPLUNK_HOME/bin/splunk start --accept-license
-          $SPLUNK_HOME/bin/splunk cmd python -m pip install solnlib
+          $SPLUNK_HOME/bin/splunk cmd python -m pip install .
           $SPLUNK_HOME/bin/splunk set servername custom-servername -auth admin:Chang3d!
           $SPLUNK_HOME/bin/splunk restart
           until curl -k -s -u admin:Chang3d! https://localhost:8089/services/server/info\?output_mode\=json | jq '.entry[0].content.kvStoreStatus' | grep -o "ready" ; do echo -n "Waiting for KVStore to become ready-" && sleep 5 ; done
