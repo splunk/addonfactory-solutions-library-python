@@ -13,12 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 """This module contains Splunk server info related functionalities."""
 
 import os
 import json
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 try:
     from splunk.rest import getWebCertFile, getWebKeyFile
@@ -132,7 +131,7 @@ class ServerInfo:
             **context,
         )
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Returns server information in a form dictionary.
 
         Note: This method is implemented here to have compatibility with splunktalib's

@@ -15,7 +15,7 @@
 #
 
 from solnlib import splunk_rest_client as rest_client
-from typing import Optional, List
+from typing import Optional
 import json
 
 __all__ = ["BulletinRestClient"]
@@ -40,18 +40,18 @@ class BulletinRestClient:
         app: str,
         **context: dict,
     ):
-        """Initializes BulletinRestClient.
-            When creating a new bulletin message, you must provide a name, which is a kind of ID.
-            If you try to create another message with the same name (ID), the API will not add another message
-            to the bulletin, but it will overwrite the existing one. Similar behaviour applies to deletion.
-            To delete a message, you must indicate the name (ID) of the message.
-            To provide better and easier control over bulletin messages, this client works in such a way
-            that there is one instance responsible for handling one specific message.
-            If you need to add another message to bulletin create another instance
-            with a different 'message_name'
-            e.g.
-            msg_1 = BulletinRestClient("message_1", "<some session key>")
-            msg_2 = BulletinRestClient("message_2", "<some session key>")
+        """Initializes BulletinRestClient. When creating a new bulletin
+        message, you must provide a name, which is a kind of ID. If you try to
+        create another message with the same name (ID), the API will not add
+        another message to the bulletin, but it will overwrite the existing
+        one. Similar behaviour applies to deletion. To delete a message, you
+        must indicate the name (ID) of the message. To provide better and
+        easier control over bulletin messages, this client works in such a way
+        that there is one instance responsible for handling one specific
+        message. If you need to add another message to bulletin create another
+        instance with a different 'message_name' e.g. msg_1 =
+        BulletinRestClient("message_1", "<some session key>") msg_2 =
+        BulletinRestClient("message_2", "<some session key>")
 
         Arguments:
             message_name: Name of the message in the Splunk's bulletin.
@@ -72,8 +72,8 @@ class BulletinRestClient:
         self,
         msg: str,
         severity: Severity = Severity.WARNING,
-        capabilities: Optional[List[str]] = None,
-        roles: Optional[List] = None,
+        capabilities: Optional[list[str]] = None,
+        roles: Optional[list] = None,
     ):
         """Creates a message in the Splunk's bulletin. Calling this method
         multiple times for the same instance will overwrite existing message.
@@ -144,7 +144,7 @@ class BulletinRestClient:
         self._rest_client.delete(endpoint)
 
     @staticmethod
-    def _validate_and_get_body_value(arg, error_msg) -> List:
+    def _validate_and_get_body_value(arg, error_msg) -> list:
         if type(arg) is list and (all(isinstance(el, str) for el in arg)):
             return [el for el in arg]
         else:

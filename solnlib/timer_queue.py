@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 """A simple thread safe timer queue implementation which has O(logn) time
 complexity."""
 import logging
@@ -21,7 +20,7 @@ import queue as Queue
 import threading
 import traceback
 from time import time
-from typing import Callable, List, Tuple
+from typing import Callable
 
 import sortedcontainers as sc
 
@@ -127,7 +126,7 @@ class TimerQueueStruct:
         else:
             self._cancelling_timers[timer.ident] = timer
 
-    def get_expired_timers(self) -> Tuple:
+    def get_expired_timers(self) -> tuple:
         """Get a list of expired timers.
 
         Returns:
@@ -148,7 +147,7 @@ class TimerQueueStruct:
             next_expired_time = self._timers[0].when
         return next_expired_time, expired_timers
 
-    def reset_timers(self, expired_timers: List[Timer]) -> bool:
+    def reset_timers(self, expired_timers: list[Timer]) -> bool:
         """Re-add the expired periodical timers to data structure for next
         round scheduling.
 

@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 """The Splunk Software Development Kit for Solutions."""
 
 from . import (

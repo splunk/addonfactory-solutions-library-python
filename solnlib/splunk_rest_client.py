@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 """This module proxy all REST call to splunklib SDK, it handles proxy, certs
 etc in this centralized location.
 

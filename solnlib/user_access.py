@@ -13,11 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 """Splunk user access control related utilities."""
 
 import json
-from typing import List, Optional
+from typing import Optional
 
 from splunklib import binding
 
@@ -347,7 +346,7 @@ class ObjectACLManager:
     def update_acls(
         self,
         obj_collection: str,
-        obj_ids: List[str],
+        obj_ids: list[str],
         obj_type: str,
         obj_app: str,
         obj_owner: str,
@@ -437,7 +436,7 @@ class ObjectACLManager:
         return ObjectACL.parse(obj_acl)
 
     @utils.retry(exceptions=[binding.HTTPError])
-    def get_acls(self, obj_collection: str, obj_ids: List[str]) -> List[ObjectACL]:
+    def get_acls(self, obj_collection: str, obj_ids: list[str]) -> list[ObjectACL]:
         """Batch get acl info.
 
         Query objects acl info with parameter of the combination of
@@ -492,7 +491,7 @@ class ObjectACLManager:
             )
 
     @utils.retry(exceptions=[binding.HTTPError])
-    def delete_acls(self, obj_collection: str, obj_ids: List[str]):
+    def delete_acls(self, obj_collection: str, obj_ids: list[str]):
         """Batch delete acl info.
 
         Query objects acl info with parameter of the combination of
@@ -515,8 +514,8 @@ class ObjectACLManager:
 
     @utils.retry(exceptions=[binding.HTTPError])
     def get_accessible_object_ids(
-        self, user: str, operation: str, obj_collection: str, obj_ids: List[str]
-    ) -> List[str]:
+        self, user: str, operation: str, obj_collection: str, obj_ids: list[str]
+    ) -> list[str]:
         """Get accessible IDs of objects from `obj_acls`.
 
         Arguments:
@@ -834,7 +833,7 @@ def get_user_capabilities(
     host: str = None,
     port: int = None,
     **context: dict,
-) -> List[dict]:
+) -> list[dict]:
     """Get user capabilities.
 
     Arguments:
@@ -912,7 +911,7 @@ def user_is_capable(
 @utils.retry(exceptions=[binding.HTTPError])
 def get_user_roles(
     session_key: str, username: str, scheme=None, host=None, port=None, **context
-) -> List:
+) -> list:
     """Get user roles.
 
     Arguments:

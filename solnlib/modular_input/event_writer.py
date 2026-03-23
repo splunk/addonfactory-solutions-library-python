@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 """This module provides two kinds of event writers (ClassicEventWriter,
 HECEventWriter) to write Splunk modular input events."""
 
@@ -26,7 +25,7 @@ import traceback
 import warnings
 from abc import ABCMeta, abstractmethod
 from random import randint
-from typing import List, Union
+from typing import Union
 
 from splunklib import binding
 
@@ -38,7 +37,6 @@ from ..utils import retry
 from .event import HECEvent, XMLEvent
 
 __all__ = ["ClassicEventWriter", "HECEventWriter"]
-
 
 deprecation_msg = (
     "Function 'create_from_token' is deprecated and incompatible with 'global_settings_schema=True'. "
@@ -103,7 +101,7 @@ class EventWriter(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def write_events(self, events: List):
+    def write_events(self, events: list):
         """Write events.
 
         Arguments:
@@ -461,7 +459,7 @@ class HECEventWriter(EventWriter):
 
     def write_events(
         self,
-        events: List,
+        events: list,
         retries: int = WRITE_EVENT_RETRIES,
         event_field: str = "event",
     ):

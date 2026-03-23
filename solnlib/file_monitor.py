@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 """This module contains file monitoring class that can be used to check files
 change periodically and call callback function to handle properly when
 detecting files change."""
@@ -22,7 +21,7 @@ import os.path as op
 import threading
 import time
 import traceback
-from typing import Any, Callable, List
+from typing import Any, Callable
 
 __all__ = ["FileChangesChecker", "FileMonitor"]
 
@@ -30,7 +29,7 @@ __all__ = ["FileChangesChecker", "FileMonitor"]
 class FileChangesChecker:
     """Files change checker."""
 
-    def __init__(self, callback: Callable[[List[str]], Any], files: List):
+    def __init__(self, callback: Callable[[list[str]], Any], files: list):
         """Initializes FileChangesChecker.
 
         Arguments:
@@ -88,7 +87,7 @@ class FileMonitor:
     """
 
     def __init__(
-        self, callback: Callable[[List[str]], Any], files: List, interval: int = 1
+        self, callback: Callable[[list[str]], Any], files: list, interval: int = 1
     ):
         """Initializes FileMonitor.
 

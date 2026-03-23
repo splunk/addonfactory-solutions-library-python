@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 """OpenTelemetry observability utilities for Splunk add-ons.
 
 This module provides two public components:
@@ -60,7 +59,7 @@ import logging
 import os
 import ssl
 import urllib.request
-from typing import Callable, List, Optional, Tuple, Union
+from typing import Callable, Optional, Union
 from typing_extensions import TypeAlias
 import grpc
 from .splunkenv import get_conf_stanzas
@@ -254,7 +253,7 @@ class ObservabilityService:
         logger: _Logger,
         ta_name: Optional[str] = None,
         ta_version: Optional[str] = None,
-        extra_exporters: Optional[List[MetricExporter]] = None,
+        extra_exporters: Optional[list[MetricExporter]] = None,
     ):
         """Initialise the observability service.
 
@@ -307,7 +306,7 @@ class ObservabilityService:
                 }
             )
 
-            metric_readers: List[PeriodicExportingMetricReader] = []
+            metric_readers: list[PeriodicExportingMetricReader] = []
             otlp_exporter = self._create_otlp_exporter()
             if otlp_exporter:
                 metric_readers.append(PeriodicExportingMetricReader(otlp_exporter))
@@ -339,7 +338,7 @@ class ObservabilityService:
         except Exception as e:
             self._logger.warning("Failed to initialise ObservabilityService: %s", e)
 
-    def _read_ta_info(self) -> Tuple[Optional[str], Optional[str]]:
+    def _read_ta_info(self) -> tuple[Optional[str], Optional[str]]:
         """Read the add-on name and version from ``app.conf``.
 
         Returns a ``(ta_name, ta_version)`` tuple.  Either value is
