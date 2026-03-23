@@ -10,12 +10,20 @@ import context
 def setup_env():
     # path manipulation get the 'splunk' library for the imports while running on GH Actions
     if "SPLUNK_HOME" in os.environ:
-        sys.path.append(
-            os.path.sep.join(
-                [os.environ["SPLUNK_HOME"], "lib", "python3.7", "site-packages"]
-            )
+        splunk_home = os.environ["SPLUNK_HOME"]
+        lib_dir = os.path.join(splunk_home, "lib")
+        # Find the highest available pythonX.Y directory in $SPLUNK_HOME/lib
+        python_dirs = sorted(
+            [
+                d
+                for d in os.listdir(lib_dir)
+                if d.startswith("python3.") and os.path.isdir(os.path.join(lib_dir, d))
+            ],
+            key=lambda d: tuple(int(x) for x in d[6:].split(".")),
+            reverse=True,
         )
-        # TODO: 'python3.7' needs to be updated as and when Splunk has new folder for Python.
+        if python_dirs:
+            sys.path.append(os.path.join(lib_dir, python_dirs[0], "site-packages"))
 
 
 @pytest.fixture(scope="session")
