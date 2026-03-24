@@ -40,18 +40,18 @@ class BulletinRestClient:
         app: str,
         **context: dict,
     ):
-        """Initializes BulletinRestClient. When creating a new bulletin
-        message, you must provide a name, which is a kind of ID. If you try to
-        create another message with the same name (ID), the API will not add
-        another message to the bulletin, but it will overwrite the existing
-        one. Similar behaviour applies to deletion. To delete a message, you
-        must indicate the name (ID) of the message. To provide better and
-        easier control over bulletin messages, this client works in such a way
-        that there is one instance responsible for handling one specific
-        message. If you need to add another message to bulletin create another
-        instance with a different 'message_name' e.g. msg_1 =
-        BulletinRestClient("message_1", "<some session key>") msg_2 =
-        BulletinRestClient("message_2", "<some session key>")
+        """Initializes BulletinRestClient.
+            When creating a new bulletin message, you must provide a name, which is a kind of ID.
+            If you try to create another message with the same name (ID), the API will not add another message
+            to the bulletin, but it will overwrite the existing one. Similar behaviour applies to deletion.
+            To delete a message, you must indicate the name (ID) of the message.
+            To provide better and easier control over bulletin messages, this client works in such a way
+            that there is one instance responsible for handling one specific message.
+            If you need to add another message to bulletin create another instance
+            with a different 'message_name'
+            e.g.
+            msg_1 = BulletinRestClient("message_1", "<some session key>")
+            msg_2 = BulletinRestClient("message_2", "<some session key>")
 
         Arguments:
             message_name: Name of the message in the Splunk's bulletin.
