@@ -1,5 +1,5 @@
 #
-# Copyright 2025 Splunk Inc.
+# Copyright 2026 Splunk Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -60,7 +60,6 @@ import os
 import ssl
 import urllib.request
 from typing import Callable, Optional, Union
-from typing_extensions import TypeAlias
 import grpc
 from .splunkenv import get_conf_stanzas
 from opentelemetry.metrics import Instrument, Meter
@@ -75,7 +74,7 @@ from opentelemetry.sdk.metrics.export import (
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
 
-_Logger: TypeAlias = Union[logging.Logger, logging.LoggerAdapter]
+_Logger = Union[logging.Logger, logging.LoggerAdapter]
 
 _SPOTLIGHT_SIDECAR_NAME = "spotlight-collector"
 _SPOTLIGHT_SERVICE_NAME = "spotlight_telemetry"
