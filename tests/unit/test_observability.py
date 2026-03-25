@@ -417,12 +417,19 @@ class TestObservabilityService:
             "solnlib.observability.grpc.ssl_channel_credentials",
             MagicMock(return_value=MagicMock()),
         )
+        mock_exporter = MagicMock()
         monkeypatch.setattr(
             "solnlib.observability.OTLPMetricExporter",
-            MagicMock(return_value=MagicMock()),
+            MagicMock(return_value=mock_exporter),
         )
-        svc = _make_service(logger, monkeypatch)
+        # Build svc without patching _create_otlp_exporter so the real method is called
+        svc = ObservabilityService(
+            modinput_type="test-input",
+            logger=logger,
+            ta_name="my_ta",
+            ta_version="1.0.0",
+        )
         # Act
         result = ObservabilityService._create_otlp_exporter(svc)
         # Assert
-        assert result is not None
+        assert result is mock_exporter
