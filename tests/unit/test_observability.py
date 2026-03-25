@@ -403,3 +403,26 @@ class TestObservabilityService:
         result = ObservabilityService._create_otlp_exporter(svc)
         # Assert
         assert result is None
+
+    def test_create_otlp_exporter_returns_exporter_when_cert_present(
+        self, logger, monkeypatch, tmp_path
+    ):
+        # Arrange
+        monkeypatch.setenv("SPOTLIGHT_OTEL_RECEIVER_PORT", "4317")
+        monkeypatch.setenv("SPLUNK_HOME", str(tmp_path))
+        cert_path = tmp_path / "var/packages/data/spotlight-collector"
+        cert_path.mkdir(parents=True)
+        (cert_path / "server.crt").write_bytes(b"fake-cert")
+        monkeypatch.setattr(
+            "solnlib.observability.grpc.ssl_channel_credentials",
+            MagicMock(return_value=MagicMock()),
+        )
+        monkeypatch.setattr(
+            "solnlib.observability.OTLPMetricExporter",
+            MagicMock(return_value=MagicMock()),
+        )
+        svc = _make_service(logger, monkeypatch)
+        # Act
+        result = ObservabilityService._create_otlp_exporter(svc)
+        # Assert
+        assert result is not None
