@@ -13,12 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 """This module contains Splunk credential related interfaces."""
 
 import re
 import warnings
-from typing import Dict, List
 
 from splunklib import binding, client
 
@@ -232,7 +230,7 @@ class CredentialManager:
                 f"Failed to delete password of realm={self._realm}, user={user}"
             )
 
-    def get_raw_passwords(self) -> List[client.StoragePassword]:
+    def get_raw_passwords(self) -> list[client.StoragePassword]:
         """Returns all passwords in the "raw" format."""
         warnings.warn(
             "Please pass realm to the CredentialManager, "
@@ -240,13 +238,13 @@ class CredentialManager:
         )
         return self._storage_passwords.list(count=-1)
 
-    def get_raw_passwords_in_realm(self) -> List[client.StoragePassword]:
+    def get_raw_passwords_in_realm(self) -> list[client.StoragePassword]:
         """Returns all passwords within the realm in the "raw" format."""
         if self._realm is None:
             raise ValueError("No realm was specified")
         return self._storage_passwords.list(count=-1, search=f"realm={self._realm}")
 
-    def get_clear_passwords(self) -> List[Dict[str, str]]:
+    def get_clear_passwords(self) -> list[dict[str, str]]:
         """Returns all passwords in the "clear" format."""
         warnings.warn(
             "Please pass realm to the CredentialManager, "
@@ -255,14 +253,14 @@ class CredentialManager:
         raw_passwords = self.get_raw_passwords()
         return self._get_clear_passwords(raw_passwords)
 
-    def get_clear_passwords_in_realm(self) -> List[Dict[str, str]]:
+    def get_clear_passwords_in_realm(self) -> list[dict[str, str]]:
         """Returns all passwords within the realm in the "clear" format."""
         if self._realm is None:
             raise ValueError("No realm was specified")
         raw_passwords = self.get_raw_passwords_in_realm()
         return self._get_clear_passwords(raw_passwords)
 
-    def _get_all_passwords_in_realm(self) -> List[client.StoragePassword]:
+    def _get_all_passwords_in_realm(self) -> list[client.StoragePassword]:
         warnings.warn(
             "_get_all_passwords_in_realm is deprecated, "
             "please use get_raw_passwords_in_realm instead.",
@@ -277,8 +275,8 @@ class CredentialManager:
         return all_passwords
 
     def _get_clear_passwords(
-        self, passwords: List[client.StoragePassword]
-    ) -> List[Dict[str, str]]:
+        self, passwords: list[client.StoragePassword]
+    ) -> list[dict[str, str]]:
         results = {}
         ptn = re.compile(rf"(.+){self.SEP}(\d+)")
         for password in passwords:
@@ -327,7 +325,7 @@ class CredentialManager:
         return list(results.values())
 
     @retry(exceptions=[binding.HTTPError])
-    def _get_all_passwords(self) -> List[Dict[str, str]]:
+    def _get_all_passwords(self) -> list[dict[str, str]]:
         warnings.warn(
             "_get_all_passwords is deprecated, "
             "please use get_all_passwords_in_realm instead.",

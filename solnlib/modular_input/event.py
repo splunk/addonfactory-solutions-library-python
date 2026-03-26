@@ -13,11 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 """This module provides Splunk modular input event encapsulation."""
 
 import json
-from typing import List
+
 from xml.etree import ElementTree as ET  # nosemgrep
 
 import defusedxml.ElementTree as defused_et
@@ -106,7 +105,7 @@ class Event:
         return json.dumps(event)
 
     @classmethod
-    def format_events(cls, events: List) -> List:
+    def format_events(cls, events: list) -> list:
         """Format events to list of string.
 
         Arguments:
@@ -153,7 +152,7 @@ class XMLEvent(Event):
         return _event
 
     @classmethod
-    def format_events(cls, events: List) -> List:
+    def format_events(cls, events: list) -> list:
         """Format events to list of string.
 
         Arguments:
@@ -219,7 +218,7 @@ class HECEvent(Event):
         return json.dumps(event, ensure_ascii=False)
 
     @classmethod
-    def format_events(cls, events: List, event_field: str = "event") -> List:
+    def format_events(cls, events: list, event_field: str = "event") -> list:
         """Format events to list of string.
 
         Arguments:

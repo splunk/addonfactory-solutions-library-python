@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 """This module provides two kinds of checkpointer: KVStoreCheckpointer,
 FileCheckpointer for modular input to save checkpoint."""
 
@@ -25,7 +24,8 @@ import os.path as op
 import traceback
 import warnings
 from abc import ABCMeta, abstractmethod
-from typing import Any, Dict, Iterable, Optional
+from typing import Any, Optional
+from collections.abc import Iterable
 
 from splunklib import binding
 
@@ -47,7 +47,7 @@ class Checkpointer(metaclass=ABCMeta):
         document data."""
 
     @abstractmethod
-    def batch_update(self, states: Iterable[Dict[str, Any]]):
+    def batch_update(self, states: Iterable[dict[str, Any]]):
         """Updates multiple documents."""
 
     @abstractmethod
@@ -144,7 +144,7 @@ class KVStoreCheckpointer(Checkpointer):
         self._collection_data.batch_save(record)
 
     @utils.retry(exceptions=[binding.HTTPError])
-    def batch_update(self, states: Iterable[Dict[str, Any]]) -> None:
+    def batch_update(self, states: Iterable[dict[str, Any]]) -> None:
         """Updates multiple documents.
 
         Arguments:

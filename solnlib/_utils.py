@@ -16,7 +16,7 @@
 """This module provide utils that are private to solnlib."""
 
 import re
-from typing import Any, Dict, Optional, Union
+from typing import Any, Optional, Union
 
 from splunklib import binding, client
 
@@ -33,7 +33,7 @@ def get_collection_data(
     scheme: Optional[str] = None,
     host: Optional[str] = None,
     port: Optional[Union[str, int]] = None,
-    fields: Optional[Dict] = None,
+    fields: Optional[dict] = None,
     **context: Any,
 ) -> client.KVStoreCollectionData:
     """Get collection data, if there is no such collection - creates one.

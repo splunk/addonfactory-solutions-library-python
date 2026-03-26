@@ -27,8 +27,14 @@ def test_CVE_2023_32712():
     session_key = context.get_session_key()
 
     msg_prefix = "ASCII Table in one string: "
-    time.sleep(30)
-    search_results = search(session_key, f'search index=_internal "{msg_prefix}"')
+    # Poll until the modular input has run and written the log (up to 120s)
+    search_results = []
+    deadline = time.time() + 120
+    while time.time() < deadline:
+        search_results = search(session_key, f'search index=_internal "{msg_prefix}"')
+        if len(search_results) >= 1:
+            break
+        time.sleep(5)
     assert len(search_results) >= 1
     _raw_event = search_results[0]["_raw"]
 

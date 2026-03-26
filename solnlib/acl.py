@@ -13,11 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 """This module contains interfaces that support CRUD operations on ACL."""
 
 import json
-from typing import List
 
 from splunklib import binding
 
@@ -108,8 +106,8 @@ class ACLManager:
         self,
         path: str,
         owner: str = None,
-        perms_read: List = None,
-        perms_write: List = None,
+        perms_read: list = None,
+        perms_write: list = None,
     ) -> dict:
         """Update ACL of /servicesNS/{`owner`}/{`app`}/{`path`}.
 
