@@ -23,6 +23,12 @@ import requests
 
 import logging
 
+from solnlib.log import log_exception
+
+from solnlib.utils import get_solnlib_logger
+
+logger = get_solnlib_logger(__name__)
+
 
 def splunkd_request(
     splunkd_uri,
@@ -34,7 +40,6 @@ def splunkd_request(
     retry=1,
     verify=False,
 ) -> Optional[requests.Response]:
-
     headers = headers if headers is not None else {}
     headers["Authorization"] = f"Splunk {session_key}"
     content_type = headers.get("Content-Type")
@@ -63,12 +68,21 @@ def splunkd_request(
                 timeout=timeout,
                 verify=verify,
             )
-        except Exception:
-            logging.error(msg_temp, splunkd_uri, "unknown", format_exc())
+        except Exception as e:
+            logging.error(msg_temp, splunkd_uri, "unknown", format_exc())  # deprecated
+            log_exception(
+                logger(),
+                e,
+                exc_label="unknown",
+                msg_before=f"Failed to send rest request={splunkd_uri}, errcode=unknown",
+            )
         else:
             if resp.status_code not in (200, 201):
                 if not (method == "GET" and resp.status_code == 404):
                     logging.debug(
+                        msg_temp, splunkd_uri, resp.status_code, code_to_msg(resp)
+                    )  # deprecated
+                    logger().debug(
                         msg_temp, splunkd_uri, resp.status_code, code_to_msg(resp)
                     )
             else:

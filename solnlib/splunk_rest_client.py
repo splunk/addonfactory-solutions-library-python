@@ -20,7 +20,6 @@ All clients should use SplunkRestProxy to do REST call instead of
 calling splunklib SDK directly in business logic code.
 """
 
-import logging
 import os
 import sys
 import traceback
@@ -33,6 +32,10 @@ from splunklib import binding, client
 
 from .net_utils import validate_scheme_host_port
 from .splunkenv import get_splunkd_access_info
+
+from solnlib.utils import get_solnlib_logger
+
+logger = get_solnlib_logger(__name__)
 
 __all__ = ["SplunkRestClient"]
 MAX_REQUEST_RETRIES = 5
@@ -170,7 +173,7 @@ def _request_handler(context):
                 **kwargs,
             )
         except Exception:
-            logging.error(
+            logger().error(
                 "Failed to issue http request=%s to url=%s, error=%s",
                 method,
                 url,
