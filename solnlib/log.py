@@ -351,7 +351,7 @@ def log_exception(
     """
 
     msg = _get_exception_message(e, full_msg, msg_before, msg_after)
-    logger.log(log_level, f'exc_l="{exc_label}" {msg}')
+    logger.log(log_level, f'exc_l="{exc_label}" | {msg}')
 
 
 def _get_exception_message(
@@ -366,7 +366,7 @@ def _get_exception_message(
     else:
         error = traceback.format_exception_only(exc_type, exc_value)
 
-    msg_start = msg_before if msg_before is not None else ""
-    msg_mid = "".join(error)
-    msg_end = msg_after if msg_after is not None else ""
-    return f"{msg_start}\n{msg_mid}\n{msg_end}"
+    msg_start = msg_before + " | " if msg_before is not None else ""
+    msg_mid = "".join(error).replace("\n", " ").rstrip()
+    msg_end = " | " + msg_after if msg_after is not None else ""
+    return f"{msg_start}{msg_mid}{msg_end}"
