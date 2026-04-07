@@ -37,7 +37,7 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.14"
+python = ">=3.14,<3.15"
 sortedcontainers = ">=2"
 defusedxml = ">=0.7"
 splunk-sdk = ">=2.0.2"
