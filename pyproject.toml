@@ -47,10 +47,10 @@ opentelemetry-exporter-otlp-proto-grpc = ">=1.39.1,<2"
 grpcio = ">=1.74.0"
 
 [tool.poetry.group.dev.dependencies]
-pytest = ">=7"
+pytest = ">=7,<9"
 mkdocs = ">=1"
 mkdocs-material = ">=9"
-mkdocstrings = {version=">=0", extras=["python"]}
+mkdocstrings = {version=">=0,<1", extras=["python"]}
 mkdocs-print-site-plugin = "^2.3.6"
 
 [build-system]
