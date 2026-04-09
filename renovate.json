@@ -30,6 +30,16 @@
       "matchPackageNames": ["python"],
       "matchManagers": ["github-actions"],
       "enabled": false
+    },
+    {
+      "description": "Ignore packages that drop Python 3.9 support",
+      "matchManagers": ["poetry"],
+      "matchPackageNames": [
+        "pytest",
+        "mkdocstrings"
+      ],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
     }
   ]
 }
