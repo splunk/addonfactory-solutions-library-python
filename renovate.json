@@ -18,6 +18,18 @@
     {
       "matchPackageNames": ["urllib3"],
       "allowedVersions": "<2.0.0"
+    },
+    {
+      "description": "Ignore Python version updates in pyproject.toml",
+      "matchManagers": ["poetry"],
+      "matchDepNames": ["python"],
+      "enabled": false
+    },
+    {
+      "description": "Ignore updates for Python in GitHub Actions",
+      "matchPackageNames": ["python"],
+      "matchManagers": ["github-actions"],
+      "enabled": false
     }
   ]
 }
