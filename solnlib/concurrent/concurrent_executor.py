@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 """Concurrent executor provides concurrent executing function either in a
 thread pool or a process pool."""
 
@@ -69,11 +68,11 @@ class ConcurrentExecutor:
         return self._io_executor.apply_async(func, args, kwargs, callback)
 
     def enqueue_io_funcs(self, funcs, block=True):
-        """run jobs in a fire and forget way, no result will be handled over to
+        """Run jobs in a fire and forget way, no result will be handled over to
         clients.
 
-        :param funcs: tuple/list-like or generator like object, func shall be
-                      callable
+        :param funcs: tuple/list-like or generator like object, func
+            shall be callable
         """
 
         return self._io_executor.enqueue_funcs(funcs, block)

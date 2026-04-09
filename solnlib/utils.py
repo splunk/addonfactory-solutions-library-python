@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 """Common utilities."""
 
 import datetime
@@ -23,7 +22,7 @@ import signal
 import time
 import traceback
 from functools import wraps
-from typing import Any, Callable, List, Tuple, Union
+from typing import Any, Callable, Union
 from urllib import parse as urlparse
 
 __all__ = [
@@ -129,7 +128,7 @@ def retry(
     retries: int = 3,
     reraise: bool = True,
     default_return: Any = None,
-    exceptions: List = None,
+    exceptions: list = None,
 ):
     """A decorator to run function with max `retries` times if there is
     exception.
@@ -176,7 +175,7 @@ def retry(
     return do_retry
 
 
-def extract_http_scheme_host_port(http_url: str) -> Tuple:
+def extract_http_scheme_host_port(http_url: str) -> tuple:
     """Extract scheme, host and port from a HTTP URL.
 
     Arguments:

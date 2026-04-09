@@ -15,7 +15,7 @@
 #
 import json
 from enum import Enum
-from typing import Tuple, Union, Optional
+from typing import Union, Optional
 
 from solnlib import splunk_rest_client as rest_client
 
@@ -89,7 +89,7 @@ class AlertsRestClient:
         alert_condition: str = "",
         alert_comparator: AlertComparator = AlertComparator.GREATER_THAN,
         alert_threshold: Union[int, float, str] = 0,
-        time_window: Tuple[str, str] = ("-15m", "now"),
+        time_window: tuple[str, str] = ("-15m", "now"),
         alert_severity: AlertSeverity = AlertSeverity.WARN,
         cron_schedule: str = "* * * * *",
         expires: Union[int, str] = "24h",
@@ -188,7 +188,7 @@ class AlertsRestClient:
         alert_condition: Optional[str] = None,
         alert_comparator: Optional[AlertComparator] = None,
         alert_threshold: Optional[Union[int, float, str]] = None,
-        time_window: Optional[Tuple[str, str]] = None,
+        time_window: Optional[tuple[str, str]] = None,
         alert_severity: Optional[AlertSeverity] = None,
         cron_schedule: Optional[str] = None,
         expires: Optional[Union[int, str]] = None,

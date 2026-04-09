@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 """This module provides log functionalities."""
 
 import logging
@@ -22,7 +21,7 @@ import os.path as op
 import traceback
 from functools import partial
 from threading import Lock
-from typing import Dict, Any
+from typing import Any
 
 from .pattern import Singleton
 from .splunkenv import make_splunkhome_path
@@ -223,7 +222,7 @@ class Logs(metaclass=Singleton):
 
 
 def log_event(
-    logger: logging.Logger, key_values: Dict[str, Any], log_level: int = logging.INFO
+    logger: logging.Logger, key_values: dict[str, Any], log_level: int = logging.INFO
 ):
     """General function to log any event in key-value format."""
     message = " ".join([f"{k}={v}" for k, v in key_values.items()])
