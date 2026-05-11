@@ -720,8 +720,9 @@ class StanzaObservabilityRecorder:
         """Add *event_count* and *byte_count* to the built-in counters.
 
         The ``"splunk.modinput.name"`` attribute is always set to the
-        *stanza_name* supplied at construction time.  *extra_attrs* are merged
-        on top, so they can override or extend the default attribute set.
+        *stanza_name* supplied at construction time and cannot be overridden by
+        *extra_attrs*.  This preserves the stanza-scoped guarantee — every data
+        point is unambiguously attributed to the stanza that recorded it.
 
         Silently no-ops if either counter is ``None`` (i.e.
         :class:`ObservabilityService` failed to initialise).
@@ -743,9 +744,8 @@ class StanzaObservabilityRecorder:
                 extra_attrs={"my_ta.partition": partition_id},
             )
         """
-        attrs = {ATTR_MODINPUT_NAME: self._stanza_name}
-        if extra_attrs:
-            attrs.update(extra_attrs)
+        attrs = dict(extra_attrs) if extra_attrs else {}
+        attrs[ATTR_MODINPUT_NAME] = self._stanza_name
         if self._service.event_count_counter:
             self._service.event_count_counter.add(event_count, attributes=attrs)
         if self._service.event_bytes_counter:
