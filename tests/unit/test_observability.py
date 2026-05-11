@@ -726,19 +726,31 @@ class TestStanzaObservabilityRecorder:
             with rec:
                 raise ValueError("boom")
 
-    def test_get_service_returns_none_when_not_initialised(
-        self, clear_stanza_recorder_cache
-    ):
-        from solnlib.observability import StanzaObservabilityRecorder
-
-        result = StanzaObservabilityRecorder.get_service("never-used")
-        assert result is None
-
-    def test_get_service_returns_service_after_init(
+    def test_register_instrument_delegates_to_service(
         self, monkeypatch, clear_stanza_recorder_cache
     ):
-        from solnlib.observability import StanzaObservabilityRecorder
+        rec = self._make_recorder(monkeypatch)
+        mock_service = MagicMock()
+        mock_instrument = MagicMock()
+        mock_service.register_instrument.return_value = mock_instrument
+        rec._service = mock_service
 
-        rec = self._make_recorder(monkeypatch, modinput_type="kql")
-        svc = StanzaObservabilityRecorder.get_service("kql")
-        assert svc is rec._service
+        def callback(meter):
+            return meter.create_counter("x")
+
+        result = rec.register_instrument(callback)
+
+        mock_service.register_instrument.assert_called_once_with(callback)
+        assert result is mock_instrument
+
+    def test_register_instrument_returns_none_when_service_not_initialised(
+        self, monkeypatch, clear_stanza_recorder_cache
+    ):
+        rec = self._make_recorder(monkeypatch)
+        mock_service = MagicMock()
+        mock_service.register_instrument.return_value = None
+        rec._service = mock_service
+
+        result = rec.register_instrument(lambda meter: meter.create_counter("x"))
+
+        assert result is None

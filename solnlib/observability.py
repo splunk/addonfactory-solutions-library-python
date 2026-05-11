@@ -428,18 +428,27 @@ class ObservabilityService:
         return self._discover_otlp_port_via_ipc_broker()
 
     def _create_otlp_exporter(self) -> Optional[MetricExporter]:
-        """Create a TLS-secured OTLP gRPC exporter targeting the Spotlight
-        collector.
+        """Create a TLS-secured OTLP gRPC exporter targeting the Spotlight collector.
+
+        ``grpc`` and ``OTLPMetricExporter`` are imported lazily inside this
+        method so that ``import solnlib.observability`` succeeds in environments
+        where ``grpcio`` is not installed.  The import only fails when OTLP
+        export is actually attempted.
 
         The collector's server certificate is read from
         ``$SPLUNK_HOME/var/packages/data/spotlight-collector/server.crt``
         (defaults to ``/opt/splunk`` when ``SPLUNK_HOME`` is not set).
 
+        Both ``Counter`` and ``Histogram`` instruments are configured with
+        ``AggregationTemporality.DELTA`` so that each export interval reports
+        only the change since the previous interval.
+
         Returns the configured exporter, or ``None`` when:
 
         - The OTLP port cannot be resolved (see :meth:`_resolve_otlp_port`).
         - The certificate file does not exist.
-        - Any other exception occurs during exporter construction.
+        - Any other exception occurs during exporter construction (including a
+          missing ``grpcio`` package).
         """
         try:
             import grpc
@@ -540,8 +549,17 @@ class ObservabilityService:
     def flush(self, timeout_millis: float = 30_000) -> None:
         """Force-flush all metric readers.
 
-        Should be called before the modular input process exits to ensure
-        all buffered metrics are exported.
+        Blocks until all buffered data points have been handed off to their
+        exporters or *timeout_millis* elapses.  Call this before the modular
+        input process exits to avoid dropping the last batch of metrics.
+
+        Prefer using :class:`StanzaObservabilityRecorder` as a context manager
+        rather than calling this method directly — it calls
+        :meth:`StanzaObservabilityRecorder.flush` on exit automatically.
+
+        Args:
+            timeout_millis: Maximum time to wait for exporters to drain, in
+                milliseconds.  Defaults to 30 seconds.
         """
         if self._provider is None:
             return
@@ -555,19 +573,57 @@ class StanzaObservabilityRecorder:
     """Stanza-scoped observability recorder backed by a shared ``ObservabilityService``.
 
     One ``ObservabilityService`` is created per *modinput_type* per process and
-    cached for the lifetime of the process.  Each ``StanzaObservabilityRecorder``
-    instance is bound to a single *stanza_name*, which is automatically included
-    as the ``splunk.modinput.name`` attribute on every data point.
+    cached in :attr:`_instances` for the lifetime of the process.  Every
+    ``StanzaObservabilityRecorder`` for the same *modinput_type* shares that
+    service regardless of how many stanzas are active, so the OTLP connection
+    and ``MeterProvider`` are only initialised once.
 
-    Implements the context-manager protocol: ``__exit__`` calls :meth:`flush`
-    so metrics are exported before the stanza's process exits.
+    Each recorder instance is bound to a single *stanza_name*, which is
+    automatically attached as the ``"splunk.modinput.name"`` attribute on every
+    recorded data point.
 
-    Example::
+    **Best practices:**
 
+    - Use as a context manager (``with`` statement) so that :meth:`flush` is
+      always called when the stanza collection loop exits, even on exceptions.
+    - Pass the same *modinput_type* string for all stanzas of the same input
+      type.  The string should be lowercase, hyphenated, and stable across
+      restarts (e.g. ``"event-hub"``).
+    - Do not store the recorder beyond the lifetime of a single stanza
+      collection cycle — create a new instance for each run.
+    - Register custom instruments via :meth:`register_instrument` on the
+      recorder instance rather than accessing the underlying service directly.
+    - :class:`StanzaObservabilityRecorder` is **thread-safe** at the singleton
+      level (``_lock`` protects ``_instances``), but individual recorder
+      instances are not meant to be shared across threads.
+
+    **Typical usage**::
+
+        import logging
         from solnlib.observability import StanzaObservabilityRecorder
 
-        with StanzaObservabilityRecorder("event-hub", logger, stanza_name) as obs:
-            obs.record(len(events), total_bytes)
+        logger = logging.getLogger(__name__)
+
+        def collect(stanza_name: str) -> None:
+            with StanzaObservabilityRecorder("my-input", logger, stanza_name) as obs:
+                events = fetch_events()
+                obs.record(len(events), sum(len(e) for e in events))
+
+    **Custom instrument** (e.g. latency histogram)::
+
+        from solnlib.observability import StanzaObservabilityRecorder, ATTR_MODINPUT_NAME
+
+        with StanzaObservabilityRecorder("my-input", logger, stanza_name) as obs:
+            latency_histogram = obs.register_instrument(
+                lambda meter: meter.create_histogram(
+                    name="my_ta.request.latency",
+                    description="Latency of outbound API requests",
+                    unit="s",
+                )
+            )
+            # ... collect events ...
+            if latency_histogram:
+                latency_histogram.record(elapsed, {ATTR_MODINPUT_NAME: stanza_name})
     """
 
     _instances: ClassVar[dict[str, ObservabilityService]] = {}
@@ -579,6 +635,25 @@ class StanzaObservabilityRecorder:
         logger: _Logger,
         stanza_name: str,
     ) -> None:
+        """Initialise a stanza-scoped recorder.
+
+        Gets or creates the shared :class:`ObservabilityService` for
+        *modinput_type* (singleton per process), then emits a zero baseline
+        on both built-in counters so that the metric series is visible in
+        dashboards from the very first collection cycle even when no events
+        were ingested.
+
+        Args:
+            modinput_type: Low-cardinality identifier for the input type,
+                e.g. ``"event-hub"``.  All recorders for the same input type
+                share a single ``ObservabilityService``.
+            logger: Python logger used both for ``ObservabilityService``
+                diagnostics and for the :class:`LoggerMetricExporter` that
+                is automatically added as an extra exporter.
+            stanza_name: The name of the input stanza being collected (e.g.
+                ``"my_stanza"``).  Attached as ``"splunk.modinput.name"``
+                on every recorded data point.
+        """
         self._stanza_name = stanza_name
         self._service = self._get_or_create_service(modinput_type, logger)
         self._emit_zero_baseline()
@@ -587,6 +662,12 @@ class StanzaObservabilityRecorder:
     def _get_or_create_service(
         cls, modinput_type: str, logger: _Logger
     ) -> ObservabilityService:
+        """Return the cached service for *modinput_type*, creating it if needed.
+
+        Thread-safe: uses ``_lock`` to ensure exactly one
+        ``ObservabilityService`` is created per *modinput_type* even when
+        multiple stanzas are initialised concurrently at process start.
+        """
         with cls._lock:
             if modinput_type not in cls._instances:
                 cls._instances[modinput_type] = ObservabilityService(
@@ -596,11 +677,39 @@ class StanzaObservabilityRecorder:
                 )
         return cls._instances[modinput_type]
 
-    @classmethod
-    def get_service(cls, modinput_type: str) -> Optional[ObservabilityService]:
-        """Return the cached ``ObservabilityService`` for *modinput_type*, or ``None``."""
-        with cls._lock:
-            return cls._instances.get(modinput_type)
+    def register_instrument(
+        self, callback: Callable[[Meter], Instrument]
+    ) -> Optional[Instrument]:
+        """Create a custom instrument on the shared meter.
+
+        Delegates to :meth:`ObservabilityService.register_instrument`.  The
+        instrument is registered on the process-wide ``MeterProvider``, so it
+        is shared across all recorders for the same *modinput_type*.  Calling
+        this method on any recorder instance for a given *modinput_type* is
+        equivalent — register each instrument only once.
+
+        Returns ``None`` when :class:`ObservabilityService` failed to
+        initialise (e.g. because ``ta_name`` could not be determined).  Always
+        guard the returned value before recording::
+
+            latency_histogram = obs.register_instrument(
+                lambda meter: meter.create_histogram(
+                    name="my_ta.request.latency",
+                    description="Latency of outbound API requests",
+                    unit="s",
+                )
+            )
+            if latency_histogram:
+                latency_histogram.record(elapsed, {ATTR_MODINPUT_NAME: self._stanza_name})
+
+        Args:
+            callback: Callable that receives the ``Meter`` and returns a new
+                instrument (Counter, Histogram, Gauge, etc.).
+
+        Returns:
+            The instrument created by *callback*, or ``None``.
+        """
+        return self._service.register_instrument(callback)
 
     def record(
         self,
@@ -610,9 +719,29 @@ class StanzaObservabilityRecorder:
     ) -> None:
         """Add *event_count* and *byte_count* to the built-in counters.
 
-        *extra_attrs* are merged with ``{"splunk.modinput.name": stanza_name}``
-        before being passed to the counter.  Silently no-ops if either counter
-        is ``None`` (i.e. ``ObservabilityService`` failed to initialise).
+        The ``"splunk.modinput.name"`` attribute is always set to the
+        *stanza_name* supplied at construction time.  *extra_attrs* are merged
+        on top, so they can override or extend the default attribute set.
+
+        Silently no-ops if either counter is ``None`` (i.e.
+        :class:`ObservabilityService` failed to initialise).
+
+        Args:
+            event_count: Number of events ingested in this batch.  Pass ``0``
+                for an explicit "no events" observation.
+            byte_count: Total size of the ingested events in bytes.
+            extra_attrs: Optional dict of additional OpenTelemetry attributes
+                to attach to both data points.  Keys must be strings; values
+                must be strings, booleans, or numbers.  Avoid high-cardinality
+                keys such as user IDs or GUIDs.
+
+        Example::
+
+            obs.record(
+                event_count=len(events),
+                byte_count=sum(len(e) for e in events),
+                extra_attrs={"my_ta.partition": partition_id},
+            )
         """
         attrs = {ATTR_MODINPUT_NAME: self._stanza_name}
         if extra_attrs:
@@ -623,15 +752,44 @@ class StanzaObservabilityRecorder:
             self._service.event_bytes_counter.add(byte_count, attributes=attrs)
 
     def flush(self) -> None:
-        """Force-flush all metric readers via ``ObservabilityService.flush()``."""
+        """Force-flush all metric readers.
+
+        Delegates to :meth:`ObservabilityService.flush` (which calls
+        ``MeterProvider.force_flush()`` internally).  Called automatically by
+        ``__exit__`` when the recorder is used as a context manager, so you
+        rarely need to call this directly.
+
+        Call it explicitly only when you are not using the context manager and
+        need to guarantee delivery before the process exits::
+
+            obs = StanzaObservabilityRecorder("my-input", logger, stanza_name)
+            try:
+                obs.record(len(events), total_bytes)
+            finally:
+                obs.flush()
+        """
         self._service.flush()
 
     def __enter__(self) -> "StanzaObservabilityRecorder":
+        """Return *self* to support the ``with`` statement."""
         return self
 
     def __exit__(self, *_) -> bool:
+        """Flush all metric readers and allow exceptions to propagate.
+
+        Returns ``False`` so any exception raised inside the ``with`` block
+        is re-raised after flushing.
+        """
         self.flush()
         return False
 
     def _emit_zero_baseline(self) -> None:
+        """Emit ``add(0)`` on both built-in counters.
+
+        Called once from ``__init__``.  Ensures that the metric series for this
+        stanza appears in dashboards and alerting rules from the very first
+        collection cycle, even when no events were ingested.  Without this
+        baseline, a stanza that has never produced data is indistinguishable
+        from a stanza that has never been seen at all.
+        """
         self.record(0, 0)
