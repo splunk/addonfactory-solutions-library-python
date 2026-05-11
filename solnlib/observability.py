@@ -484,7 +484,14 @@ class ObservabilityService:
                 server_cert = f.read()
 
             credentials = grpc.ssl_channel_credentials(root_certificates=server_cert)
-            exporter = OTLPMetricExporter(endpoint=endpoint, credentials=credentials)
+            exporter = OTLPMetricExporter(
+                endpoint=endpoint,
+                credentials=credentials,
+                preferred_temporality={
+                    Counter: AggregationTemporality.DELTA,
+                    Histogram: AggregationTemporality.DELTA,
+                },
+            )
             self._logger.info("OTLP gRPC exporter configured with TLS for %s", endpoint)
             return exporter
 

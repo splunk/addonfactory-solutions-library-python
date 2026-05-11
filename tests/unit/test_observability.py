@@ -18,7 +18,8 @@ import logging
 from unittest.mock import MagicMock
 
 import pytest
-from opentelemetry.sdk.metrics.export import MetricExportResult
+from opentelemetry.sdk.metrics import Counter, Histogram
+from opentelemetry.sdk.metrics.export import AggregationTemporality, MetricExportResult
 
 from solnlib.observability import LoggerMetricExporter, ObservabilityService
 
@@ -433,3 +434,38 @@ class TestObservabilityService:
         result = ObservabilityService._create_otlp_exporter(svc)
         # Assert
         assert result is mock_exporter
+
+    def test_create_otlp_exporter_uses_delta_temporality(
+        self, logger, monkeypatch, tmp_path
+    ):
+        # Arrange
+        monkeypatch.setenv("SPOTLIGHT_OTEL_RECEIVER_PORT", "4317")
+        monkeypatch.setenv("SPLUNK_HOME", str(tmp_path))
+        cert_path = tmp_path / "var/packages/data/spotlight-collector"
+        cert_path.mkdir(parents=True)
+        (cert_path / "server.crt").write_bytes(b"fake-cert")
+        monkeypatch.setattr(
+            "solnlib.observability.grpc.ssl_channel_credentials",
+            MagicMock(return_value=MagicMock()),
+        )
+        mock_exporter_cls = MagicMock(return_value=MagicMock())
+        monkeypatch.setattr(
+            "solnlib.observability.OTLPMetricExporter",
+            mock_exporter_cls,
+        )
+        # Do NOT use _make_service — it patches _create_otlp_exporter away.
+        # Create a bare svc object and call the real method directly.
+        svc = ObservabilityService(
+            modinput_type="test-input",
+            logger=logger,
+            ta_name="my_ta",
+            ta_version="1.0.0",
+        )
+        mock_exporter_cls.reset_mock()
+        # Act
+        ObservabilityService._create_otlp_exporter(svc)
+        # Assert — preferred_temporality must set DELTA for Counter and Histogram
+        _, kwargs = mock_exporter_cls.call_args
+        temporality = kwargs["preferred_temporality"]
+        assert temporality[Counter] == AggregationTemporality.DELTA
+        assert temporality[Histogram] == AggregationTemporality.DELTA
