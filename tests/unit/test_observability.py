@@ -469,3 +469,31 @@ class TestObservabilityService:
         temporality = kwargs["preferred_temporality"]
         assert temporality[Counter] == AggregationTemporality.DELTA
         assert temporality[Histogram] == AggregationTemporality.DELTA
+
+    def test_flush_calls_provider_force_flush(self, logger, monkeypatch):
+        # Arrange
+        svc = _make_service(logger, monkeypatch)
+        mock_provider = MagicMock()
+        svc._provider = mock_provider
+        # Act
+        svc.flush(timeout_millis=5_000)
+        # Assert
+        mock_provider.force_flush.assert_called_once_with(timeout_millis=5000)
+
+    def test_flush_is_noop_when_provider_missing(self, logger, monkeypatch):
+        # Arrange
+        svc = _make_service(logger, monkeypatch)
+        svc._provider = None
+        # Act / Assert — must not raise
+        svc.flush()
+
+    def test_flush_logs_warning_on_exception(self, logger, monkeypatch):
+        # Arrange
+        svc = _make_service(logger, monkeypatch)
+        mock_provider = MagicMock()
+        mock_provider.force_flush.side_effect = RuntimeError("boom")
+        svc._provider = mock_provider
+        # Act
+        svc.flush()
+        # Assert
+        logger.warning.assert_called()

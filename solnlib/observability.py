@@ -283,6 +283,7 @@ class ObservabilityService:
         self.event_count_counter: Optional[Counter] = None
         self.event_bytes_counter: Optional[Counter] = None
         self._meter: Optional[Meter] = None
+        self._provider: Optional[MeterProvider] = None
 
         try:
             if ta_name is None or ta_version is None:
@@ -313,8 +314,10 @@ class ObservabilityService:
             for exporter in extra_exporters or []:
                 metric_readers.append(PeriodicExportingMetricReader(exporter))
 
-            provider = MeterProvider(resource=resource, metric_readers=metric_readers)
-            self._meter = provider.get_meter(ta_name, ta_version)
+            self._provider = MeterProvider(
+                resource=resource, metric_readers=metric_readers
+            )
+            self._meter = self._provider.get_meter(ta_name, ta_version)
 
             self.event_count_counter = self._meter.create_counter(
                 name="splunk.addon.events",
@@ -538,3 +541,16 @@ class ObservabilityService:
         if self._meter is None:
             return None
         return callback(self._meter)
+
+    def flush(self, timeout_millis: float = 30_000) -> None:
+        """Force-flush all metric readers.
+
+        Should be called before the modular input process exits to ensure
+        all buffered metrics are exported.
+        """
+        if self._provider is None:
+            return
+        try:
+            self._provider.force_flush(timeout_millis=int(timeout_millis))
+        except Exception as e:
+            self._logger.warning("Failed to flush metrics: %s", e)
