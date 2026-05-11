@@ -15,6 +15,7 @@
 #
 
 import logging
+import sys
 from unittest.mock import MagicMock
 
 import pytest
@@ -414,14 +415,18 @@ class TestObservabilityService:
         cert_path = tmp_path / "var/packages/data/spotlight-collector"
         cert_path.mkdir(parents=True)
         (cert_path / "server.crt").write_bytes(b"fake-cert")
-        monkeypatch.setattr(
-            "solnlib.observability.grpc.ssl_channel_credentials",
-            MagicMock(return_value=MagicMock()),
-        )
+        # Patch grpc module directly (it's imported inside _create_otlp_exporter)
+        mock_grpc = MagicMock()
+        mock_grpc.ssl_channel_credentials = MagicMock(return_value=MagicMock())
+        monkeypatch.setitem(sys.modules, "grpc", mock_grpc)
+        # Patch OTLPMetricExporter module
+        mock_otlp_module = MagicMock()
         mock_exporter = MagicMock()
-        monkeypatch.setattr(
-            "solnlib.observability.OTLPMetricExporter",
-            MagicMock(return_value=mock_exporter),
+        mock_otlp_module.OTLPMetricExporter = MagicMock(return_value=mock_exporter)
+        monkeypatch.setitem(
+            sys.modules,
+            "opentelemetry.exporter.otlp.proto.grpc.metric_exporter",
+            mock_otlp_module,
         )
         # Build svc without patching _create_otlp_exporter so the real method is called
         svc = ObservabilityService(
@@ -444,14 +449,18 @@ class TestObservabilityService:
         cert_path = tmp_path / "var/packages/data/spotlight-collector"
         cert_path.mkdir(parents=True)
         (cert_path / "server.crt").write_bytes(b"fake-cert")
-        monkeypatch.setattr(
-            "solnlib.observability.grpc.ssl_channel_credentials",
-            MagicMock(return_value=MagicMock()),
-        )
+        # Patch grpc module directly (it's imported inside _create_otlp_exporter)
+        mock_grpc = MagicMock()
+        mock_grpc.ssl_channel_credentials = MagicMock(return_value=MagicMock())
+        monkeypatch.setitem(sys.modules, "grpc", mock_grpc)
+        # Patch OTLPMetricExporter module
         mock_exporter_cls = MagicMock(return_value=MagicMock())
-        monkeypatch.setattr(
-            "solnlib.observability.OTLPMetricExporter",
-            mock_exporter_cls,
+        mock_otlp_module = MagicMock()
+        mock_otlp_module.OTLPMetricExporter = mock_exporter_cls
+        monkeypatch.setitem(
+            sys.modules,
+            "opentelemetry.exporter.otlp.proto.grpc.metric_exporter",
+            mock_otlp_module,
         )
         # Do NOT use _make_service — it patches _create_otlp_exporter away.
         # Create a bare svc object and call the real method directly.
@@ -497,3 +506,53 @@ class TestObservabilityService:
         svc.flush()
         # Assert
         logger.warning.assert_called()
+
+    def test_module_importable_without_grpc(self, monkeypatch):
+        # Arrange
+        import builtins
+
+        # Simulate grpc not being installed by temporarily hiding it
+        grpc_mod = sys.modules.pop("grpc", None)
+        otlp_mod = sys.modules.pop(
+            "opentelemetry.exporter.otlp.proto.grpc.metric_exporter", None
+        )
+        # Also clear the observability module and any submodules
+        obs_mods_to_clear = [
+            k for k in sys.modules.keys() if k.startswith("solnlib.observability")
+        ]
+        saved_obs_mods = {k: sys.modules.pop(k) for k in obs_mods_to_clear}
+
+        # Mock ImportError for grpc modules before import
+        original_import = builtins.__import__
+
+        def mock_import(name, *args, **kwargs):
+            if (
+                name == "grpc"
+                or name == "opentelemetry.exporter.otlp.proto.grpc.metric_exporter"
+            ):
+                raise ModuleNotFoundError(f"No module named '{name}'")
+            return original_import(name, *args, **kwargs)
+
+        try:
+            # Patch __import__ to raise for grpc modules
+            builtins.__import__ = mock_import
+            # Act
+            import solnlib.observability as reimported_obs
+
+            # Assert
+            assert hasattr(reimported_obs, "ObservabilityService")
+            assert hasattr(reimported_obs, "LoggerMetricExporter")
+        except ImportError as e:
+            pytest.fail(
+                f"solnlib.observability should be importable without grpcio, but got: {e}"
+            )
+        finally:
+            builtins.__import__ = original_import
+            if grpc_mod is not None:
+                sys.modules["grpc"] = grpc_mod
+            if otlp_mod is not None:
+                sys.modules[
+                    "opentelemetry.exporter.otlp.proto.grpc.metric_exporter"
+                ] = otlp_mod
+            for k, v in saved_obs_mods.items():
+                sys.modules[k] = v

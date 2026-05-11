@@ -60,7 +60,6 @@ import os
 import ssl
 import urllib.request
 from typing import Callable, Optional, Union
-import grpc
 from .splunkenv import get_conf_stanzas
 from opentelemetry.metrics import Instrument, Meter
 from opentelemetry.sdk.metrics import MeterProvider, Counter, Histogram
@@ -72,7 +71,6 @@ from opentelemetry.sdk.metrics.export import (
     AggregationTemporality,
 )
 from opentelemetry.sdk.resources import Resource
-from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
 
 _Logger = Union[logging.Logger, logging.LoggerAdapter]
 
@@ -452,6 +450,11 @@ class ObservabilityService:
         - Any other exception occurs during exporter construction.
         """
         try:
+            import grpc
+            from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import (
+                OTLPMetricExporter,
+            )
+
             splunk_home = os.environ.get("SPLUNK_HOME", "/opt/splunk")
             otel_port = self._resolve_otlp_port()
 
