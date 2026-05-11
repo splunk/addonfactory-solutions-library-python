@@ -15,7 +15,7 @@
 #
 """OpenTelemetry observability utilities for Splunk add-ons.
 
-This module provides two public components:
+This module provides three public components:
 
 - :class:`LoggerMetricExporter` — an OpenTelemetry ``MetricExporter`` that
   writes every exported data point to a standard Python logger.  It is useful
@@ -28,38 +28,30 @@ This module provides two public components:
   Splunk Spotlight OTLP collector and falls back silently when it is not
   reachable, so callers never have to handle observability failures themselves.
 
+- :class:`StanzaObservabilityRecorder` — a stanza-scoped recorder that wraps
+  ``ObservabilityService`` with a per-process singleton cache.  Bind it to a
+  single stanza name and call :meth:`~StanzaObservabilityRecorder.record` after
+  each batch of ingested events.  Use as a context manager for automatic flush
+  on exit.
+
 Typical usage::
 
     import logging
-    from solnlib.observability import LoggerMetricExporter, ObservabilityService, ATTR_MODINPUT_NAME
+    from solnlib.observability import StanzaObservabilityRecorder
 
     logger = logging.getLogger(__name__)
 
-    obs = ObservabilityService(
-        modinput_type="my-input",
-        logger=logger,
-        ta_name="my_ta",
-        ta_version="1.0.0",
-        extra_exporters=[LoggerMetricExporter(logger)],
-    )
-
-    # In your event collection loop:
-    if obs.event_count_counter:
-        obs.event_count_counter.add(
-            len(events), {ATTR_MODINPUT_NAME: stanza_name}
-        )
-    if obs.event_bytes_counter:
-        obs.event_bytes_counter.add(
-            total_bytes, {ATTR_MODINPUT_NAME: stanza_name}
-        )
+    with StanzaObservabilityRecorder("my-input", logger, stanza_name) as obs:
+        obs.record(len(events), total_bytes)
 """
 
 import json
 import logging
 import os
 import ssl
+import threading
 import urllib.request
-from typing import Callable, Optional, Union
+from typing import Callable, ClassVar, Optional, Union
 from .splunkenv import get_conf_stanzas
 from opentelemetry.metrics import Instrument, Meter
 from opentelemetry.sdk.metrics import MeterProvider, Counter, Histogram
@@ -557,3 +549,89 @@ class ObservabilityService:
             self._provider.force_flush(timeout_millis=int(timeout_millis))
         except Exception as e:
             self._logger.warning("Failed to flush metrics: %s", e)
+
+
+class StanzaObservabilityRecorder:
+    """Stanza-scoped observability recorder backed by a shared ``ObservabilityService``.
+
+    One ``ObservabilityService`` is created per *modinput_type* per process and
+    cached for the lifetime of the process.  Each ``StanzaObservabilityRecorder``
+    instance is bound to a single *stanza_name*, which is automatically included
+    as the ``splunk.modinput.name`` attribute on every data point.
+
+    Implements the context-manager protocol: ``__exit__`` calls :meth:`flush`
+    so metrics are exported before the stanza's process exits.
+
+    Example::
+
+        from solnlib.observability import StanzaObservabilityRecorder
+
+        with StanzaObservabilityRecorder("event-hub", logger, stanza_name) as obs:
+            obs.record(len(events), total_bytes)
+    """
+
+    _instances: ClassVar[dict[str, ObservabilityService]] = {}
+    _lock: ClassVar[threading.Lock] = threading.Lock()
+
+    def __init__(
+        self,
+        modinput_type: str,
+        logger: _Logger,
+        stanza_name: str,
+    ) -> None:
+        self._stanza_name = stanza_name
+        self._service = self._get_or_create_service(modinput_type, logger)
+        self._emit_zero_baseline()
+
+    @classmethod
+    def _get_or_create_service(
+        cls, modinput_type: str, logger: _Logger
+    ) -> ObservabilityService:
+        with cls._lock:
+            if modinput_type not in cls._instances:
+                cls._instances[modinput_type] = ObservabilityService(
+                    modinput_type=modinput_type,
+                    logger=logger,
+                    extra_exporters=[LoggerMetricExporter(logger)],
+                )
+        return cls._instances[modinput_type]
+
+    @classmethod
+    def get_service(cls, modinput_type: str) -> Optional[ObservabilityService]:
+        """Return the cached ``ObservabilityService`` for *modinput_type*, or ``None``."""
+        with cls._lock:
+            return cls._instances.get(modinput_type)
+
+    def record(
+        self,
+        event_count: int,
+        byte_count: int,
+        extra_attrs: Optional[dict] = None,
+    ) -> None:
+        """Add *event_count* and *byte_count* to the built-in counters.
+
+        *extra_attrs* are merged with ``{"splunk.modinput.name": stanza_name}``
+        before being passed to the counter.  Silently no-ops if either counter
+        is ``None`` (i.e. ``ObservabilityService`` failed to initialise).
+        """
+        attrs = {ATTR_MODINPUT_NAME: self._stanza_name}
+        if extra_attrs:
+            attrs.update(extra_attrs)
+        if self._service.event_count_counter:
+            self._service.event_count_counter.add(event_count, attributes=attrs)
+        if self._service.event_bytes_counter:
+            self._service.event_bytes_counter.add(byte_count, attributes=attrs)
+
+    def flush(self) -> None:
+        """Force-flush all metric readers via ``ObservabilityService.flush()``."""
+        self._service.flush()
+
+    def __enter__(self) -> "StanzaObservabilityRecorder":
+        return self
+
+    def __exit__(self, *_) -> bool:
+        self.flush()
+        return False
+
+    def _emit_zero_baseline(self) -> None:
+        self.record(0, 0)
