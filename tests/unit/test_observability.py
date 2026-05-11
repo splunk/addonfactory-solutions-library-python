@@ -664,41 +664,14 @@ class TestStanzaObservabilityRecorder:
         # Must not raise
         rec.record(10, 2048)
 
-    def test_emit_zero_baseline_called_in_init(
-        self, monkeypatch, clear_stanza_recorder_cache
-    ):
+    def test_emit_zero_baseline_called_in_init(self, clear_stanza_recorder_cache):
         from solnlib.observability import StanzaObservabilityRecorder
 
-        monkeypatch.setattr(
-            "solnlib.observability.ObservabilityService._create_otlp_exporter",
-            lambda self: None,
-        )
         logger = MagicMock(spec=logging.Logger)
-        mock_count = MagicMock()
-        mock_bytes = MagicMock()
+        with patch.object(StanzaObservabilityRecorder, "record") as mock_record:
+            StanzaObservabilityRecorder("kql", logger, "my-stanza")
 
-        with patch(
-            "solnlib.observability.ObservabilityService.__init__",
-            lambda self, **kwargs: None,
-        ):
-            pass  # We'll use a different approach below
-
-        # Create recorder, then inspect that counters got add(0) called
-        rec = StanzaObservabilityRecorder("kql", logger, "my-stanza")
-        svc = rec._service
-        if svc.event_count_counter is not None:
-            # If service initialised, counters exist — check add(0,...) was called
-            # We can only verify indirectly since we can't intercept before __init__
-            # So we test _emit_zero_baseline directly instead
-            svc.event_count_counter = mock_count
-            svc.event_bytes_counter = mock_bytes
-            rec._emit_zero_baseline()
-            mock_count.add.assert_called_once_with(
-                0, attributes={"splunk.modinput.name": "my-stanza"}
-            )
-            mock_bytes.add.assert_called_once_with(
-                0, attributes={"splunk.modinput.name": "my-stanza"}
-            )
+        mock_record.assert_called_once_with(0, 0)
 
     def test_flush_delegates_to_service(self, monkeypatch, clear_stanza_recorder_cache):
         rec = self._make_recorder(monkeypatch)
