@@ -120,6 +120,10 @@ class _DowngradeToInfoFilter(logging.Filter):
 
 _downgrade_to_info_filter = _DowngradeToInfoFilter()
 
+# Intentional process-wide policy: observability is auxiliary functionality, so
+# diagnostics emitted by the OpenTelemetry SDK and exporters are capped at INFO
+# across all signal types (metrics, logs, and traces). This preserves diagnostic
+# messages without surfacing observability failures as add-on WARNING/ERROR events.
 _OTLP_LOGGERS = (
     "opentelemetry.exporter.otlp.proto.grpc.exporter",
     "opentelemetry.util.re",
