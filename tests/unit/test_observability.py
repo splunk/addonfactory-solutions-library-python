@@ -1247,6 +1247,72 @@ class TestObservabilityService:
         )
         assert all(levelno <= logging.INFO for _, levelno in captured)
 
+    @pytest.mark.parametrize(
+        "modinput_type",
+        [123, None, "bad\nvalue", "bad\rvalue", "\ud800"],
+    )
+    def test_init_direct_call_degrades_gracefully_on_invalid_modinput_type(
+        self, logger, monkeypatch, modinput_type
+    ):
+        monkeypatch.setattr(
+            "solnlib.observability.ObservabilityService._create_otlp_exporter",
+            lambda self: None,
+        )
+        svc = ObservabilityService(
+            modinput_type=modinput_type,
+            logger=logger,
+            ta_name="my_ta",
+            ta_version="1.0.0",
+        )
+        assert svc._meter is None
+        assert svc.event_count_counter is None
+        assert svc.event_bytes_counter is None
+        logger.info.assert_called()
+
+    def test_init_valid_modinput_type_still_initialises(self, logger, monkeypatch):
+        svc = _make_service(logger, monkeypatch)
+        assert svc._meter is not None
+
+    def test_init_invalid_modinput_type_error_sanitizes_evil_type_name(
+        self, logger, monkeypatch
+    ):
+        # Same class-name exposure as StanzaObservabilityRecorder's TypeError
+        # (Task 10): fix at the raise site for consistency. Checking the
+        # final logged output is not sufficient proof here — this ValueError
+        # is always caught internally and passed through _safe_exception_str,
+        # which re-sanitizes whatever it's given. A test that only inspects
+        # logger.info.call_args_list would still pass even if the raise-site
+        # fix were reverted, since the downstream re-sanitization masks the
+        # regression. Capture the exception object handed to
+        # _safe_exception_str instead, and assert its own stored message
+        # (args[0]) is already clean, proving the local fix independent of
+        # that downstream safety net.
+        monkeypatch.setattr(
+            "solnlib.observability.ObservabilityService._create_otlp_exporter",
+            lambda self: None,
+        )
+        captured_errors = []
+
+        def _capturing_safe_exception_str(error):
+            captured_errors.append(error)
+            return "SAFE"
+
+        monkeypatch.setattr(
+            "solnlib.observability._safe_exception_str",
+            _capturing_safe_exception_str,
+        )
+        evil_type = type("bad\r\nname", (), {})
+        ObservabilityService(
+            modinput_type=evil_type(),
+            logger=logger,
+            ta_name="my_ta",
+            ta_version="1.0.0",
+        )
+        assert captured_errors, "expected the ValueError to reach _safe_exception_str"
+        raw_message = captured_errors[0].args[0]
+        assert "\n" not in raw_message
+        assert "\r" not in raw_message
+
 
 # ---------------------------------------------------------------------------
 # _DowngradeToInfoFilter

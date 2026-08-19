@@ -407,6 +407,14 @@ class ObservabilityService:
             logging.getLogger(logger_name).addFilter(_downgrade_to_info_filter)
 
         try:
+            if type(modinput_type) is not str or not _is_safe_identifier_str(
+                modinput_type
+            ):
+                raise ValueError(
+                    "modinput_type must be a str without CR/LF, got "
+                    f"{_sanitize_for_log(type(modinput_type).__name__)}"
+                )
+
             if ta_name is None or ta_version is None:
                 _ta_name, _ta_version = self._read_ta_info()
                 ta_name = ta_name or _ta_name
