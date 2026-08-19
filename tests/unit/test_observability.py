@@ -22,6 +22,8 @@ import os
 import shutil
 import subprocess
 import sys
+import threading
+import time
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -559,6 +561,40 @@ class TestCircuitBreakerExporter:
             wrapper.export(MagicMock())
         assert logger.info.call_count == 4
         assert "3 consecutive failures" in logger.info.call_args_list[-1].args[0]
+
+    def test_export_and_shutdown_are_mutually_exclusive(self, logger):
+        from solnlib.observability import _CircuitBreakerExporter
+
+        inner = _FakeInnerExporter()
+        inner.results.append(MetricExportResult.SUCCESS)
+        export_started = threading.Event()
+        release_export = threading.Event()
+        real_export = inner.export
+
+        def blocking_export(metrics_data, timeout_millis=10_000, **kwargs):
+            export_started.set()
+            release_export.wait(timeout=5)
+            return real_export(metrics_data, timeout_millis=timeout_millis, **kwargs)
+
+        inner.export = blocking_export
+        wrapper = _CircuitBreakerExporter(inner, logger)
+
+        export_thread = threading.Thread(target=wrapper.export, args=(MagicMock(),))
+        export_thread.start()
+        assert export_started.wait(timeout=5)
+
+        shutdown_thread = threading.Thread(target=wrapper.shutdown)
+        shutdown_thread.start()
+        time.sleep(0.2)
+        assert wrapper._shutdown_called is False
+        assert inner.shutdown_calls == []
+
+        release_export.set()
+        export_thread.join(timeout=5)
+        shutdown_thread.join(timeout=5)
+
+        assert wrapper._shutdown_called is True
+        assert len(inner.shutdown_calls) == 1
 
 
 # ---------------------------------------------------------------------------

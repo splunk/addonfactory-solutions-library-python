@@ -260,6 +260,7 @@ class _CircuitBreakerExporter(MetricExporter):
         self._consecutive_failures = 0
         self._tripped = False
         self._shutdown_called = False
+        self._lock = threading.Lock()
 
     def export(
         self,
@@ -267,40 +268,43 @@ class _CircuitBreakerExporter(MetricExporter):
         timeout_millis: float = 10_000,
         **kwargs,
     ) -> MetricExportResult:
-        if self._tripped:
-            return MetricExportResult.SUCCESS
+        with self._lock:
+            if self._tripped:
+                return MetricExportResult.SUCCESS
 
-        try:
-            result = self._inner.export(
-                metrics_data, timeout_millis=timeout_millis, **kwargs
-            )
-        except Exception as error:
-            self._logger.info(
-                "OTLP export raised an exception: %s",
-                _safe_exception_repr(error),
-            )
-            result = MetricExportResult.FAILURE
+            try:
+                result = self._inner.export(
+                    metrics_data, timeout_millis=timeout_millis, **kwargs
+                )
+            except Exception as error:
+                self._logger.info(
+                    "OTLP export raised an exception: %s",
+                    _safe_exception_repr(error),
+                )
+                result = MetricExportResult.FAILURE
 
-        if result == MetricExportResult.SUCCESS:
-            self._consecutive_failures = 0
+            if result == MetricExportResult.SUCCESS:
+                self._consecutive_failures = 0
+                return result
+
+            self._consecutive_failures += 1
+            if self._consecutive_failures >= self._MAX_CONSECUTIVE_FAILURES:
+                self._tripped = True
+                self._logger.info("OTLP export disabled after 3 consecutive failures")
             return result
 
-        self._consecutive_failures += 1
-        if self._consecutive_failures >= self._MAX_CONSECUTIVE_FAILURES:
-            self._tripped = True
-            self._logger.info("OTLP export disabled after 3 consecutive failures")
-        return result
-
     def force_flush(self, timeout_millis: float = 10_000) -> bool:
-        if self._tripped:
-            return True
-        return self._inner.force_flush(timeout_millis=timeout_millis)
+        with self._lock:
+            if self._tripped:
+                return True
+            return self._inner.force_flush(timeout_millis=timeout_millis)
 
     def shutdown(self, timeout_millis: float = 30_000, **kwargs) -> None:
-        if self._shutdown_called:
-            return
-        self._shutdown_called = True
-        self._inner.shutdown(timeout_millis=timeout_millis, **kwargs)
+        with self._lock:
+            if self._shutdown_called:
+                return
+            self._shutdown_called = True
+            self._inner.shutdown(timeout_millis=timeout_millis, **kwargs)
 
 
 class ObservabilityService:
