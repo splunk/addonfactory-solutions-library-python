@@ -17,6 +17,7 @@
 import contextlib
 import io
 import logging
+import math
 import os
 import shutil
 import subprocess
@@ -25,7 +26,12 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from opentelemetry.sdk.metrics import Counter, Histogram
-from opentelemetry.sdk.metrics.export import AggregationTemporality, MetricExportResult
+from opentelemetry.sdk.metrics.export import (
+    AggregationTemporality,
+    MetricExporter,
+    MetricExportResult,
+    PeriodicExportingMetricReader,
+)
 
 from solnlib.observability import LoggerMetricExporter, ObservabilityService
 
@@ -337,6 +343,222 @@ class TestLoggerMetricExporter:
     def test_force_flush_returns_true(self, logger):
         # Arrange / Act / Assert
         assert LoggerMetricExporter(logger).force_flush() is True
+
+
+# ---------------------------------------------------------------------------
+# _CircuitBreakerExporter
+# ---------------------------------------------------------------------------
+
+
+class _FakeInnerExporter(MetricExporter):
+    """Real MetricExporter subclass for deterministic circuit-breaker tests."""
+
+    def __init__(self, temporality=None, aggregation=None):
+        super().__init__(
+            preferred_temporality=temporality
+            or {
+                Counter: AggregationTemporality.DELTA,
+                Histogram: AggregationTemporality.DELTA,
+            },
+            preferred_aggregation=aggregation or {},
+        )
+        self.results = []  # queue of MetricExportResult values or Exception instances
+        self.export_calls = []
+        self.force_flush_calls = []
+        self.shutdown_calls = []
+
+    def export(self, metrics_data, timeout_millis=10_000, **kwargs):
+        self.export_calls.append((metrics_data, timeout_millis, kwargs))
+        outcome = self.results.pop(0)
+        if isinstance(outcome, Exception):
+            raise outcome
+        return outcome
+
+    def force_flush(self, timeout_millis=10_000):
+        self.force_flush_calls.append(timeout_millis)
+        return True
+
+    def shutdown(self, timeout_millis=30_000, **kwargs):
+        self.shutdown_calls.append((timeout_millis, kwargs))
+
+
+class TestCircuitBreakerExporter:
+    def test_preserves_preferred_temporality_and_aggregation(self, logger):
+        from solnlib.observability import _CircuitBreakerExporter
+
+        temporality = {Counter: AggregationTemporality.DELTA}
+        aggregation = {"some": "aggregation"}
+        inner = _FakeInnerExporter(temporality, aggregation)
+        wrapper = _CircuitBreakerExporter(inner, logger)
+        assert wrapper._preferred_temporality == temporality
+        assert wrapper._preferred_aggregation == aggregation
+
+    def test_real_reader_reads_temporality_from_wrapper(self, logger):
+        from solnlib.observability import _CircuitBreakerExporter
+
+        temporality = {
+            Counter: AggregationTemporality.DELTA,
+            Histogram: AggregationTemporality.DELTA,
+        }
+        inner = _FakeInnerExporter(temporality)
+        wrapper = _CircuitBreakerExporter(inner, logger)
+        reader = PeriodicExportingMetricReader(
+            wrapper, export_interval_millis=math.inf
+        )
+        try:
+            assert reader._preferred_temporality == temporality
+        finally:
+            reader.shutdown()
+
+    def test_export_forwards_timeout_and_kwargs(self, logger):
+        from solnlib.observability import _CircuitBreakerExporter
+
+        inner = _FakeInnerExporter()
+        inner.results.append(MetricExportResult.SUCCESS)
+        wrapper = _CircuitBreakerExporter(inner, logger)
+        metrics_data = MagicMock()
+        wrapper.export(metrics_data, timeout_millis=1234, extra_kwarg="sentinel")
+        assert inner.export_calls == [(metrics_data, 1234, {"extra_kwarg": "sentinel"})]
+
+    def test_force_flush_forwards_timeout_before_trip(self, logger):
+        from solnlib.observability import _CircuitBreakerExporter
+
+        inner = _FakeInnerExporter()
+        wrapper = _CircuitBreakerExporter(inner, logger)
+        assert wrapper.force_flush(timeout_millis=5000) is True
+        assert inner.force_flush_calls == [5000]
+
+    def test_force_flush_is_noop_after_trip(self, logger):
+        from solnlib.observability import _CircuitBreakerExporter
+
+        inner = _FakeInnerExporter()
+        inner.results.extend([MetricExportResult.FAILURE] * 3)
+        wrapper = _CircuitBreakerExporter(inner, logger)
+        for _ in range(3):
+            wrapper.export(MagicMock())
+        assert wrapper.force_flush(timeout_millis=5000) is True
+        assert inner.force_flush_calls == []
+
+    def test_shutdown_forwards_timeout_millis_and_kwargs(self, logger):
+        from solnlib.observability import _CircuitBreakerExporter
+
+        inner = _FakeInnerExporter()
+        wrapper = _CircuitBreakerExporter(inner, logger)
+        wrapper.shutdown(timeout_millis=9999, extra_kwarg="sentinel")
+        assert inner.shutdown_calls == [(9999, {"extra_kwarg": "sentinel"})]
+
+    def test_shutdown_accepts_timeout_kwarg_from_real_reader(self, logger):
+        from solnlib.observability import _CircuitBreakerExporter
+
+        inner = _FakeInnerExporter()
+        wrapper = _CircuitBreakerExporter(inner, logger)
+        wrapper.shutdown(timeout=1.5)
+        assert inner.shutdown_calls == [(30_000, {"timeout": 1.5})]
+
+    def test_shutdown_delegates_exactly_once_including_after_trip(self, logger):
+        from solnlib.observability import _CircuitBreakerExporter
+
+        inner = _FakeInnerExporter()
+        inner.results.extend([MetricExportResult.FAILURE] * 3)
+        wrapper = _CircuitBreakerExporter(inner, logger)
+        for _ in range(3):
+            wrapper.export(MagicMock())
+        wrapper.shutdown()
+        wrapper.shutdown()
+        assert len(inner.shutdown_calls) == 1
+
+    def test_export_returns_failure_and_increments_state_on_failure_result(
+        self, logger
+    ):
+        from solnlib.observability import _CircuitBreakerExporter
+
+        inner = _FakeInnerExporter()
+        inner.results.append(MetricExportResult.FAILURE)
+        wrapper = _CircuitBreakerExporter(inner, logger)
+        result = wrapper.export(MagicMock())
+        assert result == MetricExportResult.FAILURE
+        assert wrapper._consecutive_failures == 1
+        logger.info.assert_not_called()
+
+    def test_export_catches_exception_logs_and_returns_failure(self, logger):
+        from solnlib.observability import _CircuitBreakerExporter
+
+        inner = _FakeInnerExporter()
+        inner.results.append(RuntimeError("boom"))
+        wrapper = _CircuitBreakerExporter(inner, logger)
+        result = wrapper.export(MagicMock())
+        assert result == MetricExportResult.FAILURE
+        assert wrapper._consecutive_failures == 1
+        logger.info.assert_called_once()
+
+    def test_export_resets_failure_count_after_success(self, logger):
+        from solnlib.observability import _CircuitBreakerExporter
+
+        inner = _FakeInnerExporter()
+        inner.results.extend(
+            [MetricExportResult.FAILURE, MetricExportResult.SUCCESS]
+        )
+        wrapper = _CircuitBreakerExporter(inner, logger)
+        wrapper.export(MagicMock())
+        assert wrapper._consecutive_failures == 1
+        wrapper.export(MagicMock())
+        assert wrapper._consecutive_failures == 0
+
+    @pytest.mark.parametrize(
+        "outcomes",
+        [
+            [MetricExportResult.FAILURE] * 3,
+            [RuntimeError("boom")] * 3,
+            [MetricExportResult.FAILURE, RuntimeError("boom"), MetricExportResult.FAILURE],
+        ],
+    )
+    def test_export_trips_on_third_consecutive_failure(self, logger, outcomes):
+        from solnlib.observability import _CircuitBreakerExporter
+
+        inner = _FakeInnerExporter()
+        inner.results.extend(outcomes)
+        wrapper = _CircuitBreakerExporter(inner, logger)
+        for _ in range(3):
+            wrapper.export(MagicMock())
+        assert wrapper._tripped is True
+
+    def test_export_third_attempt_returns_actual_failure_not_synthetic_success(
+        self, logger
+    ):
+        from solnlib.observability import _CircuitBreakerExporter
+
+        inner = _FakeInnerExporter()
+        inner.results.extend([MetricExportResult.FAILURE] * 3)
+        wrapper = _CircuitBreakerExporter(inner, logger)
+        results = [wrapper.export(MagicMock()) for _ in range(3)]
+        assert results == [MetricExportResult.FAILURE] * 3
+
+    def test_export_after_trip_never_calls_inner_and_no_further_logs(self, logger):
+        from solnlib.observability import _CircuitBreakerExporter
+
+        inner = _FakeInnerExporter()
+        inner.results.extend([MetricExportResult.FAILURE] * 3)
+        wrapper = _CircuitBreakerExporter(inner, logger)
+        for _ in range(3):
+            wrapper.export(MagicMock())
+        logger.reset_mock()
+        result = wrapper.export(MagicMock())
+        assert result == MetricExportResult.SUCCESS
+        assert len(inner.export_calls) == 3
+        logger.info.assert_not_called()
+
+    def test_three_consecutive_exceptions_emit_three_info_plus_one_trip_log(
+        self, logger
+    ):
+        from solnlib.observability import _CircuitBreakerExporter
+
+        inner = _FakeInnerExporter()
+        inner.results.extend([RuntimeError("boom")] * 3)
+        wrapper = _CircuitBreakerExporter(inner, logger)
+        for _ in range(3):
+            wrapper.export(MagicMock())
+        assert logger.info.call_count == 4
+        assert "3 consecutive failures" in logger.info.call_args_list[-1].args[0]
 
 
 # ---------------------------------------------------------------------------
