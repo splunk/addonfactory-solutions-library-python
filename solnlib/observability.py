@@ -859,6 +859,17 @@ class StanzaObservabilityRecorder:
                 ``"my_stanza"``).  Attached as ``"splunk.modinput.name"``
                 on every recorded data point.
         """
+        self._logger = logger
+        if type(modinput_type) is not str or not _is_safe_identifier_str(modinput_type):
+            raise TypeError(
+                "modinput_type must be a str without CR/LF, got "
+                f"{_sanitize_for_log(type(modinput_type).__name__)}"
+            )
+        if type(stanza_name) is not str or not _is_safe_identifier_str(stanza_name):
+            raise TypeError(
+                "stanza_name must be a str without CR/LF, got "
+                f"{_sanitize_for_log(type(stanza_name).__name__)}"
+            )
         self._stanza_name = stanza_name
         self._service = self._get_or_create_service(modinput_type, logger)
         self._emit_zero_baseline()
@@ -952,7 +963,7 @@ class StanzaObservabilityRecorder:
         attrs = {}
         if extra_attrs is not None:
             if type(extra_attrs) is not dict:
-                self._service._logger.info(
+                self._logger.info(
                     "Ignoring extra_attrs: expected dict or None, got %s",
                     _sanitize_for_log(type(extra_attrs).__name__),
                 )
@@ -960,13 +971,13 @@ class StanzaObservabilityRecorder:
                 for key, value in extra_attrs.items():
                     key_error = _attr_key_error(key)
                     if key_error is not None:
-                        self._service._logger.info(
+                        self._logger.info(
                             "Ignoring invalid attribute: %s", key_error
                         )
                         continue
                     value_error = _attr_value_error(value)
                     if value_error is not None:
-                        self._service._logger.info(
+                        self._logger.info(
                             "Ignoring invalid value for attribute %r: %s",
                             key,
                             value_error,
@@ -977,13 +988,13 @@ class StanzaObservabilityRecorder:
 
         event_count_error = _count_error(event_count)
         if event_count_error is not None:
-            self._service._logger.info("Skipping invalid event_count: %s", event_count_error)
+            self._logger.info("Skipping invalid event_count: %s", event_count_error)
         elif self._service.event_count_counter:
             self._service.event_count_counter.add(event_count, attributes=attrs)
 
         byte_count_error = _count_error(byte_count)
         if byte_count_error is not None:
-            self._service._logger.info("Skipping invalid byte_count: %s", byte_count_error)
+            self._logger.info("Skipping invalid byte_count: %s", byte_count_error)
         elif self._service.event_bytes_counter:
             self._service.event_bytes_counter.add(byte_count, attributes=attrs)
 

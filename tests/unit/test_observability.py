@@ -1815,6 +1815,87 @@ class TestStanzaObservabilityRecorder:
                 assert "\n" not in str(arg)
                 assert "\r" not in str(arg)
 
+    @pytest.mark.parametrize(
+        "modinput_type, stanza_name",
+        [
+            (123, "ok"),
+            ("ok", 123),
+            (None, "ok"),
+            ("ok", "bad\nname"),
+            ("ok", "bad\rname"),
+            ("\ud800", "ok"),
+        ],
+    )
+    def test_init_rejects_invalid_identity_values(
+        self, monkeypatch, clear_stanza_recorder_cache, modinput_type, stanza_name
+    ):
+        from solnlib.observability import StanzaObservabilityRecorder
+
+        monkeypatch.setattr(
+            "solnlib.observability.ObservabilityService._create_otlp_exporter",
+            lambda self: None,
+        )
+        with pytest.raises(TypeError):
+            StanzaObservabilityRecorder(
+                modinput_type, MagicMock(spec=logging.Logger), stanza_name
+            )
+
+    def test_init_error_message_omits_raw_value(
+        self, monkeypatch, clear_stanza_recorder_cache
+    ):
+        from solnlib.observability import StanzaObservabilityRecorder
+
+        monkeypatch.setattr(
+            "solnlib.observability.ObservabilityService._create_otlp_exporter",
+            lambda self: None,
+        )
+        secret_value = "TOP-SECRET-SHOULD-NOT-APPEAR"
+        with pytest.raises(TypeError) as exc_info:
+            StanzaObservabilityRecorder(secret_value + "\n", MagicMock(spec=logging.Logger), "ok")
+        assert secret_value not in str(exc_info.value)
+
+    def test_init_accepts_empty_identity_strings(
+        self, monkeypatch, clear_stanza_recorder_cache
+    ):
+        from solnlib.observability import StanzaObservabilityRecorder
+
+        monkeypatch.setattr(
+            "solnlib.observability.ObservabilityService._create_otlp_exporter",
+            lambda self: None,
+        )
+        rec = StanzaObservabilityRecorder("", MagicMock(spec=logging.Logger), "")
+        assert rec._stanza_name == ""
+
+    def test_init_rejects_invalid_identity_before_cache_lookup(
+        self, monkeypatch, clear_stanza_recorder_cache
+    ):
+        from solnlib.observability import StanzaObservabilityRecorder
+
+        with pytest.raises(TypeError):
+            StanzaObservabilityRecorder(
+                "bad\nmodinput", MagicMock(spec=logging.Logger), "ok"
+            )
+        assert "bad\nmodinput" not in StanzaObservabilityRecorder._instances
+
+    def test_init_type_error_message_sanitizes_evil_type_name(
+        self, monkeypatch, clear_stanza_recorder_cache
+    ):
+        # A non-str modinput_type/stanza_name is reported by class name, and
+        # that class name is caller-controlled: type("bad\r\nname", (), {})
+        # is a real class whose __name__ contains raw CR/LF. This TypeError
+        # propagates to the caller (unlike the internally-caught validation
+        # in ObservabilityService), so its message must be pre-sanitized —
+        # solnlib does not control what the caller does with it afterward.
+        from solnlib.observability import StanzaObservabilityRecorder
+
+        evil_type = type("bad\r\nname", (), {})
+        with pytest.raises(TypeError) as exc_info:
+            StanzaObservabilityRecorder(
+                evil_type(), MagicMock(spec=logging.Logger), "ok"
+            )
+        assert "\n" not in str(exc_info.value)
+        assert "\r" not in str(exc_info.value)
+
 
 class TestAttrValidation:
     def test_attr_key_error_accepts_valid_key(self):
