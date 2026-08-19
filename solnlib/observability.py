@@ -717,6 +717,34 @@ class ObservabilityService:
             self._logger.info("Failed to flush metrics: %s", _safe_exception_str(error))
 
 
+_INT64_MIN = -(2**63)
+_INT64_MAX = 2**63 - 1
+
+
+def _is_encodable_str(value: str) -> bool:
+    # Caller guarantees type(value) is str.
+    try:
+        value.encode("utf-8")
+        return True
+    except UnicodeEncodeError:
+        return False
+
+
+def _is_safe_identifier_str(value: str) -> bool:
+    return _is_encodable_str(value) and "\n" not in value and "\r" not in value
+
+
+def _count_error(value) -> Optional[str]:
+    """Return None for a valid event/byte count, else a safe reason string."""
+    if type(value) is not int:
+        return f"expected int, got {_sanitize_for_log(type(value).__name__)}"
+    if value < 0:
+        return "count is negative"
+    if value > _INT64_MAX:
+        return f"count exceeds int64 range ({value.bit_length()} bits)"
+    return None
+
+
 class StanzaObservabilityRecorder:
     """Stanza-scoped observability recorder backed by a shared ``ObservabilityService``.
 
@@ -894,9 +922,17 @@ class StanzaObservabilityRecorder:
         """
         attrs = dict(extra_attrs) if extra_attrs else {}
         attrs[ATTR_MODINPUT_NAME] = self._stanza_name
-        if self._service.event_count_counter:
+
+        event_count_error = _count_error(event_count)
+        if event_count_error is not None:
+            self._service._logger.info("Skipping invalid event_count: %s", event_count_error)
+        elif self._service.event_count_counter:
             self._service.event_count_counter.add(event_count, attributes=attrs)
-        if self._service.event_bytes_counter:
+
+        byte_count_error = _count_error(byte_count)
+        if byte_count_error is not None:
+            self._service._logger.info("Skipping invalid byte_count: %s", byte_count_error)
+        elif self._service.event_bytes_counter:
             self._service.event_bytes_counter.add(byte_count, attributes=attrs)
 
     def flush(self) -> None:

@@ -1500,6 +1500,49 @@ class TestLogLevelDowngrade:
 
 
 # ---------------------------------------------------------------------------
+# Recorder input validation
+# ---------------------------------------------------------------------------
+
+
+class TestCountValidation:
+    @pytest.mark.parametrize("value", [0, 1, 2**63 - 1])
+    def test_count_error_accepts_valid_values(self, value):
+        from solnlib.observability import _count_error
+
+        assert _count_error(value) is None
+
+    @pytest.mark.parametrize(
+        "value",
+        [-1, 2**63, True, False, 1.0, 2**100, -(2**100)],
+    )
+    def test_count_error_rejects_invalid_values(self, value):
+        from solnlib.observability import _count_error
+
+        assert _count_error(value) is not None
+
+    def test_count_error_message_does_not_render_raw_oversized_int(self):
+        from solnlib.observability import _count_error
+
+        huge = 2**200
+        error = _count_error(huge)
+        assert str(huge) not in error
+        assert str(huge.bit_length()) in error
+
+    def test_count_error_type_name_is_sanitized(self):
+        # type(value).__name__ is derived from a caller-supplied object's
+        # class and is not guaranteed safe: type("bad\r\nname", (), {}) is
+        # a real, constructible class whose __name__ contains raw CR/LF and
+        # can be arbitrarily long. It must go through _sanitize_for_log the
+        # same as any other value that reaches lazy log formatting.
+        from solnlib.observability import _count_error
+
+        evil_type = type("bad\r\nname", (), {})
+        error = _count_error(evil_type())
+        assert "\n" not in error
+        assert "\r" not in error
+
+
+# ---------------------------------------------------------------------------
 # StanzaObservabilityRecorder
 # ---------------------------------------------------------------------------
 
@@ -1668,6 +1711,42 @@ class TestStanzaObservabilityRecorder:
         result = rec.register_instrument(lambda meter: meter.create_counter("x"))
 
         assert result is None
+
+    def test_record_skips_invalid_event_count_keeps_valid_byte_count(
+        self, monkeypatch, clear_stanza_recorder_cache
+    ):
+        rec = self._make_recorder(monkeypatch)
+        mock_count = MagicMock()
+        mock_bytes = MagicMock()
+        rec._service.event_count_counter = mock_count
+        rec._service.event_bytes_counter = mock_bytes
+        mock_count.reset_mock()
+        mock_bytes.reset_mock()
+
+        rec.record(-1, 1024)
+
+        mock_count.add.assert_not_called()
+        mock_bytes.add.assert_called_once_with(
+            1024, attributes={"splunk.modinput.name": "my:stanza"}
+        )
+
+    def test_record_skips_invalid_byte_count_keeps_valid_event_count(
+        self, monkeypatch, clear_stanza_recorder_cache
+    ):
+        rec = self._make_recorder(monkeypatch)
+        mock_count = MagicMock()
+        mock_bytes = MagicMock()
+        rec._service.event_count_counter = mock_count
+        rec._service.event_bytes_counter = mock_bytes
+        mock_count.reset_mock()
+        mock_bytes.reset_mock()
+
+        rec.record(5, True)
+
+        mock_count.add.assert_called_once_with(
+            5, attributes={"splunk.modinput.name": "my:stanza"}
+        )
+        mock_bytes.add.assert_not_called()
 
 
 class TestGrpcTlsHandshakeStderrSuppression:
