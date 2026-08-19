@@ -312,7 +312,7 @@ class ObservabilityService:
 
     Sets up a ``MeterProvider`` with two built-in event counters and,
     when the Spotlight collector is reachable, an OTLP gRPC exporter.
-    Initialisation failures are caught and logged as warnings so that a
+    Initialisation failures are caught and logged at INFO so that a
     missing or misconfigured observability stack never breaks the add-on.
 
     **Resource attributes** (fixed for the lifetime of the process):

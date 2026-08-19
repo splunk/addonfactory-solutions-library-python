@@ -619,6 +619,9 @@ def _make_service(logger, monkeypatch, extra_exporters=None):
 
 
 class TestObservabilityService:
+    def test_class_docstring_does_not_mention_warnings(self):
+        assert "warning" not in ObservabilityService.__doc__.lower()
+
     def test_counters_are_created(self, logger, monkeypatch):
         # Arrange / Act
         svc = _make_service(logger, monkeypatch)
