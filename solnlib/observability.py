@@ -73,6 +73,43 @@ _SERVICE_NAMESPACE = "splunk.addon"
 ATTR_MODINPUT_NAME = "splunk.modinput.name"
 
 
+def _sanitize_for_log(text) -> str:
+    """Return one bounded, UTF-8-safe physical log-line fragment."""
+    try:
+        # Calling the base implementation directly neutralizes overridden
+        # methods on a str subclass and returns a genuine plain str.
+        text = str.__str__(text) if isinstance(text, str) else str(text)
+        text = text.replace("\r\n", " ").replace("\n", " ").replace("\r", " ")
+        text = text.encode("utf-8", errors="replace").decode("utf-8")
+        if len(text) > 500:
+            text = text[:500] + "...(truncated)"
+        return text
+    except BaseException:
+        return "<unrepresentable>"
+
+
+def _safe_exception_repr(error: BaseException) -> str:
+    try:
+        return _sanitize_for_log(repr(error))
+    except BaseException:
+        pass
+    try:
+        return _sanitize_for_log(f"{type(error).__name__} (repr unavailable)")
+    except BaseException:
+        return "<exception repr unavailable>"
+
+
+def _safe_exception_str(error: BaseException) -> str:
+    try:
+        return _sanitize_for_log(str(error))
+    except BaseException:
+        pass
+    try:
+        return _sanitize_for_log(f"{type(error).__name__} (details unavailable)")
+    except BaseException:
+        return "<exception details unavailable>"
+
+
 class LoggerMetricExporter(MetricExporter):
     """An OpenTelemetry ``MetricExporter`` that logs every data point.
 

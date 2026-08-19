@@ -14,6 +14,7 @@
 # limitations under the License.
 #
 
+import io
 import logging
 import sys
 from unittest.mock import MagicMock, patch
@@ -28,6 +29,126 @@ from solnlib.observability import LoggerMetricExporter, ObservabilityService
 @pytest.fixture
 def logger():
     return MagicMock(spec=logging.Logger)
+
+
+@pytest.fixture
+def real_logger():
+    """A real Logger + StreamHandler over a UTF-8 TextIOWrapper.
+
+    MagicMock does not execute lazy `%`-formatting and StringIO does not
+    perform UTF-8 encoding, so tests that must prove formatting/encoding
+    never raises need a real logger.
+    """
+    stream = io.TextIOWrapper(io.BytesIO(), encoding="utf-8", errors="strict")
+    handler = logging.StreamHandler(stream)
+    test_logger = logging.getLogger("test.solnlib.observability.real")
+    test_logger.setLevel(logging.DEBUG)
+    test_logger.handlers = [handler]
+    test_logger.propagate = False
+    yield test_logger, stream
+    test_logger.handlers = []
+
+
+# ---------------------------------------------------------------------------
+# Safe log rendering
+# ---------------------------------------------------------------------------
+
+
+class _RaisesOnStr:
+    def __str__(self):
+        raise RuntimeError("boom")
+
+
+class _BadExceptionRepr(Exception):
+    def __repr__(self):
+        raise RuntimeError("bad repr")
+
+    def __str__(self):
+        raise RuntimeError("bad str")
+
+
+class _WeirdStr(str):
+    def __str__(self):
+        return "overridden!"
+
+
+class TestSafeRendering:
+    @pytest.mark.parametrize(
+        "value, expected",
+        [
+            ("plain safe text", "plain safe text"),
+            ("line1\r\nline2", "line1 line2"),
+            ("line1\nline2", "line1 line2"),
+            ("line1\rline2", "line1 line2"),
+            ("\ud800", "?"),
+        ],
+    )
+    def test_sanitize_for_log_plain_cases(self, value, expected):
+        from solnlib.observability import _sanitize_for_log
+
+        assert _sanitize_for_log(value) == expected
+
+    def test_sanitize_for_log_truncates_long_text(self):
+        from solnlib.observability import _sanitize_for_log
+
+        result = _sanitize_for_log("x" * 600)
+        assert result == "x" * 500 + "...(truncated)"
+
+    def test_sanitize_for_log_non_string_raising_str(self):
+        from solnlib.observability import _sanitize_for_log
+
+        assert _sanitize_for_log(_RaisesOnStr()) == "<unrepresentable>"
+
+    def test_sanitize_for_log_str_subclass_returns_plain_str(self):
+        from solnlib.observability import _sanitize_for_log
+
+        result = _sanitize_for_log(_WeirdStr("hello"))
+        assert result == "hello"
+        assert type(result) is str
+
+    def test_safe_exception_repr_normal_exception(self):
+        from solnlib.observability import _safe_exception_repr
+
+        error = ValueError("bad value")
+        assert _safe_exception_repr(error) == repr(error)
+
+    def test_safe_exception_repr_falls_back_when_repr_raises(self):
+        from solnlib.observability import _safe_exception_repr
+
+        result = _safe_exception_repr(_BadExceptionRepr("x"))
+        assert result == "_BadExceptionRepr (repr unavailable)"
+
+    def test_safe_exception_str_normal_exception(self):
+        from solnlib.observability import _safe_exception_str
+
+        error = ValueError("bad value")
+        assert _safe_exception_str(error) == str(error)
+
+    def test_safe_exception_str_falls_back_when_str_raises(self):
+        from solnlib.observability import _safe_exception_str
+
+        result = _safe_exception_str(_BadExceptionRepr("x"))
+        assert result == "_BadExceptionRepr (details unavailable)"
+
+    def test_safe_exception_str_end_to_end_through_real_logger(
+        self, real_logger, capsys
+    ):
+        from solnlib.observability import _safe_exception_str
+
+        test_logger, stream = real_logger
+        error = ValueError("multi\r\nline\r\nmessage")
+        test_logger.info("boom: %s", _safe_exception_str(error))
+        stream.flush()
+        stream.seek(0)
+        output = stream.read()
+        assert "\n" not in output.strip("\n")
+        assert "boom: multi line message" in output
+
+        # logging.Handler.handleError() writes "--- Logging error ---" to the
+        # real sys.stderr directly, never to the handler's own stream, so a
+        # formatting/encoding failure must be detected there, not in `stream`.
+        captured = capsys.readouterr()
+        assert "--- Logging error ---" not in captured.err
 
 
 # ---------------------------------------------------------------------------
