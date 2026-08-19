@@ -276,7 +276,8 @@ class TestLoggerMetricExporter:
         result = exporter.export(metrics_data)
         # Assert
         assert result == MetricExportResult.FAILURE
-        logger.error.assert_called()
+        logger.info.assert_called()
+        logger.error.assert_not_called()
 
     def test_shutdown_does_not_raise(self, logger):
         # Arrange / Act / Assert
@@ -329,7 +330,7 @@ class TestObservabilityService:
         _make_service(logger, monkeypatch, extra_exporters=[extra])
         # No assertion needed beyond not raising; the exporter is wrapped internally
 
-    def test_missing_ta_name_logs_warning(self, logger, monkeypatch):
+    def test_missing_ta_name_logs_info(self, logger, monkeypatch):
         # Arrange
         monkeypatch.setattr(
             "solnlib.observability.ObservabilityService._create_otlp_exporter",
@@ -343,7 +344,8 @@ class TestObservabilityService:
         svc = ObservabilityService(modinput_type="test-input", logger=logger)
         # Assert
         assert svc._meter is None
-        logger.warning.assert_called()
+        logger.info.assert_called()
+        logger.warning.assert_not_called()
 
     def test_register_instrument_returns_none_when_meter_missing(
         self, logger, monkeypatch
@@ -617,7 +619,7 @@ class TestObservabilityService:
         # Act / Assert — must not raise
         svc.flush()
 
-    def test_flush_logs_warning_on_exception(self, logger, monkeypatch):
+    def test_flush_logs_info_on_exception(self, logger, monkeypatch):
         # Arrange
         svc = _make_service(logger, monkeypatch)
         mock_provider = MagicMock()
@@ -626,7 +628,8 @@ class TestObservabilityService:
         # Act
         svc.flush()
         # Assert
-        logger.warning.assert_called()
+        logger.info.assert_called()
+        logger.warning.assert_not_called()
 
     def test_module_importable_without_grpc(self, monkeypatch):
         # Arrange
@@ -677,6 +680,208 @@ class TestObservabilityService:
                 ] = otlp_mod
             for k, v in saved_obs_mods.items():
                 sys.modules[k] = v
+            # `import solnlib.observability` also rebinds the `observability`
+            # attribute on the `solnlib` package module; pytest's monkeypatch
+            # dotted-path resolver reads that attribute in preference to
+            # sys.modules, so it must be restored too or later
+            # monkeypatch.setattr("solnlib.observability....") calls in the
+            # same test run silently patch the discarded reimported module.
+            if "solnlib.observability" in saved_obs_mods:
+                import solnlib
+
+                solnlib.observability = saved_obs_mods["solnlib.observability"]
+
+
+# ---------------------------------------------------------------------------
+# Log-level downgrade (WARNING/ERROR -> INFO)
+# ---------------------------------------------------------------------------
+
+
+class TestLogLevelDowngrade:
+    def test_logger_metric_exporter_export_exception_uses_safe_str(
+        self, logger, monkeypatch
+    ):
+        monkeypatch.setattr(
+            "solnlib.observability._safe_exception_str", lambda error: "SAFE"
+        )
+        metrics_data = MagicMock()
+        metrics_data.resource_metrics.__iter__ = MagicMock(
+            side_effect=RuntimeError("boom")
+        )
+        exporter = LoggerMetricExporter(logger)
+        exporter.export(metrics_data)
+        logger.info.assert_called_once()
+        args, kwargs = logger.info.call_args
+        assert "SAFE" in args
+        assert "exc_info" not in kwargs
+
+    def test_init_exception_uses_safe_str(self, logger, monkeypatch):
+        monkeypatch.setattr(
+            "solnlib.observability._safe_exception_str", lambda error: "SAFE"
+        )
+        monkeypatch.setattr(
+            "solnlib.observability.ObservabilityService._create_otlp_exporter",
+            lambda self: None,
+        )
+        monkeypatch.setattr(
+            "solnlib.observability.ObservabilityService._read_ta_info",
+            MagicMock(side_effect=RuntimeError("boom")),
+        )
+        ObservabilityService(modinput_type="test-input", logger=logger)
+        assert any("SAFE" in call.args for call in logger.info.call_args_list)
+        logger.warning.assert_not_called()
+
+    def test_read_ta_info_exception_uses_safe_str(self, logger, monkeypatch):
+        monkeypatch.setattr(
+            "solnlib.observability._safe_exception_str", lambda error: "SAFE"
+        )
+        monkeypatch.setattr(
+            "solnlib.observability.ObservabilityService._create_otlp_exporter",
+            lambda self: None,
+        )
+        monkeypatch.setattr(
+            "solnlib.observability.get_conf_stanzas",
+            MagicMock(side_effect=RuntimeError("boom")),
+        )
+        svc = ObservabilityService(modinput_type="test-input", logger=logger)
+        assert svc._meter is None
+        assert any("SAFE" in call.args for call in logger.info.call_args_list)
+        logger.warning.assert_not_called()
+
+    def test_get_ipc_broker_port_exception_uses_safe_str(self, logger, monkeypatch):
+        monkeypatch.setattr(
+            "solnlib.observability._safe_exception_str", lambda error: "SAFE"
+        )
+        monkeypatch.setattr(
+            "solnlib.observability.get_conf_stanzas",
+            MagicMock(side_effect=RuntimeError("boom")),
+        )
+        svc = _make_service(logger, monkeypatch)
+        logger.reset_mock()
+        assert svc._get_ipc_broker_port() is None
+        assert any("SAFE" in call.args for call in logger.info.call_args_list)
+        logger.warning.assert_not_called()
+
+    def test_discover_otlp_port_missing_broker_port_is_info(self, logger, monkeypatch):
+        monkeypatch.setattr(
+            "solnlib.observability.ObservabilityService._get_ipc_broker_port",
+            lambda self: None,
+        )
+        svc = _make_service(logger, monkeypatch)
+        logger.reset_mock()
+        assert svc._discover_otlp_port_via_ipc_broker() is None
+        logger.info.assert_called()
+        logger.warning.assert_not_called()
+
+    def test_discover_otlp_port_unsuccessful_response_is_info(
+        self, logger, monkeypatch
+    ):
+        monkeypatch.setattr(
+            "solnlib.observability.ObservabilityService._get_ipc_broker_port",
+            lambda self: 8088,
+        )
+        mock_resp = MagicMock()
+        mock_resp.__enter__ = lambda s: s
+        mock_resp.__exit__ = MagicMock(return_value=False)
+        mock_resp.read.return_value = b'{"success": false}'
+        monkeypatch.setattr("urllib.request.urlopen", lambda *a, **kw: mock_resp)
+        svc = _make_service(logger, monkeypatch)
+        logger.reset_mock()
+        assert svc._discover_otlp_port_via_ipc_broker() is None
+        logger.info.assert_called()
+        logger.warning.assert_not_called()
+
+    def test_discover_otlp_port_exception_uses_safe_str(self, logger, monkeypatch):
+        monkeypatch.setattr(
+            "solnlib.observability._safe_exception_str", lambda error: "SAFE"
+        )
+        monkeypatch.setattr(
+            "solnlib.observability.ObservabilityService._get_ipc_broker_port",
+            lambda self: 8088,
+        )
+        monkeypatch.setattr(
+            "urllib.request.urlopen",
+            MagicMock(side_effect=RuntimeError("boom")),
+        )
+        svc = _make_service(logger, monkeypatch)
+        logger.reset_mock()
+        assert svc._discover_otlp_port_via_ipc_broker() is None
+        assert any("SAFE" in call.args for call in logger.info.call_args_list)
+        logger.warning.assert_not_called()
+
+    def test_create_otlp_exporter_missing_port_is_info(self, logger, monkeypatch):
+        monkeypatch.delenv("SPOTLIGHT_OTEL_RECEIVER_PORT", raising=False)
+        monkeypatch.setattr(
+            "solnlib.observability.ObservabilityService._discover_otlp_port_via_ipc_broker",
+            lambda self: None,
+        )
+        # Create service WITHOUT patching _create_otlp_exporter
+        svc = ObservabilityService(
+            modinput_type="test-input",
+            logger=logger,
+            ta_name="my_ta",
+            ta_version="1.0.0",
+        )
+        logger.reset_mock()
+        assert ObservabilityService._create_otlp_exporter(svc) is None
+        logger.info.assert_called()
+        logger.warning.assert_not_called()
+
+    def test_create_otlp_exporter_missing_cert_is_info(
+        self, logger, monkeypatch, tmp_path
+    ):
+        monkeypatch.setenv("SPOTLIGHT_OTEL_RECEIVER_PORT", "4317")
+        monkeypatch.setenv("SPLUNK_HOME", str(tmp_path))
+        # Create service WITHOUT patching _create_otlp_exporter
+        svc = ObservabilityService(
+            modinput_type="test-input",
+            logger=logger,
+            ta_name="my_ta",
+            ta_version="1.0.0",
+        )
+        logger.reset_mock()
+        assert ObservabilityService._create_otlp_exporter(svc) is None
+        logger.info.assert_called()
+        logger.error.assert_not_called()
+
+    def test_create_otlp_exporter_exception_uses_safe_str_no_exc_info(
+        self, logger, monkeypatch
+    ):
+        monkeypatch.setattr(
+            "solnlib.observability._safe_exception_str", lambda error: "SAFE"
+        )
+        monkeypatch.setenv("SPOTLIGHT_OTEL_RECEIVER_PORT", "4317")
+        monkeypatch.setattr(
+            "solnlib.observability.ObservabilityService._resolve_otlp_port",
+            MagicMock(side_effect=RuntimeError("boom")),
+        )
+        # Create service WITHOUT patching _create_otlp_exporter
+        svc = ObservabilityService(
+            modinput_type="test-input",
+            logger=logger,
+            ta_name="my_ta",
+            ta_version="1.0.0",
+        )
+        logger.reset_mock()
+        assert ObservabilityService._create_otlp_exporter(svc) is None
+        logger.info.assert_called_once()
+        args, kwargs = logger.info.call_args
+        assert "SAFE" in args
+        assert "exc_info" not in kwargs
+        logger.warning.assert_not_called()
+
+    def test_flush_exception_uses_safe_str(self, logger, monkeypatch):
+        monkeypatch.setattr(
+            "solnlib.observability._safe_exception_str", lambda error: "SAFE"
+        )
+        svc = _make_service(logger, monkeypatch)
+        mock_provider = MagicMock()
+        mock_provider.force_flush.side_effect = RuntimeError("boom")
+        svc._provider = mock_provider
+        logger.reset_mock()
+        svc.flush()
+        assert any("SAFE" in call.args for call in logger.info.call_args_list)
+        logger.warning.assert_not_called()
 
 
 # ---------------------------------------------------------------------------

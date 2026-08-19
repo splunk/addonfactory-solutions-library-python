@@ -203,8 +203,10 @@ class LoggerMetricExporter(MetricExporter):
                     metric_count,
                 )
             return MetricExportResult.SUCCESS
-        except Exception as e:
-            self._logger.error("Failed to export metrics: %s", e, exc_info=True)
+        except Exception as error:
+            self._logger.info(
+                "Failed to export metrics: %s", _safe_exception_str(error)
+            )
             return MetricExportResult.FAILURE
 
     def shutdown(self, timeout_millis: float = 30_000, **kwargs) -> None:
@@ -364,8 +366,11 @@ class ObservabilityService:
                 ta_version,
                 modinput_type,
             )
-        except Exception as e:
-            self._logger.warning("Failed to initialise ObservabilityService: %s", e)
+        except Exception as error:
+            self._logger.info(
+                "Failed to initialise ObservabilityService: %s",
+                _safe_exception_str(error),
+            )
 
     def _read_ta_info(self) -> tuple[Optional[str], Optional[str]]:
         """Read the add-on name and version from ``app.conf``.
@@ -382,8 +387,11 @@ class ObservabilityService:
             )
             ta_version = scoped_stanzas.get("launcher", {}).get("version") or None
             return ta_name, ta_version
-        except Exception as e:
-            self._logger.warning("Failed to read TA info from app.conf: %s", e)
+        except Exception as error:
+            self._logger.info(
+                "Failed to read TA info from app.conf: %s",
+                _safe_exception_str(error),
+            )
             return None, None
 
     def _get_ipc_broker_port(self) -> Optional[int]:
@@ -396,9 +404,10 @@ class ObservabilityService:
         try:
             stanzas = get_conf_stanzas("server")
             return int(stanzas["ipc_broker"]["port"])
-        except Exception as e:
-            self._logger.warning(
-                "Failed to read IPC broker port from server.conf: %s", e
+        except Exception as error:
+            self._logger.info(
+                "Failed to read IPC broker port from server.conf: %s",
+                _safe_exception_str(error),
             )
             return None
 
@@ -413,7 +422,7 @@ class ObservabilityService:
         """
         ipc_broker_port = self._get_ipc_broker_port()
         if ipc_broker_port is None:
-            self._logger.warning("IPC broker port not found in server.conf")
+            self._logger.info("IPC broker port not found in server.conf")
             return None
 
         url = (
@@ -434,15 +443,18 @@ class ObservabilityService:
                 data = json.loads(resp.read().decode())
 
             if not data.get("success"):
-                self._logger.warning(
+                self._logger.info(
                     "IPC broker discovery returned unsuccessful response: %s", data
                 )
                 return None
             port = str(data["port"])
             self._logger.info("Discovered OTLP port via IPC broker: %s", port)
             return port
-        except Exception as e:
-            self._logger.warning("IPC broker OTLP port discovery failed: %s", e)
+        except Exception as error:
+            self._logger.info(
+                "IPC broker OTLP port discovery failed: %s",
+                _safe_exception_str(error),
+            )
             return None
 
     def _resolve_otlp_port(self) -> Optional[str]:
@@ -503,7 +515,7 @@ class ObservabilityService:
             )
 
             if not otel_port:
-                self._logger.warning(
+                self._logger.info(
                     "OTLP port could not be determined from env or IPC broker, "
                     "OTLP export disabled"
                 )
@@ -518,7 +530,7 @@ class ObservabilityService:
             )
 
             if not os.path.exists(cert_file):
-                self._logger.error(
+                self._logger.info(
                     "OTel Collector certificate not found at %s, OTLP export disabled",
                     cert_file,
                 )
@@ -539,9 +551,10 @@ class ObservabilityService:
             self._logger.info("OTLP gRPC exporter configured with TLS for %s", endpoint)
             return exporter
 
-        except Exception as e:
-            self._logger.warning(
-                "Failed to configure OTLP exporter: %s", e, exc_info=True
+        except Exception as error:
+            self._logger.info(
+                "Failed to configure OTLP exporter: %s",
+                _safe_exception_str(error),
             )
             return None
 
@@ -602,8 +615,8 @@ class ObservabilityService:
             return
         try:
             self._provider.force_flush(timeout_millis=int(timeout_millis))
-        except Exception as e:
-            self._logger.warning("Failed to flush metrics: %s", e)
+        except Exception as error:
+            self._logger.info("Failed to flush metrics: %s", _safe_exception_str(error))
 
 
 class StanzaObservabilityRecorder:
