@@ -528,6 +528,8 @@ class ObservabilityService:
         - Any other exception occurs during exporter construction (including a
           missing ``grpcio`` package).
         """
+        os.environ.setdefault("GRPC_VERBOSITY", "NONE")
+
         try:
             import grpc
             from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import (
@@ -564,6 +566,9 @@ class ObservabilityService:
                     cert_file,
                 )
                 return None
+
+            for logger_name in _OTLP_LOGGERS:
+                logging.getLogger(logger_name).addFilter(_downgrade_to_info_filter)
 
             with open(cert_file, "rb") as f:
                 server_cert = f.read()

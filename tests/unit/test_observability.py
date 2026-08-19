@@ -17,6 +17,9 @@
 import contextlib
 import io
 import logging
+import os
+import shutil
+import subprocess
 import sys
 from unittest.mock import MagicMock, patch
 
@@ -25,6 +28,37 @@ from opentelemetry.sdk.metrics import Counter, Histogram
 from opentelemetry.sdk.metrics.export import AggregationTemporality, MetricExportResult
 
 from solnlib.observability import LoggerMetricExporter, ObservabilityService
+
+
+_GRPC_TLS_HANDSHAKE_SCRIPT = """
+import sys
+import grpc
+from concurrent import futures
+
+server_key_path, server_crt_path, wrong_root_path = sys.argv[1:4]
+
+with open(server_key_path, "rb") as f:
+    server_key = f.read()
+with open(server_crt_path, "rb") as f:
+    server_cert = f.read()
+with open(wrong_root_path, "rb") as f:
+    wrong_root = f.read()
+
+server = grpc.server(futures.ThreadPoolExecutor(max_workers=1))
+server_creds = grpc.ssl_server_credentials([(server_key, server_cert)])
+port = server.add_secure_port("127.0.0.1:0", server_creds)
+server.start()
+
+client_creds = grpc.ssl_channel_credentials(root_certificates=wrong_root)
+channel = grpc.secure_channel(f"127.0.0.1:{port}", client_creds)
+try:
+    grpc.channel_ready_future(channel).result(timeout=3)
+except Exception:
+    pass
+finally:
+    channel.close()
+    server.stop(0)
+"""
 
 
 @pytest.fixture
@@ -744,6 +778,185 @@ class TestObservabilityService:
 
                 solnlib.observability = saved_obs_mods["solnlib.observability"]
 
+    def test_create_otlp_exporter_sets_grpc_verbosity_when_absent(
+        self, logger, monkeypatch
+    ):
+        monkeypatch.delenv("GRPC_VERBOSITY", raising=False)
+        monkeypatch.delenv("SPOTLIGHT_OTEL_RECEIVER_PORT", raising=False)
+        monkeypatch.setattr(
+            "solnlib.observability.ObservabilityService._discover_otlp_port_via_ipc_broker",
+            lambda self: None,
+        )
+        svc = ObservabilityService(
+            modinput_type="test-input",
+            logger=logger,
+            ta_name="my_ta",
+            ta_version="1.0.0",
+        )
+        ObservabilityService._create_otlp_exporter(svc)
+        assert os.environ["GRPC_VERBOSITY"] == "NONE"
+
+    def test_create_otlp_exporter_respects_existing_grpc_verbosity(
+        self, logger, monkeypatch
+    ):
+        monkeypatch.setenv("GRPC_VERBOSITY", "DEBUG")
+        monkeypatch.delenv("SPOTLIGHT_OTEL_RECEIVER_PORT", raising=False)
+        monkeypatch.setattr(
+            "solnlib.observability.ObservabilityService._discover_otlp_port_via_ipc_broker",
+            lambda self: None,
+        )
+        svc = ObservabilityService(
+            modinput_type="test-input",
+            logger=logger,
+            ta_name="my_ta",
+            ta_version="1.0.0",
+        )
+        ObservabilityService._create_otlp_exporter(svc)
+        assert os.environ["GRPC_VERBOSITY"] == "DEBUG"
+
+    def test_create_otlp_exporter_attaches_filter_to_otlp_loggers(
+        self, logger, monkeypatch, tmp_path
+    ):
+        from solnlib.observability import _downgrade_to_info_filter, _OTLP_LOGGERS
+
+        monkeypatch.setenv("SPOTLIGHT_OTEL_RECEIVER_PORT", "4317")
+        monkeypatch.setenv("SPLUNK_HOME", str(tmp_path))
+        cert_path = tmp_path / "var/packages/data/spotlight-collector"
+        cert_path.mkdir(parents=True)
+        (cert_path / "server.crt").write_bytes(b"fake-cert")
+        mock_grpc = MagicMock()
+        mock_grpc.ssl_channel_credentials = MagicMock(return_value=MagicMock())
+        monkeypatch.setitem(sys.modules, "grpc", mock_grpc)
+        mock_otlp_module = MagicMock()
+        mock_otlp_module.OTLPMetricExporter = MagicMock(return_value=MagicMock())
+        monkeypatch.setitem(
+            sys.modules,
+            "opentelemetry.exporter.otlp.proto.grpc.metric_exporter",
+            mock_otlp_module,
+        )
+        svc = ObservabilityService(
+            modinput_type="test-input",
+            logger=logger,
+            ta_name="my_ta",
+            ta_version="1.0.0",
+        )
+        with _clean_logger_filters(*_OTLP_LOGGERS) as loggers:
+            ObservabilityService._create_otlp_exporter(svc)
+            for lg in loggers:
+                assert _downgrade_to_info_filter in lg.filters
+
+    def test_create_otlp_exporter_does_not_attach_filter_on_missing_port(
+        self, logger, monkeypatch
+    ):
+        from solnlib.observability import _downgrade_to_info_filter, _OTLP_LOGGERS
+
+        monkeypatch.delenv("SPOTLIGHT_OTEL_RECEIVER_PORT", raising=False)
+        monkeypatch.setattr(
+            "solnlib.observability.ObservabilityService._discover_otlp_port_via_ipc_broker",
+            lambda self: None,
+        )
+        svc = _make_service(logger, monkeypatch)
+        with _clean_logger_filters(*_OTLP_LOGGERS) as loggers:
+            assert ObservabilityService._create_otlp_exporter(svc) is None
+            for lg in loggers:
+                assert _downgrade_to_info_filter not in lg.filters
+
+    def test_filters_are_attached_before_construction_logs_occur(
+        self, logger, monkeypatch, tmp_path
+    ):
+        """Regression guard for the required ordering: the filter must be on
+        the logger *before* OTLPMetricExporter() runs, not merely present by
+        the time _create_otlp_exporter() returns. Checking `.filters` after
+        the call (as the two tests above do) cannot tell "attached early"
+        apart from "attached late" — both leave the filter present at the
+        end. This test instead attaches a capturing Handler to each OTLP
+        logger *before* calling _create_otlp_exporter(), forces two of the
+        four loggers to actually emit a WARNING during real OTLPMetricExporter
+        construction (malformed OTEL_EXPORTER_OTLP_METRICS_HEADERS and
+        OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE — verified against
+        opentelemetry-exporter-otlp-proto-grpc 1.39.1 to log through
+        `opentelemetry.util.re` and
+        `opentelemetry.exporter.otlp.proto.common._internal.metrics_encoder`
+        respectively), and asserts every record the handler observed was
+        already at INFO by the time it reached the handler. Filters run
+        before handlers in Logger.handle(), so this only passes if the
+        filter was attached before that specific log call — i.e. before
+        OTLPMetricExporter() ran. Uses the real grpc/OTLPMetricExporter
+        (no sys.modules mocking): constructing ssl_channel_credentials and
+        OTLPMetricExporter does not perform network I/O, so no real
+        collector is needed, and a syntactically-invalid cert file is
+        accepted at construction time (verified empirically).
+
+        Calls _create_otlp_exporter() on a bare instance built via
+        ObservabilityService.__new__() rather than going through the full
+        constructor. The full constructor would wrap the real returned
+        exporter in a real PeriodicExportingMetricReader — in OTel 1.39.1
+        that reader defaults export_interval_millis to 60_000 and spawns a
+        genuine daemon thread (MeterProvider also registers an atexit
+        shutdown hook), and nothing in this test would ever join or shut
+        that thread down. _create_otlp_exporter only reads self._logger
+        (SPOTLIGHT_OTEL_RECEIVER_PORT is set below, so _resolve_otlp_port()
+        never touches the IPC-broker path, which is the only other place
+        that reads self attributes), so a bare instance with just _logger
+        set is sufficient. The real exporter this returns still opens a
+        gRPC channel object, so it is explicitly shut down in finally."""
+        from solnlib.observability import _OTLP_LOGGERS
+
+        monkeypatch.setenv("SPOTLIGHT_OTEL_RECEIVER_PORT", "4317")
+        monkeypatch.setenv("SPLUNK_HOME", str(tmp_path))
+        monkeypatch.setenv(
+            "OTEL_EXPORTER_OTLP_METRICS_HEADERS", "not-a-valid-header-no-equals-sign"
+        )
+        monkeypatch.setenv(
+            "OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE",
+            "not-a-real-preference",
+        )
+        cert_path = tmp_path / "var/packages/data/spotlight-collector"
+        cert_path.mkdir(parents=True)
+        (cert_path / "server.crt").write_bytes(b"fake-cert")
+
+        svc = ObservabilityService.__new__(ObservabilityService)
+        svc._logger = logger
+
+        captured = []  # list of (logger_name, levelno) tuples
+
+        class _CapturingHandler(logging.Handler):
+            def emit(self, record):
+                captured.append((record.name, record.levelno))
+
+        capturing_handler = _CapturingHandler(level=logging.NOTSET)
+
+        with _clean_logger_filters(*_OTLP_LOGGERS) as loggers:
+            original_levels = [lg.level for lg in loggers]
+            for lg in loggers:
+                lg.addHandler(capturing_handler)
+                lg.setLevel(logging.NOTSET)
+            exporter = None
+            try:
+                exporter = svc._create_otlp_exporter()
+            finally:
+                for lg, level in zip(loggers, original_levels):
+                    lg.removeHandler(capturing_handler)
+                    lg.setLevel(level)
+                if exporter is not None:
+                    exporter.shutdown()
+
+        captured_logger_names = {name for name, _ in captured}
+        assert "opentelemetry.util.re" in captured_logger_names, (
+            "expected the malformed-headers trigger to still log through "
+            "opentelemetry.util.re — if this fails, the trigger stopped "
+            "working and the test no longer proves anything"
+        )
+        assert (
+            "opentelemetry.exporter.otlp.proto.common._internal.metrics_encoder"
+            in captured_logger_names
+        ), (
+            "expected the malformed-temporality-preference trigger to still "
+            "log through the metrics encoder — if this fails, the trigger "
+            "stopped working and the test no longer proves anything"
+        )
+        assert all(levelno <= logging.INFO for _, levelno in captured)
+
 
 # ---------------------------------------------------------------------------
 # _DowngradeToInfoFilter
@@ -1165,3 +1378,83 @@ class TestStanzaObservabilityRecorder:
         result = rec.register_instrument(lambda meter: meter.create_counter("x"))
 
         assert result is None
+
+
+class TestGrpcTlsHandshakeStderrSuppression:
+    """Integration check: a real TLS handshake failure logs a gRPC C-core
+    diagnostic line straight to stderr unless GRPC_VERBOSITY=NONE is set
+    before grpc initializes. Requires the system `openssl` binary."""
+
+    @staticmethod
+    def _generate_self_signed_cert(directory, name, subject):
+        key_path = directory / f"{name}.key"
+        crt_path = directory / f"{name}.crt"
+        subprocess.run(
+            [
+                "openssl",
+                "req",
+                "-x509",
+                "-newkey",
+                "rsa:2048",
+                "-keyout",
+                str(key_path),
+                "-out",
+                str(crt_path),
+                "-days",
+                "1",
+                "-nodes",
+                "-subj",
+                subject,
+            ],
+            check=True,
+            capture_output=True,
+        )
+        return key_path, crt_path
+
+    @pytest.mark.skipif(
+        shutil.which("openssl") is None, reason="requires system openssl binary"
+    )
+    def test_grpc_verbosity_none_suppresses_tls_handshake_stderr(self, tmp_path):
+        server_key, server_crt = self._generate_self_signed_cert(
+            tmp_path, "server", "/CN=localhost"
+        )
+        _, wrong_root_crt = self._generate_self_signed_cert(
+            tmp_path, "wrong_root", "/CN=wrong-root"
+        )
+
+        control_env = dict(os.environ)
+        control_env.pop("GRPC_VERBOSITY", None)
+        control = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                _GRPC_TLS_HANDSHAKE_SCRIPT,
+                str(server_key),
+                str(server_crt),
+                str(wrong_root_crt),
+            ],
+            env=control_env,
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+
+        suppressed_env = dict(os.environ)
+        suppressed_env["GRPC_VERBOSITY"] = "NONE"
+        suppressed = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                _GRPC_TLS_HANDSHAKE_SCRIPT,
+                str(server_key),
+                str(server_crt),
+                str(wrong_root_crt),
+            ],
+            env=suppressed_env,
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+
+        assert "Handshake failed" in control.stderr
+        assert "Handshake failed" not in suppressed.stderr
