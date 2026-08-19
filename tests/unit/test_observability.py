@@ -14,6 +14,7 @@
 # limitations under the License.
 #
 
+import contextlib
 import io
 import logging
 import sys
@@ -47,6 +48,22 @@ def real_logger():
     test_logger.propagate = False
     yield test_logger, stream
     test_logger.handlers = []
+
+
+@contextlib.contextmanager
+def _clean_logger_filters(*logger_names):
+    """Snapshot each logger's filters, clear them for a clean-slate
+    precondition, then restore the exact original list afterward —
+    regardless of what the wrapped code attaches or removes."""
+    loggers = [logging.getLogger(name) for name in logger_names]
+    original = [list(lg.filters) for lg in loggers]
+    for lg in loggers:
+        lg.filters = []
+    try:
+        yield loggers
+    finally:
+        for lg, filters in zip(loggers, original):
+            lg.filters = filters
 
 
 # ---------------------------------------------------------------------------
@@ -630,6 +647,42 @@ class TestObservabilityService:
         # Assert
         logger.info.assert_called()
         logger.warning.assert_not_called()
+
+    def test_init_attaches_filter_to_metrics_sdk_loggers(self, logger, monkeypatch):
+        from solnlib.observability import (
+            _downgrade_to_info_filter,
+            _METRICS_SDK_LOGGERS,
+        )
+
+        monkeypatch.setattr(
+            "solnlib.observability.ObservabilityService._create_otlp_exporter",
+            lambda self: None,
+        )
+        with _clean_logger_filters(*_METRICS_SDK_LOGGERS) as loggers:
+            ObservabilityService(
+                modinput_type="test-input",
+                logger=logger,
+                ta_name="my_ta",
+                ta_version="1.0.0",
+            )
+            for lg in loggers:
+                assert _downgrade_to_info_filter in lg.filters
+
+    def test_init_does_not_attach_filter_to_unrelated_logger(self, logger, monkeypatch):
+        from solnlib.observability import _downgrade_to_info_filter
+
+        monkeypatch.setattr(
+            "solnlib.observability.ObservabilityService._create_otlp_exporter",
+            lambda self: None,
+        )
+        ObservabilityService(
+            modinput_type="test-input",
+            logger=logger,
+            ta_name="my_ta",
+            ta_version="1.0.0",
+        )
+        unrelated = logging.getLogger("opentelemetry.sdk.resources")
+        assert _downgrade_to_info_filter not in unrelated.filters
 
     def test_module_importable_without_grpc(self, monkeypatch):
         # Arrange

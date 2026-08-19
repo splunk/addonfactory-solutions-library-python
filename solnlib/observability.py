@@ -340,6 +340,9 @@ class ObservabilityService:
         self._meter: Optional[Meter] = None
         self._provider: Optional[MeterProvider] = None
 
+        for logger_name in _METRICS_SDK_LOGGERS:
+            logging.getLogger(logger_name).addFilter(_downgrade_to_info_filter)
+
         try:
             if ta_name is None or ta_version is None:
                 _ta_name, _ta_version = self._read_ta_info()
