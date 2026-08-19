@@ -404,9 +404,7 @@ class TestCircuitBreakerExporter:
         }
         inner = _FakeInnerExporter(temporality)
         wrapper = _CircuitBreakerExporter(inner, logger)
-        reader = PeriodicExportingMetricReader(
-            wrapper, export_interval_millis=math.inf
-        )
+        reader = PeriodicExportingMetricReader(wrapper, export_interval_millis=math.inf)
         try:
             assert reader._preferred_temporality == temporality
         finally:
@@ -497,9 +495,7 @@ class TestCircuitBreakerExporter:
         from solnlib.observability import _CircuitBreakerExporter
 
         inner = _FakeInnerExporter()
-        inner.results.extend(
-            [MetricExportResult.FAILURE, MetricExportResult.SUCCESS]
-        )
+        inner.results.extend([MetricExportResult.FAILURE, MetricExportResult.SUCCESS])
         wrapper = _CircuitBreakerExporter(inner, logger)
         wrapper.export(MagicMock())
         assert wrapper._consecutive_failures == 1
@@ -511,7 +507,11 @@ class TestCircuitBreakerExporter:
         [
             [MetricExportResult.FAILURE] * 3,
             [RuntimeError("boom")] * 3,
-            [MetricExportResult.FAILURE, RuntimeError("boom"), MetricExportResult.FAILURE],
+            [
+                MetricExportResult.FAILURE,
+                RuntimeError("boom"),
+                MetricExportResult.FAILURE,
+            ],
         ],
     )
     def test_export_trips_on_third_consecutive_failure(self, logger, outcomes):
@@ -1922,7 +1922,9 @@ class TestStanzaObservabilityRecorder:
         )
         secret_value = "TOP-SECRET-SHOULD-NOT-APPEAR"
         with pytest.raises(TypeError) as exc_info:
-            StanzaObservabilityRecorder(secret_value + "\n", MagicMock(spec=logging.Logger), "ok")
+            StanzaObservabilityRecorder(
+                secret_value + "\n", MagicMock(spec=logging.Logger), "ok"
+            )
         assert secret_value not in str(exc_info.value)
 
     def test_init_accepts_empty_identity_strings(
@@ -1985,7 +1987,17 @@ class TestAttrValidation:
 
     @pytest.mark.parametrize(
         "value",
-        [True, False, 0, 2**63 - 1, -(2**63), 1.5, float("nan"), float("inf"), "ok"],
+        [
+            True,
+            False,
+            0,
+            2**63 - 1,
+            -(2**63),
+            1.5,
+            float("nan"),
+            float("inf"),
+            "ok",
+        ],
     )
     def test_attr_value_error_accepts_valid_values(self, value):
         from solnlib.observability import _attr_value_error

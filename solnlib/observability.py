@@ -979,9 +979,7 @@ class StanzaObservabilityRecorder:
                 for key, value in extra_attrs.items():
                     key_error = _attr_key_error(key)
                     if key_error is not None:
-                        self._logger.info(
-                            "Ignoring invalid attribute: %s", key_error
-                        )
+                        self._logger.info("Ignoring invalid attribute: %s", key_error)
                         continue
                     value_error = _attr_value_error(value)
                     if value_error is not None:
