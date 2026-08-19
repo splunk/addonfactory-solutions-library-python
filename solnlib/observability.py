@@ -272,17 +272,21 @@ class _CircuitBreakerExporter(MetricExporter):
             if self._tripped:
                 return MetricExportResult.SUCCESS
 
-            try:
-                result = self._inner.export(
-                    metrics_data, timeout_millis=timeout_millis, **kwargs
-                )
-            except Exception as error:
-                self._logger.info(
-                    "OTLP export raised an exception: %s",
-                    _safe_exception_repr(error),
-                )
-                result = MetricExportResult.FAILURE
+        # Never hold _lock across this blocking call: shutdown() must be able
+        # to reach the inner exporter and interrupt an in-flight retry even
+        # while an export is still outstanding on another thread.
+        try:
+            result = self._inner.export(
+                metrics_data, timeout_millis=timeout_millis, **kwargs
+            )
+        except Exception as error:
+            self._logger.info(
+                "OTLP export raised an exception: %s",
+                _safe_exception_repr(error),
+            )
+            result = MetricExportResult.FAILURE
 
+        with self._lock:
             if result == MetricExportResult.SUCCESS:
                 self._consecutive_failures = 0
                 return result
@@ -297,14 +301,14 @@ class _CircuitBreakerExporter(MetricExporter):
         with self._lock:
             if self._tripped:
                 return True
-            return self._inner.force_flush(timeout_millis=timeout_millis)
+        return self._inner.force_flush(timeout_millis=timeout_millis)
 
     def shutdown(self, timeout_millis: float = 30_000, **kwargs) -> None:
         with self._lock:
             if self._shutdown_called:
                 return
             self._shutdown_called = True
-            self._inner.shutdown(timeout_millis=timeout_millis, **kwargs)
+        self._inner.shutdown(timeout_millis=timeout_millis, **kwargs)
 
 
 class ObservabilityService:

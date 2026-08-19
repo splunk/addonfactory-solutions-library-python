@@ -23,7 +23,6 @@ import shutil
 import subprocess
 import sys
 import threading
-import time
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -562,7 +561,7 @@ class TestCircuitBreakerExporter:
         assert logger.info.call_count == 4
         assert "3 consecutive failures" in logger.info.call_args_list[-1].args[0]
 
-    def test_export_and_shutdown_are_mutually_exclusive(self, logger):
+    def test_shutdown_is_not_blocked_by_in_flight_export(self, logger):
         from solnlib.observability import _CircuitBreakerExporter
 
         inner = _FakeInnerExporter()
@@ -585,16 +584,15 @@ class TestCircuitBreakerExporter:
 
         shutdown_thread = threading.Thread(target=wrapper.shutdown)
         shutdown_thread.start()
-        time.sleep(0.2)
-        assert wrapper._shutdown_called is False
-        assert inner.shutdown_calls == []
+        shutdown_thread.join(timeout=5)
+
+        # shutdown() must complete without waiting for the in-flight export to
+        # finish, so the real gRPC exporter can interrupt its retry backoff.
+        assert wrapper._shutdown_called is True
+        assert len(inner.shutdown_calls) == 1
 
         release_export.set()
         export_thread.join(timeout=5)
-        shutdown_thread.join(timeout=5)
-
-        assert wrapper._shutdown_called is True
-        assert len(inner.shutdown_calls) == 1
 
 
 # ---------------------------------------------------------------------------
