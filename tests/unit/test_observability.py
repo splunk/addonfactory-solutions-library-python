@@ -693,6 +693,65 @@ class TestObservabilityService:
 
 
 # ---------------------------------------------------------------------------
+# _DowngradeToInfoFilter
+# ---------------------------------------------------------------------------
+
+
+class TestDowngradeToInfoFilter:
+    def test_downgrades_error_and_critical_to_info(self):
+        from solnlib.observability import _downgrade_to_info_filter
+
+        for level in (logging.ERROR, logging.CRITICAL):
+            record = logging.LogRecord(
+                "x", level, __file__, 1, "msg %s", ("arg",), None
+            )
+            assert _downgrade_to_info_filter.filter(record) is True
+            assert record.levelno == logging.INFO
+            assert record.levelname == "INFO"
+            assert record.msg == "msg %s"
+            assert record.args == ("arg",)
+
+    def test_preserves_debug_and_info(self):
+        from solnlib.observability import _downgrade_to_info_filter
+
+        for level in (logging.DEBUG, logging.INFO):
+            record = logging.LogRecord(
+                "x", level, __file__, 1, "msg %s", ("arg",), None
+            )
+            _downgrade_to_info_filter.filter(record)
+            assert record.levelno == level
+            assert record.msg == "msg %s"
+            assert record.args == ("arg",)
+
+    def test_repeated_attachment_does_not_duplicate(self):
+        from solnlib.observability import _downgrade_to_info_filter
+
+        test_logger = logging.getLogger("test.solnlib.observability.dedup")
+        test_logger.filters = []
+        test_logger.addFilter(_downgrade_to_info_filter)
+        test_logger.addFilter(_downgrade_to_info_filter)
+        assert test_logger.filters.count(_downgrade_to_info_filter) == 1
+        test_logger.filters = []
+
+    def test_otlp_and_metrics_sdk_logger_names_are_defined(self):
+        from solnlib.observability import _METRICS_SDK_LOGGERS, _OTLP_LOGGERS
+
+        assert _OTLP_LOGGERS == (
+            "opentelemetry.exporter.otlp.proto.grpc.exporter",
+            "opentelemetry.util.re",
+            "opentelemetry.exporter.otlp.proto.common._internal.metrics_encoder",
+            "opentelemetry.exporter.otlp.proto.common._internal",
+        )
+        assert _METRICS_SDK_LOGGERS == (
+            "opentelemetry.sdk.metrics._internal.export",
+            "opentelemetry.sdk.metrics._internal",
+            "opentelemetry.sdk.metrics._internal.instrument",
+            "opentelemetry.metrics._internal",
+            "opentelemetry.attributes",
+        )
+
+
+# ---------------------------------------------------------------------------
 # Log-level downgrade (WARNING/ERROR -> INFO)
 # ---------------------------------------------------------------------------
 

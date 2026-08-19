@@ -110,6 +110,32 @@ def _safe_exception_str(error: BaseException) -> str:
         return "<exception details unavailable>"
 
 
+class _DowngradeToInfoFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        if record.levelno > logging.INFO:
+            record.levelno = logging.INFO
+            record.levelname = "INFO"
+        return True
+
+
+_downgrade_to_info_filter = _DowngradeToInfoFilter()
+
+_OTLP_LOGGERS = (
+    "opentelemetry.exporter.otlp.proto.grpc.exporter",
+    "opentelemetry.util.re",
+    "opentelemetry.exporter.otlp.proto.common._internal.metrics_encoder",
+    "opentelemetry.exporter.otlp.proto.common._internal",
+)
+
+_METRICS_SDK_LOGGERS = (
+    "opentelemetry.sdk.metrics._internal.export",
+    "opentelemetry.sdk.metrics._internal",
+    "opentelemetry.sdk.metrics._internal.instrument",
+    "opentelemetry.metrics._internal",
+    "opentelemetry.attributes",
+)
+
+
 class LoggerMetricExporter(MetricExporter):
     """An OpenTelemetry ``MetricExporter`` that logs every data point.
 
