@@ -1268,6 +1268,8 @@ class TestObservabilityService:
         assert svc.event_count_counter is None
         assert svc.event_bytes_counter is None
         logger.info.assert_called()
+        logger.warning.assert_not_called()
+        logger.error.assert_not_called()
 
     def test_init_valid_modinput_type_still_initialises(self, logger, monkeypatch):
         svc = _make_service(logger, monkeypatch)
