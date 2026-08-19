@@ -870,7 +870,39 @@ class TestObservabilityService:
         # Act
         result = ObservabilityService._create_otlp_exporter(svc)
         # Assert
-        assert result is mock_exporter
+        from solnlib.observability import _CircuitBreakerExporter
+
+        assert isinstance(result, _CircuitBreakerExporter)
+        assert result._inner is mock_exporter
+
+    def test_create_otlp_exporter_wrapper_forwards_shutdown(
+        self, logger, monkeypatch, tmp_path
+    ):
+        monkeypatch.setenv("SPOTLIGHT_OTEL_RECEIVER_PORT", "4317")
+        monkeypatch.setenv("SPLUNK_HOME", str(tmp_path))
+        cert_path = tmp_path / "var/packages/data/spotlight-collector"
+        cert_path.mkdir(parents=True)
+        (cert_path / "server.crt").write_bytes(b"fake-cert")
+        mock_grpc = MagicMock()
+        mock_grpc.ssl_channel_credentials = MagicMock(return_value=MagicMock())
+        monkeypatch.setitem(sys.modules, "grpc", mock_grpc)
+        mock_otlp_module = MagicMock()
+        mock_exporter = MagicMock()
+        mock_otlp_module.OTLPMetricExporter = MagicMock(return_value=mock_exporter)
+        monkeypatch.setitem(
+            sys.modules,
+            "opentelemetry.exporter.otlp.proto.grpc.metric_exporter",
+            mock_otlp_module,
+        )
+        svc = ObservabilityService(
+            modinput_type="test-input",
+            logger=logger,
+            ta_name="my_ta",
+            ta_version="1.0.0",
+        )
+        result = ObservabilityService._create_otlp_exporter(svc)
+        result.shutdown(timeout_millis=1234)
+        mock_exporter.shutdown.assert_called_once_with(timeout_millis=1234)
 
     def test_create_otlp_exporter_uses_delta_temporality(
         self, logger, monkeypatch, tmp_path

@@ -584,7 +584,8 @@ class ObservabilityService:
         ``AggregationTemporality.DELTA`` so that each export interval reports
         only the change since the previous interval.
 
-        Returns the configured exporter, or ``None`` when:
+        Returns the configured exporter wrapped in ``_CircuitBreakerExporter``,
+        or ``None`` when:
 
         - The OTLP port cannot be resolved (see :meth:`_resolve_otlp_port`).
         - The certificate file does not exist.
@@ -646,7 +647,7 @@ class ObservabilityService:
                 },
             )
             self._logger.info("OTLP gRPC exporter configured with TLS for %s", endpoint)
-            return exporter
+            return _CircuitBreakerExporter(exporter, self._logger)
 
         except Exception as error:
             self._logger.info(
