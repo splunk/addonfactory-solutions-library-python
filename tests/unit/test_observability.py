@@ -1748,6 +1748,128 @@ class TestStanzaObservabilityRecorder:
         )
         mock_bytes.add.assert_not_called()
 
+    def test_record_rejects_non_dict_extra_attrs(
+        self, monkeypatch, clear_stanza_recorder_cache
+    ):
+        rec = self._make_recorder(monkeypatch)
+        mock_count = MagicMock()
+        rec._service.event_count_counter = mock_count
+        mock_count.reset_mock()
+
+        rec.record(1, 1, extra_attrs=[("a", "b")])
+
+        mock_count.add.assert_called_once_with(
+            1, attributes={"splunk.modinput.name": "my:stanza"}
+        )
+
+    def test_record_drops_invalid_entries_keeps_valid_ones(
+        self, monkeypatch, clear_stanza_recorder_cache
+    ):
+        rec = self._make_recorder(monkeypatch)
+        mock_count = MagicMock()
+        rec._service.event_count_counter = mock_count
+        mock_count.reset_mock()
+
+        rec.record(
+            1,
+            1,
+            extra_attrs={
+                "good.key": "good value",
+                "bad.value": [1, 2, 3],
+                123: "bad key",
+            },
+        )
+
+        mock_count.add.assert_called_once_with(
+            1,
+            attributes={
+                "splunk.modinput.name": "my:stanza",
+                "good.key": "good value",
+            },
+        )
+
+    def test_record_extra_attrs_cannot_override_modinput_name(
+        self, monkeypatch, clear_stanza_recorder_cache
+    ):
+        rec = self._make_recorder(monkeypatch)
+        mock_count = MagicMock()
+        rec._service.event_count_counter = mock_count
+        mock_count.reset_mock()
+
+        rec.record(1, 1, extra_attrs={"splunk.modinput.name": "hijacked"})
+
+        mock_count.add.assert_called_once_with(
+            1, attributes={"splunk.modinput.name": "my:stanza"}
+        )
+
+    def test_record_non_dict_extra_attrs_log_sanitizes_type_name(
+        self, monkeypatch, clear_stanza_recorder_cache
+    ):
+        rec = self._make_recorder(monkeypatch)
+        evil_type = type("bad\r\nname", (), {})
+
+        rec.record(1, 1, extra_attrs=evil_type())
+
+        for call in rec._service._logger.info.call_args_list:
+            for arg in call.args:
+                assert "\n" not in str(arg)
+                assert "\r" not in str(arg)
+
+
+class TestAttrValidation:
+    def test_attr_key_error_accepts_valid_key(self):
+        from solnlib.observability import _attr_key_error
+
+        assert _attr_key_error("valid.key") is None
+
+    @pytest.mark.parametrize(
+        "key",
+        [123, b"bytes", None, "", "bad\nkey", "bad\rkey", "\ud800"],
+    )
+    def test_attr_key_error_rejects_invalid_key(self, key):
+        from solnlib.observability import _attr_key_error
+
+        assert _attr_key_error(key) is not None
+
+    @pytest.mark.parametrize(
+        "value",
+        [True, False, 0, 2**63 - 1, -(2**63), 1.5, float("nan"), float("inf"), "ok"],
+    )
+    def test_attr_value_error_accepts_valid_values(self, value):
+        from solnlib.observability import _attr_value_error
+
+        assert _attr_value_error(value) is None
+
+    def test_attr_value_error_accepts_crlf_in_string_value(self):
+        from solnlib.observability import _attr_value_error
+
+        assert _attr_value_error("has\r\nnewline") is None
+
+    @pytest.mark.parametrize(
+        "value",
+        [2**63, -(2**63) - 1, [1, 2], (1, 2), {"a": 1}, None, "\ud800"],
+    )
+    def test_attr_value_error_rejects_invalid_values(self, value):
+        from solnlib.observability import _attr_value_error
+
+        assert _attr_value_error(value) is not None
+
+    def test_attr_key_error_type_name_is_sanitized(self):
+        from solnlib.observability import _attr_key_error
+
+        evil_type = type("bad\r\nname", (), {})
+        error = _attr_key_error(evil_type())
+        assert "\n" not in error
+        assert "\r" not in error
+
+    def test_attr_value_error_type_name_is_sanitized(self):
+        from solnlib.observability import _attr_value_error
+
+        evil_type = type("bad\r\nname", (), {})
+        error = _attr_value_error(evil_type())
+        assert "\n" not in error
+        assert "\r" not in error
+
 
 class TestGrpcTlsHandshakeStderrSuppression:
     """Integration check: a real TLS handshake failure logs a gRPC C-core

@@ -745,6 +745,35 @@ def _count_error(value) -> Optional[str]:
     return None
 
 
+def _attr_key_error(key) -> Optional[str]:
+    """Return None for a valid attribute key, else a safe reason string."""
+    if type(key) is not str:
+        return f"expected str key, got {_sanitize_for_log(type(key).__name__)}"
+    if not key:
+        return "key is empty"
+    if not _is_safe_identifier_str(key):
+        return "key is not UTF-8 encodable or contains CR/LF"
+    return None
+
+
+def _attr_value_error(value) -> Optional[str]:
+    """Return None for a valid attribute value, else a safe reason string."""
+    value_type = type(value)
+    if value_type is bool:
+        return None
+    if value_type is int:
+        if _INT64_MIN <= value <= _INT64_MAX:
+            return None
+        return f"int value out of int64 range ({value.bit_length()} bits)"
+    if value_type is float:
+        return None
+    if value_type is str:
+        if _is_encodable_str(value):
+            return None
+        return "value is not UTF-8 encodable"
+    return f"unsupported value type: {_sanitize_for_log(value_type.__name__)}"
+
+
 class StanzaObservabilityRecorder:
     """Stanza-scoped observability recorder backed by a shared ``ObservabilityService``.
 
@@ -920,7 +949,30 @@ class StanzaObservabilityRecorder:
                 extra_attrs={"my_ta.partition": partition_id},
             )
         """
-        attrs = dict(extra_attrs) if extra_attrs else {}
+        attrs = {}
+        if extra_attrs is not None:
+            if type(extra_attrs) is not dict:
+                self._service._logger.info(
+                    "Ignoring extra_attrs: expected dict or None, got %s",
+                    _sanitize_for_log(type(extra_attrs).__name__),
+                )
+            else:
+                for key, value in extra_attrs.items():
+                    key_error = _attr_key_error(key)
+                    if key_error is not None:
+                        self._service._logger.info(
+                            "Ignoring invalid attribute: %s", key_error
+                        )
+                        continue
+                    value_error = _attr_value_error(value)
+                    if value_error is not None:
+                        self._service._logger.info(
+                            "Ignoring invalid value for attribute %r: %s",
+                            key,
+                            value_error,
+                        )
+                        continue
+                    attrs[key] = value
         attrs[ATTR_MODINPUT_NAME] = self._stanza_name
 
         event_count_error = _count_error(event_count)
