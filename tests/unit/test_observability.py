@@ -14,20 +14,199 @@
 # limitations under the License.
 #
 
+import contextlib
+import io
 import logging
+import math
+import os
+import shutil
+import subprocess
 import sys
+import threading
 from unittest.mock import MagicMock, patch
 
 import pytest
 from opentelemetry.sdk.metrics import Counter, Histogram
-from opentelemetry.sdk.metrics.export import AggregationTemporality, MetricExportResult
+from opentelemetry.sdk.metrics.export import (
+    AggregationTemporality,
+    MetricExporter,
+    MetricExportResult,
+    PeriodicExportingMetricReader,
+)
 
 from solnlib.observability import LoggerMetricExporter, ObservabilityService
+
+
+_GRPC_TLS_HANDSHAKE_SCRIPT = """
+import sys
+import grpc
+from concurrent import futures
+
+server_key_path, server_crt_path, wrong_root_path = sys.argv[1:4]
+
+with open(server_key_path, "rb") as f:
+    server_key = f.read()
+with open(server_crt_path, "rb") as f:
+    server_cert = f.read()
+with open(wrong_root_path, "rb") as f:
+    wrong_root = f.read()
+
+server = grpc.server(futures.ThreadPoolExecutor(max_workers=1))
+server_creds = grpc.ssl_server_credentials([(server_key, server_cert)])
+port = server.add_secure_port("127.0.0.1:0", server_creds)
+server.start()
+
+client_creds = grpc.ssl_channel_credentials(root_certificates=wrong_root)
+channel = grpc.secure_channel(f"127.0.0.1:{port}", client_creds)
+try:
+    grpc.channel_ready_future(channel).result(timeout=3)
+except Exception:
+    pass
+finally:
+    channel.close()
+    server.stop(0)
+"""
 
 
 @pytest.fixture
 def logger():
     return MagicMock(spec=logging.Logger)
+
+
+@pytest.fixture
+def real_logger():
+    """A real Logger + StreamHandler over a UTF-8 TextIOWrapper.
+
+    MagicMock does not execute lazy `%`-formatting and StringIO does not
+    perform UTF-8 encoding, so tests that must prove formatting/encoding
+    never raises need a real logger.
+    """
+    stream = io.TextIOWrapper(io.BytesIO(), encoding="utf-8", errors="strict")
+    handler = logging.StreamHandler(stream)
+    test_logger = logging.getLogger("test.solnlib.observability.real")
+    test_logger.setLevel(logging.DEBUG)
+    test_logger.handlers = [handler]
+    test_logger.propagate = False
+    yield test_logger, stream
+    test_logger.handlers = []
+
+
+@contextlib.contextmanager
+def _clean_logger_filters(*logger_names):
+    """Snapshot each logger's filters, clear them for a clean-slate
+    precondition, then restore the exact original list afterward —
+    regardless of what the wrapped code attaches or removes."""
+    loggers = [logging.getLogger(name) for name in logger_names]
+    original = [list(lg.filters) for lg in loggers]
+    for lg in loggers:
+        lg.filters = []
+    try:
+        yield loggers
+    finally:
+        for lg, filters in zip(loggers, original):
+            lg.filters = filters
+
+
+# ---------------------------------------------------------------------------
+# Safe log rendering
+# ---------------------------------------------------------------------------
+
+
+class _RaisesOnStr:
+    def __str__(self):
+        raise RuntimeError("boom")
+
+
+class _BadExceptionRepr(Exception):
+    def __repr__(self):
+        raise RuntimeError("bad repr")
+
+    def __str__(self):
+        raise RuntimeError("bad str")
+
+
+class _WeirdStr(str):
+    def __str__(self):
+        return "overridden!"
+
+
+class TestSafeRendering:
+    @pytest.mark.parametrize(
+        "value, expected",
+        [
+            ("plain safe text", "plain safe text"),
+            ("line1\r\nline2", "line1 line2"),
+            ("line1\nline2", "line1 line2"),
+            ("line1\rline2", "line1 line2"),
+            ("\ud800", "?"),
+        ],
+    )
+    def test_sanitize_for_log_plain_cases(self, value, expected):
+        from solnlib.observability import _sanitize_for_log
+
+        assert _sanitize_for_log(value) == expected
+
+    def test_sanitize_for_log_truncates_long_text(self):
+        from solnlib.observability import _sanitize_for_log
+
+        result = _sanitize_for_log("x" * 600)
+        assert result == "x" * 500 + "...(truncated)"
+
+    def test_sanitize_for_log_non_string_raising_str(self):
+        from solnlib.observability import _sanitize_for_log
+
+        assert _sanitize_for_log(_RaisesOnStr()) == "<unrepresentable>"
+
+    def test_sanitize_for_log_str_subclass_returns_plain_str(self):
+        from solnlib.observability import _sanitize_for_log
+
+        result = _sanitize_for_log(_WeirdStr("hello"))
+        assert result == "hello"
+        assert type(result) is str
+
+    def test_safe_exception_repr_normal_exception(self):
+        from solnlib.observability import _safe_exception_repr
+
+        error = ValueError("bad value")
+        assert _safe_exception_repr(error) == repr(error)
+
+    def test_safe_exception_repr_falls_back_when_repr_raises(self):
+        from solnlib.observability import _safe_exception_repr
+
+        result = _safe_exception_repr(_BadExceptionRepr("x"))
+        assert result == "_BadExceptionRepr (repr unavailable)"
+
+    def test_safe_exception_str_normal_exception(self):
+        from solnlib.observability import _safe_exception_str
+
+        error = ValueError("bad value")
+        assert _safe_exception_str(error) == str(error)
+
+    def test_safe_exception_str_falls_back_when_str_raises(self):
+        from solnlib.observability import _safe_exception_str
+
+        result = _safe_exception_str(_BadExceptionRepr("x"))
+        assert result == "_BadExceptionRepr (details unavailable)"
+
+    def test_safe_exception_str_end_to_end_through_real_logger(
+        self, real_logger, capsys
+    ):
+        from solnlib.observability import _safe_exception_str
+
+        test_logger, stream = real_logger
+        error = ValueError("multi\r\nline\r\nmessage")
+        test_logger.info("boom: %s", _safe_exception_str(error))
+        stream.flush()
+        stream.seek(0)
+        output = stream.read()
+        assert "\n" not in output.strip("\n")
+        assert "boom: multi line message" in output
+
+        # logging.Handler.handleError() writes "--- Logging error ---" to the
+        # real sys.stderr directly, never to the handler's own stream, so a
+        # formatting/encoding failure must be detected there, not in `stream`.
+        captured = capsys.readouterr()
+        assert "--- Logging error ---" not in captured.err
 
 
 # ---------------------------------------------------------------------------
@@ -155,7 +334,8 @@ class TestLoggerMetricExporter:
         result = exporter.export(metrics_data)
         # Assert
         assert result == MetricExportResult.FAILURE
-        logger.error.assert_called()
+        logger.info.assert_called()
+        logger.error.assert_not_called()
 
     def test_shutdown_does_not_raise(self, logger):
         # Arrange / Act / Assert
@@ -164,6 +344,255 @@ class TestLoggerMetricExporter:
     def test_force_flush_returns_true(self, logger):
         # Arrange / Act / Assert
         assert LoggerMetricExporter(logger).force_flush() is True
+
+
+# ---------------------------------------------------------------------------
+# _CircuitBreakerExporter
+# ---------------------------------------------------------------------------
+
+
+class _FakeInnerExporter(MetricExporter):
+    """Real MetricExporter subclass for deterministic circuit-breaker tests."""
+
+    def __init__(self, temporality=None, aggregation=None):
+        super().__init__(
+            preferred_temporality=temporality
+            or {
+                Counter: AggregationTemporality.DELTA,
+                Histogram: AggregationTemporality.DELTA,
+            },
+            preferred_aggregation=aggregation or {},
+        )
+        self.results = []  # queue of MetricExportResult values or Exception instances
+        self.export_calls = []
+        self.force_flush_calls = []
+        self.shutdown_calls = []
+
+    def export(self, metrics_data, timeout_millis=10_000, **kwargs):
+        self.export_calls.append((metrics_data, timeout_millis, kwargs))
+        outcome = self.results.pop(0)
+        if isinstance(outcome, Exception):
+            raise outcome
+        return outcome
+
+    def force_flush(self, timeout_millis=10_000):
+        self.force_flush_calls.append(timeout_millis)
+        return True
+
+    def shutdown(self, timeout_millis=30_000, **kwargs):
+        self.shutdown_calls.append((timeout_millis, kwargs))
+
+
+class TestCircuitBreakerExporter:
+    def test_preserves_preferred_temporality_and_aggregation(self, logger):
+        from solnlib.observability import _CircuitBreakerExporter
+
+        temporality = {Counter: AggregationTemporality.DELTA}
+        aggregation = {"some": "aggregation"}
+        inner = _FakeInnerExporter(temporality, aggregation)
+        wrapper = _CircuitBreakerExporter(inner, logger)
+        assert wrapper._preferred_temporality == temporality
+        assert wrapper._preferred_aggregation == aggregation
+
+    def test_real_reader_reads_temporality_from_wrapper(self, logger):
+        from solnlib.observability import _CircuitBreakerExporter
+
+        temporality = {
+            Counter: AggregationTemporality.DELTA,
+            Histogram: AggregationTemporality.DELTA,
+        }
+        inner = _FakeInnerExporter(temporality)
+        wrapper = _CircuitBreakerExporter(inner, logger)
+        reader = PeriodicExportingMetricReader(wrapper, export_interval_millis=math.inf)
+        try:
+            assert reader._preferred_temporality == temporality
+        finally:
+            reader.shutdown()
+
+    def test_export_forwards_timeout_and_kwargs(self, logger):
+        from solnlib.observability import _CircuitBreakerExporter
+
+        inner = _FakeInnerExporter()
+        inner.results.append(MetricExportResult.SUCCESS)
+        wrapper = _CircuitBreakerExporter(inner, logger)
+        metrics_data = MagicMock()
+        wrapper.export(metrics_data, timeout_millis=1234, extra_kwarg="sentinel")
+        assert inner.export_calls == [(metrics_data, 1234, {"extra_kwarg": "sentinel"})]
+
+    def test_force_flush_forwards_timeout_before_trip(self, logger):
+        from solnlib.observability import _CircuitBreakerExporter
+
+        inner = _FakeInnerExporter()
+        wrapper = _CircuitBreakerExporter(inner, logger)
+        assert wrapper.force_flush(timeout_millis=5000) is True
+        assert inner.force_flush_calls == [5000]
+
+    def test_force_flush_is_noop_after_trip(self, logger):
+        from solnlib.observability import _CircuitBreakerExporter
+
+        inner = _FakeInnerExporter()
+        inner.results.extend([MetricExportResult.FAILURE] * 3)
+        wrapper = _CircuitBreakerExporter(inner, logger)
+        for _ in range(3):
+            wrapper.export(MagicMock())
+        assert wrapper.force_flush(timeout_millis=5000) is True
+        assert inner.force_flush_calls == []
+
+    def test_shutdown_forwards_timeout_millis_and_kwargs(self, logger):
+        from solnlib.observability import _CircuitBreakerExporter
+
+        inner = _FakeInnerExporter()
+        wrapper = _CircuitBreakerExporter(inner, logger)
+        wrapper.shutdown(timeout_millis=9999, extra_kwarg="sentinel")
+        assert inner.shutdown_calls == [(9999, {"extra_kwarg": "sentinel"})]
+
+    def test_shutdown_accepts_timeout_kwarg_from_real_reader(self, logger):
+        from solnlib.observability import _CircuitBreakerExporter
+
+        inner = _FakeInnerExporter()
+        wrapper = _CircuitBreakerExporter(inner, logger)
+        wrapper.shutdown(timeout=1.5)
+        assert inner.shutdown_calls == [(30_000, {"timeout": 1.5})]
+
+    def test_shutdown_delegates_exactly_once_including_after_trip(self, logger):
+        from solnlib.observability import _CircuitBreakerExporter
+
+        inner = _FakeInnerExporter()
+        inner.results.extend([MetricExportResult.FAILURE] * 3)
+        wrapper = _CircuitBreakerExporter(inner, logger)
+        for _ in range(3):
+            wrapper.export(MagicMock())
+        wrapper.shutdown()
+        wrapper.shutdown()
+        assert len(inner.shutdown_calls) == 1
+
+    def test_export_returns_failure_and_increments_state_on_failure_result(
+        self, logger
+    ):
+        from solnlib.observability import _CircuitBreakerExporter
+
+        inner = _FakeInnerExporter()
+        inner.results.append(MetricExportResult.FAILURE)
+        wrapper = _CircuitBreakerExporter(inner, logger)
+        result = wrapper.export(MagicMock())
+        assert result == MetricExportResult.FAILURE
+        assert wrapper._consecutive_failures == 1
+        logger.info.assert_not_called()
+
+    def test_export_catches_exception_logs_and_returns_failure(self, logger):
+        from solnlib.observability import _CircuitBreakerExporter
+
+        inner = _FakeInnerExporter()
+        inner.results.append(RuntimeError("boom"))
+        wrapper = _CircuitBreakerExporter(inner, logger)
+        result = wrapper.export(MagicMock())
+        assert result == MetricExportResult.FAILURE
+        assert wrapper._consecutive_failures == 1
+        logger.info.assert_called_once()
+
+    def test_export_resets_failure_count_after_success(self, logger):
+        from solnlib.observability import _CircuitBreakerExporter
+
+        inner = _FakeInnerExporter()
+        inner.results.extend([MetricExportResult.FAILURE, MetricExportResult.SUCCESS])
+        wrapper = _CircuitBreakerExporter(inner, logger)
+        wrapper.export(MagicMock())
+        assert wrapper._consecutive_failures == 1
+        wrapper.export(MagicMock())
+        assert wrapper._consecutive_failures == 0
+
+    @pytest.mark.parametrize(
+        "outcomes",
+        [
+            [MetricExportResult.FAILURE] * 3,
+            [RuntimeError("boom")] * 3,
+            [
+                MetricExportResult.FAILURE,
+                RuntimeError("boom"),
+                MetricExportResult.FAILURE,
+            ],
+        ],
+    )
+    def test_export_trips_on_third_consecutive_failure(self, logger, outcomes):
+        from solnlib.observability import _CircuitBreakerExporter
+
+        inner = _FakeInnerExporter()
+        inner.results.extend(outcomes)
+        wrapper = _CircuitBreakerExporter(inner, logger)
+        for _ in range(3):
+            wrapper.export(MagicMock())
+        assert wrapper._tripped is True
+
+    def test_export_third_attempt_returns_actual_failure_not_synthetic_success(
+        self, logger
+    ):
+        from solnlib.observability import _CircuitBreakerExporter
+
+        inner = _FakeInnerExporter()
+        inner.results.extend([MetricExportResult.FAILURE] * 3)
+        wrapper = _CircuitBreakerExporter(inner, logger)
+        results = [wrapper.export(MagicMock()) for _ in range(3)]
+        assert results == [MetricExportResult.FAILURE] * 3
+
+    def test_export_after_trip_never_calls_inner_and_no_further_logs(self, logger):
+        from solnlib.observability import _CircuitBreakerExporter
+
+        inner = _FakeInnerExporter()
+        inner.results.extend([MetricExportResult.FAILURE] * 3)
+        wrapper = _CircuitBreakerExporter(inner, logger)
+        for _ in range(3):
+            wrapper.export(MagicMock())
+        logger.reset_mock()
+        result = wrapper.export(MagicMock())
+        assert result == MetricExportResult.SUCCESS
+        assert len(inner.export_calls) == 3
+        logger.info.assert_not_called()
+
+    def test_three_consecutive_exceptions_emit_three_info_plus_one_trip_log(
+        self, logger
+    ):
+        from solnlib.observability import _CircuitBreakerExporter
+
+        inner = _FakeInnerExporter()
+        inner.results.extend([RuntimeError("boom")] * 3)
+        wrapper = _CircuitBreakerExporter(inner, logger)
+        for _ in range(3):
+            wrapper.export(MagicMock())
+        assert logger.info.call_count == 4
+        assert "3 consecutive failures" in logger.info.call_args_list[-1].args[0]
+
+    def test_shutdown_is_not_blocked_by_in_flight_export(self, logger):
+        from solnlib.observability import _CircuitBreakerExporter
+
+        inner = _FakeInnerExporter()
+        inner.results.append(MetricExportResult.SUCCESS)
+        export_started = threading.Event()
+        release_export = threading.Event()
+        real_export = inner.export
+
+        def blocking_export(metrics_data, timeout_millis=10_000, **kwargs):
+            export_started.set()
+            release_export.wait(timeout=5)
+            return real_export(metrics_data, timeout_millis=timeout_millis, **kwargs)
+
+        inner.export = blocking_export
+        wrapper = _CircuitBreakerExporter(inner, logger)
+
+        export_thread = threading.Thread(target=wrapper.export, args=(MagicMock(),))
+        export_thread.start()
+        assert export_started.wait(timeout=5)
+
+        shutdown_thread = threading.Thread(target=wrapper.shutdown)
+        shutdown_thread.start()
+        shutdown_thread.join(timeout=5)
+
+        # shutdown() must complete without waiting for the in-flight export to
+        # finish, so the real gRPC exporter can interrupt its retry backoff.
+        assert wrapper._shutdown_called is True
+        assert len(inner.shutdown_calls) == 1
+
+        release_export.set()
+        export_thread.join(timeout=5)
 
 
 # ---------------------------------------------------------------------------
@@ -188,6 +617,9 @@ def _make_service(logger, monkeypatch, extra_exporters=None):
 
 
 class TestObservabilityService:
+    def test_class_docstring_does_not_mention_warnings(self):
+        assert "warning" not in ObservabilityService.__doc__.lower()
+
     def test_counters_are_created(self, logger, monkeypatch):
         # Arrange / Act
         svc = _make_service(logger, monkeypatch)
@@ -208,7 +640,7 @@ class TestObservabilityService:
         _make_service(logger, monkeypatch, extra_exporters=[extra])
         # No assertion needed beyond not raising; the exporter is wrapped internally
 
-    def test_missing_ta_name_logs_warning(self, logger, monkeypatch):
+    def test_missing_ta_name_logs_info(self, logger, monkeypatch):
         # Arrange
         monkeypatch.setattr(
             "solnlib.observability.ObservabilityService._create_otlp_exporter",
@@ -222,7 +654,8 @@ class TestObservabilityService:
         svc = ObservabilityService(modinput_type="test-input", logger=logger)
         # Assert
         assert svc._meter is None
-        logger.warning.assert_called()
+        logger.info.assert_called()
+        logger.warning.assert_not_called()
 
     def test_register_instrument_returns_none_when_meter_missing(
         self, logger, monkeypatch
@@ -438,7 +871,39 @@ class TestObservabilityService:
         # Act
         result = ObservabilityService._create_otlp_exporter(svc)
         # Assert
-        assert result is mock_exporter
+        from solnlib.observability import _CircuitBreakerExporter
+
+        assert isinstance(result, _CircuitBreakerExporter)
+        assert result._inner is mock_exporter
+
+    def test_create_otlp_exporter_wrapper_forwards_shutdown(
+        self, logger, monkeypatch, tmp_path
+    ):
+        monkeypatch.setenv("SPOTLIGHT_OTEL_RECEIVER_PORT", "4317")
+        monkeypatch.setenv("SPLUNK_HOME", str(tmp_path))
+        cert_path = tmp_path / "var/packages/data/spotlight-collector"
+        cert_path.mkdir(parents=True)
+        (cert_path / "server.crt").write_bytes(b"fake-cert")
+        mock_grpc = MagicMock()
+        mock_grpc.ssl_channel_credentials = MagicMock(return_value=MagicMock())
+        monkeypatch.setitem(sys.modules, "grpc", mock_grpc)
+        mock_otlp_module = MagicMock()
+        mock_exporter = MagicMock()
+        mock_otlp_module.OTLPMetricExporter = MagicMock(return_value=mock_exporter)
+        monkeypatch.setitem(
+            sys.modules,
+            "opentelemetry.exporter.otlp.proto.grpc.metric_exporter",
+            mock_otlp_module,
+        )
+        svc = ObservabilityService(
+            modinput_type="test-input",
+            logger=logger,
+            ta_name="my_ta",
+            ta_version="1.0.0",
+        )
+        result = ObservabilityService._create_otlp_exporter(svc)
+        result.shutdown(timeout_millis=1234)
+        mock_exporter.shutdown.assert_called_once_with(timeout_millis=1234)
 
     def test_create_otlp_exporter_uses_delta_temporality(
         self, logger, monkeypatch, tmp_path
@@ -496,7 +961,7 @@ class TestObservabilityService:
         # Act / Assert — must not raise
         svc.flush()
 
-    def test_flush_logs_warning_on_exception(self, logger, monkeypatch):
+    def test_flush_logs_info_on_exception(self, logger, monkeypatch):
         # Arrange
         svc = _make_service(logger, monkeypatch)
         mock_provider = MagicMock()
@@ -505,7 +970,44 @@ class TestObservabilityService:
         # Act
         svc.flush()
         # Assert
-        logger.warning.assert_called()
+        logger.info.assert_called()
+        logger.warning.assert_not_called()
+
+    def test_init_attaches_filter_to_metrics_sdk_loggers(self, logger, monkeypatch):
+        from solnlib.observability import (
+            _downgrade_to_info_filter,
+            _METRICS_SDK_LOGGERS,
+        )
+
+        monkeypatch.setattr(
+            "solnlib.observability.ObservabilityService._create_otlp_exporter",
+            lambda self: None,
+        )
+        with _clean_logger_filters(*_METRICS_SDK_LOGGERS) as loggers:
+            ObservabilityService(
+                modinput_type="test-input",
+                logger=logger,
+                ta_name="my_ta",
+                ta_version="1.0.0",
+            )
+            for lg in loggers:
+                assert _downgrade_to_info_filter in lg.filters
+
+    def test_init_does_not_attach_filter_to_unrelated_logger(self, logger, monkeypatch):
+        from solnlib.observability import _downgrade_to_info_filter
+
+        monkeypatch.setattr(
+            "solnlib.observability.ObservabilityService._create_otlp_exporter",
+            lambda self: None,
+        )
+        ObservabilityService(
+            modinput_type="test-input",
+            logger=logger,
+            ta_name="my_ta",
+            ta_version="1.0.0",
+        )
+        unrelated = logging.getLogger("opentelemetry.sdk.resources")
+        assert _downgrade_to_info_filter not in unrelated.filters
 
     def test_module_importable_without_grpc(self, monkeypatch):
         # Arrange
@@ -556,6 +1058,557 @@ class TestObservabilityService:
                 ] = otlp_mod
             for k, v in saved_obs_mods.items():
                 sys.modules[k] = v
+            # `import solnlib.observability` also rebinds the `observability`
+            # attribute on the `solnlib` package module; pytest's monkeypatch
+            # dotted-path resolver reads that attribute in preference to
+            # sys.modules, so it must be restored too or later
+            # monkeypatch.setattr("solnlib.observability....") calls in the
+            # same test run silently patch the discarded reimported module.
+            if "solnlib.observability" in saved_obs_mods:
+                import solnlib
+
+                solnlib.observability = saved_obs_mods["solnlib.observability"]
+
+    def test_create_otlp_exporter_sets_grpc_verbosity_when_absent(
+        self, logger, monkeypatch
+    ):
+        monkeypatch.delenv("GRPC_VERBOSITY", raising=False)
+        monkeypatch.delenv("SPOTLIGHT_OTEL_RECEIVER_PORT", raising=False)
+        monkeypatch.setattr(
+            "solnlib.observability.ObservabilityService._discover_otlp_port_via_ipc_broker",
+            lambda self: None,
+        )
+        svc = ObservabilityService(
+            modinput_type="test-input",
+            logger=logger,
+            ta_name="my_ta",
+            ta_version="1.0.0",
+        )
+        ObservabilityService._create_otlp_exporter(svc)
+        assert os.environ["GRPC_VERBOSITY"] == "NONE"
+
+    def test_create_otlp_exporter_respects_existing_grpc_verbosity(
+        self, logger, monkeypatch
+    ):
+        monkeypatch.setenv("GRPC_VERBOSITY", "DEBUG")
+        monkeypatch.delenv("SPOTLIGHT_OTEL_RECEIVER_PORT", raising=False)
+        monkeypatch.setattr(
+            "solnlib.observability.ObservabilityService._discover_otlp_port_via_ipc_broker",
+            lambda self: None,
+        )
+        svc = ObservabilityService(
+            modinput_type="test-input",
+            logger=logger,
+            ta_name="my_ta",
+            ta_version="1.0.0",
+        )
+        ObservabilityService._create_otlp_exporter(svc)
+        assert os.environ["GRPC_VERBOSITY"] == "DEBUG"
+
+    def test_create_otlp_exporter_attaches_filter_to_otlp_loggers(
+        self, logger, monkeypatch, tmp_path
+    ):
+        from solnlib.observability import _downgrade_to_info_filter, _OTLP_LOGGERS
+
+        monkeypatch.setenv("SPOTLIGHT_OTEL_RECEIVER_PORT", "4317")
+        monkeypatch.setenv("SPLUNK_HOME", str(tmp_path))
+        cert_path = tmp_path / "var/packages/data/spotlight-collector"
+        cert_path.mkdir(parents=True)
+        (cert_path / "server.crt").write_bytes(b"fake-cert")
+        mock_grpc = MagicMock()
+        mock_grpc.ssl_channel_credentials = MagicMock(return_value=MagicMock())
+        monkeypatch.setitem(sys.modules, "grpc", mock_grpc)
+        mock_otlp_module = MagicMock()
+        mock_otlp_module.OTLPMetricExporter = MagicMock(return_value=MagicMock())
+        monkeypatch.setitem(
+            sys.modules,
+            "opentelemetry.exporter.otlp.proto.grpc.metric_exporter",
+            mock_otlp_module,
+        )
+        svc = ObservabilityService(
+            modinput_type="test-input",
+            logger=logger,
+            ta_name="my_ta",
+            ta_version="1.0.0",
+        )
+        with _clean_logger_filters(*_OTLP_LOGGERS) as loggers:
+            ObservabilityService._create_otlp_exporter(svc)
+            for lg in loggers:
+                assert _downgrade_to_info_filter in lg.filters
+
+    def test_create_otlp_exporter_does_not_attach_filter_on_missing_port(
+        self, logger, monkeypatch
+    ):
+        from solnlib.observability import _downgrade_to_info_filter, _OTLP_LOGGERS
+
+        monkeypatch.delenv("SPOTLIGHT_OTEL_RECEIVER_PORT", raising=False)
+        monkeypatch.setattr(
+            "solnlib.observability.ObservabilityService._discover_otlp_port_via_ipc_broker",
+            lambda self: None,
+        )
+        svc = _make_service(logger, monkeypatch)
+        with _clean_logger_filters(*_OTLP_LOGGERS) as loggers:
+            assert ObservabilityService._create_otlp_exporter(svc) is None
+            for lg in loggers:
+                assert _downgrade_to_info_filter not in lg.filters
+
+    def test_filters_are_attached_before_construction_logs_occur(
+        self, logger, monkeypatch, tmp_path
+    ):
+        """Regression guard for the required ordering: the filter must be on
+        the logger *before* OTLPMetricExporter() runs, not merely present by
+        the time _create_otlp_exporter() returns. Checking `.filters` after
+        the call (as the two tests above do) cannot tell "attached early"
+        apart from "attached late" — both leave the filter present at the
+        end. This test instead attaches a capturing Handler to each OTLP
+        logger *before* calling _create_otlp_exporter(), forces two of the
+        four loggers to actually emit a WARNING during real OTLPMetricExporter
+        construction (malformed OTEL_EXPORTER_OTLP_METRICS_HEADERS and
+        OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE — verified against
+        opentelemetry-exporter-otlp-proto-grpc 1.39.1 to log through
+        `opentelemetry.util.re` and
+        `opentelemetry.exporter.otlp.proto.common._internal.metrics_encoder`
+        respectively), and asserts every record the handler observed was
+        already at INFO by the time it reached the handler. Filters run
+        before handlers in Logger.handle(), so this only passes if the
+        filter was attached before that specific log call — i.e. before
+        OTLPMetricExporter() ran. Uses the real grpc/OTLPMetricExporter
+        (no sys.modules mocking): constructing ssl_channel_credentials and
+        OTLPMetricExporter does not perform network I/O, so no real
+        collector is needed, and a syntactically-invalid cert file is
+        accepted at construction time (verified empirically).
+
+        Calls _create_otlp_exporter() on a bare instance built via
+        ObservabilityService.__new__() rather than going through the full
+        constructor. The full constructor would wrap the real returned
+        exporter in a real PeriodicExportingMetricReader — in OTel 1.39.1
+        that reader defaults export_interval_millis to 60_000 and spawns a
+        genuine daemon thread (MeterProvider also registers an atexit
+        shutdown hook), and nothing in this test would ever join or shut
+        that thread down. _create_otlp_exporter only reads self._logger
+        (SPOTLIGHT_OTEL_RECEIVER_PORT is set below, so _resolve_otlp_port()
+        never touches the IPC-broker path, which is the only other place
+        that reads self attributes), so a bare instance with just _logger
+        set is sufficient. The real exporter this returns still opens a
+        gRPC channel object, so it is explicitly shut down in finally."""
+        from solnlib.observability import _OTLP_LOGGERS
+
+        monkeypatch.setenv("SPOTLIGHT_OTEL_RECEIVER_PORT", "4317")
+        monkeypatch.setenv("SPLUNK_HOME", str(tmp_path))
+        monkeypatch.setenv(
+            "OTEL_EXPORTER_OTLP_METRICS_HEADERS", "not-a-valid-header-no-equals-sign"
+        )
+        monkeypatch.setenv(
+            "OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE",
+            "not-a-real-preference",
+        )
+        cert_path = tmp_path / "var/packages/data/spotlight-collector"
+        cert_path.mkdir(parents=True)
+        (cert_path / "server.crt").write_bytes(b"fake-cert")
+
+        svc = ObservabilityService.__new__(ObservabilityService)
+        svc._logger = logger
+
+        captured = []  # list of (logger_name, levelno) tuples
+
+        class _CapturingHandler(logging.Handler):
+            def emit(self, record):
+                captured.append((record.name, record.levelno))
+
+        capturing_handler = _CapturingHandler(level=logging.NOTSET)
+
+        with _clean_logger_filters(*_OTLP_LOGGERS) as loggers:
+            original_levels = [lg.level for lg in loggers]
+            for lg in loggers:
+                lg.addHandler(capturing_handler)
+                lg.setLevel(logging.NOTSET)
+            exporter = None
+            try:
+                exporter = svc._create_otlp_exporter()
+            finally:
+                for lg, level in zip(loggers, original_levels):
+                    lg.removeHandler(capturing_handler)
+                    lg.setLevel(level)
+                if exporter is not None:
+                    exporter.shutdown()
+
+        captured_logger_names = {name for name, _ in captured}
+        assert "opentelemetry.util.re" in captured_logger_names, (
+            "expected the malformed-headers trigger to still log through "
+            "opentelemetry.util.re — if this fails, the trigger stopped "
+            "working and the test no longer proves anything"
+        )
+        assert (
+            "opentelemetry.exporter.otlp.proto.common._internal.metrics_encoder"
+            in captured_logger_names
+        ), (
+            "expected the malformed-temporality-preference trigger to still "
+            "log through the metrics encoder — if this fails, the trigger "
+            "stopped working and the test no longer proves anything"
+        )
+        assert all(levelno <= logging.INFO for _, levelno in captured)
+
+    @pytest.mark.parametrize(
+        "modinput_type",
+        [123, None, "bad\nvalue", "bad\rvalue", "\ud800"],
+    )
+    def test_init_direct_call_degrades_gracefully_on_invalid_modinput_type(
+        self, logger, monkeypatch, modinput_type
+    ):
+        monkeypatch.setattr(
+            "solnlib.observability.ObservabilityService._create_otlp_exporter",
+            lambda self: None,
+        )
+        svc = ObservabilityService(
+            modinput_type=modinput_type,
+            logger=logger,
+            ta_name="my_ta",
+            ta_version="1.0.0",
+        )
+        assert svc._meter is None
+        assert svc.event_count_counter is None
+        assert svc.event_bytes_counter is None
+        logger.info.assert_called()
+        logger.warning.assert_not_called()
+        logger.error.assert_not_called()
+
+    def test_init_valid_modinput_type_still_initialises(self, logger, monkeypatch):
+        svc = _make_service(logger, monkeypatch)
+        assert svc._meter is not None
+
+    def test_init_invalid_modinput_type_error_sanitizes_evil_type_name(
+        self, logger, monkeypatch
+    ):
+        # Same class-name exposure as StanzaObservabilityRecorder's TypeError
+        # (Task 10): fix at the raise site for consistency. Checking the
+        # final logged output is not sufficient proof here — this ValueError
+        # is always caught internally and passed through _safe_exception_str,
+        # which re-sanitizes whatever it's given. A test that only inspects
+        # logger.info.call_args_list would still pass even if the raise-site
+        # fix were reverted, since the downstream re-sanitization masks the
+        # regression. Capture the exception object handed to
+        # _safe_exception_str instead, and assert its own stored message
+        # (args[0]) is already clean, proving the local fix independent of
+        # that downstream safety net.
+        monkeypatch.setattr(
+            "solnlib.observability.ObservabilityService._create_otlp_exporter",
+            lambda self: None,
+        )
+        captured_errors = []
+
+        def _capturing_safe_exception_str(error):
+            captured_errors.append(error)
+            return "SAFE"
+
+        monkeypatch.setattr(
+            "solnlib.observability._safe_exception_str",
+            _capturing_safe_exception_str,
+        )
+        evil_type = type("bad\r\nname", (), {})
+        ObservabilityService(
+            modinput_type=evil_type(),
+            logger=logger,
+            ta_name="my_ta",
+            ta_version="1.0.0",
+        )
+        assert captured_errors, "expected the ValueError to reach _safe_exception_str"
+        raw_message = captured_errors[0].args[0]
+        assert "\n" not in raw_message
+        assert "\r" not in raw_message
+
+
+# ---------------------------------------------------------------------------
+# _DowngradeToInfoFilter
+# ---------------------------------------------------------------------------
+
+
+class TestDowngradeToInfoFilter:
+    def test_downgrades_error_and_critical_to_info(self):
+        from solnlib.observability import _downgrade_to_info_filter
+
+        for level in (logging.ERROR, logging.CRITICAL):
+            record = logging.LogRecord(
+                "x", level, __file__, 1, "msg %s", ("arg",), None
+            )
+            assert _downgrade_to_info_filter.filter(record) is True
+            assert record.levelno == logging.INFO
+            assert record.levelname == "INFO"
+            assert record.msg == "msg %s"
+            assert record.args == ("arg",)
+
+    def test_preserves_debug_and_info(self):
+        from solnlib.observability import _downgrade_to_info_filter
+
+        for level in (logging.DEBUG, logging.INFO):
+            record = logging.LogRecord(
+                "x", level, __file__, 1, "msg %s", ("arg",), None
+            )
+            _downgrade_to_info_filter.filter(record)
+            assert record.levelno == level
+            assert record.msg == "msg %s"
+            assert record.args == ("arg",)
+
+    def test_repeated_attachment_does_not_duplicate(self):
+        from solnlib.observability import _downgrade_to_info_filter
+
+        test_logger = logging.getLogger("test.solnlib.observability.dedup")
+        test_logger.filters = []
+        test_logger.addFilter(_downgrade_to_info_filter)
+        test_logger.addFilter(_downgrade_to_info_filter)
+        assert test_logger.filters.count(_downgrade_to_info_filter) == 1
+        test_logger.filters = []
+
+    def test_otlp_and_metrics_sdk_logger_names_are_defined(self):
+        from solnlib.observability import _METRICS_SDK_LOGGERS, _OTLP_LOGGERS
+
+        assert _OTLP_LOGGERS == (
+            "opentelemetry.exporter.otlp.proto.grpc.exporter",
+            "opentelemetry.util.re",
+            "opentelemetry.exporter.otlp.proto.common._internal.metrics_encoder",
+            "opentelemetry.exporter.otlp.proto.common._internal",
+        )
+        assert _METRICS_SDK_LOGGERS == (
+            "opentelemetry.sdk.metrics._internal.export",
+            "opentelemetry.sdk.metrics._internal",
+            "opentelemetry.sdk.metrics._internal.instrument",
+            "opentelemetry.metrics._internal",
+            "opentelemetry.attributes",
+        )
+
+
+# ---------------------------------------------------------------------------
+# Log-level downgrade (WARNING/ERROR -> INFO)
+# ---------------------------------------------------------------------------
+
+
+class TestLogLevelDowngrade:
+    def test_logger_metric_exporter_export_exception_uses_safe_str(
+        self, logger, monkeypatch
+    ):
+        monkeypatch.setattr(
+            "solnlib.observability._safe_exception_str", lambda error: "SAFE"
+        )
+        metrics_data = MagicMock()
+        metrics_data.resource_metrics.__iter__ = MagicMock(
+            side_effect=RuntimeError("boom")
+        )
+        exporter = LoggerMetricExporter(logger)
+        exporter.export(metrics_data)
+        logger.info.assert_called_once()
+        args, kwargs = logger.info.call_args
+        assert "SAFE" in args
+        assert "exc_info" not in kwargs
+
+    def test_init_exception_uses_safe_str(self, logger, monkeypatch):
+        monkeypatch.setattr(
+            "solnlib.observability._safe_exception_str", lambda error: "SAFE"
+        )
+        monkeypatch.setattr(
+            "solnlib.observability.ObservabilityService._create_otlp_exporter",
+            lambda self: None,
+        )
+        monkeypatch.setattr(
+            "solnlib.observability.ObservabilityService._read_ta_info",
+            MagicMock(side_effect=RuntimeError("boom")),
+        )
+        ObservabilityService(modinput_type="test-input", logger=logger)
+        assert any("SAFE" in call.args for call in logger.info.call_args_list)
+        logger.warning.assert_not_called()
+
+    def test_read_ta_info_exception_uses_safe_str(self, logger, monkeypatch):
+        monkeypatch.setattr(
+            "solnlib.observability._safe_exception_str", lambda error: "SAFE"
+        )
+        monkeypatch.setattr(
+            "solnlib.observability.ObservabilityService._create_otlp_exporter",
+            lambda self: None,
+        )
+        monkeypatch.setattr(
+            "solnlib.observability.get_conf_stanzas",
+            MagicMock(side_effect=RuntimeError("boom")),
+        )
+        svc = ObservabilityService(modinput_type="test-input", logger=logger)
+        assert svc._meter is None
+        assert any("SAFE" in call.args for call in logger.info.call_args_list)
+        logger.warning.assert_not_called()
+
+    def test_get_ipc_broker_port_exception_uses_safe_str(self, logger, monkeypatch):
+        monkeypatch.setattr(
+            "solnlib.observability._safe_exception_str", lambda error: "SAFE"
+        )
+        monkeypatch.setattr(
+            "solnlib.observability.get_conf_stanzas",
+            MagicMock(side_effect=RuntimeError("boom")),
+        )
+        svc = _make_service(logger, monkeypatch)
+        logger.reset_mock()
+        assert svc._get_ipc_broker_port() is None
+        assert any("SAFE" in call.args for call in logger.info.call_args_list)
+        logger.warning.assert_not_called()
+
+    def test_discover_otlp_port_missing_broker_port_is_info(self, logger, monkeypatch):
+        monkeypatch.setattr(
+            "solnlib.observability.ObservabilityService._get_ipc_broker_port",
+            lambda self: None,
+        )
+        svc = _make_service(logger, monkeypatch)
+        logger.reset_mock()
+        assert svc._discover_otlp_port_via_ipc_broker() is None
+        logger.info.assert_called()
+        logger.warning.assert_not_called()
+
+    def test_discover_otlp_port_unsuccessful_response_is_info(
+        self, logger, monkeypatch
+    ):
+        monkeypatch.setattr(
+            "solnlib.observability.ObservabilityService._get_ipc_broker_port",
+            lambda self: 8088,
+        )
+        mock_resp = MagicMock()
+        mock_resp.__enter__ = lambda s: s
+        mock_resp.__exit__ = MagicMock(return_value=False)
+        mock_resp.read.return_value = b'{"success": false}'
+        monkeypatch.setattr("urllib.request.urlopen", lambda *a, **kw: mock_resp)
+        svc = _make_service(logger, monkeypatch)
+        logger.reset_mock()
+        assert svc._discover_otlp_port_via_ipc_broker() is None
+        logger.info.assert_called()
+        logger.warning.assert_not_called()
+
+    def test_discover_otlp_port_exception_uses_safe_str(self, logger, monkeypatch):
+        monkeypatch.setattr(
+            "solnlib.observability._safe_exception_str", lambda error: "SAFE"
+        )
+        monkeypatch.setattr(
+            "solnlib.observability.ObservabilityService._get_ipc_broker_port",
+            lambda self: 8088,
+        )
+        monkeypatch.setattr(
+            "urllib.request.urlopen",
+            MagicMock(side_effect=RuntimeError("boom")),
+        )
+        svc = _make_service(logger, monkeypatch)
+        logger.reset_mock()
+        assert svc._discover_otlp_port_via_ipc_broker() is None
+        assert any("SAFE" in call.args for call in logger.info.call_args_list)
+        logger.warning.assert_not_called()
+
+    def test_create_otlp_exporter_missing_port_is_info(self, logger, monkeypatch):
+        monkeypatch.delenv("SPOTLIGHT_OTEL_RECEIVER_PORT", raising=False)
+        monkeypatch.setattr(
+            "solnlib.observability.ObservabilityService._discover_otlp_port_via_ipc_broker",
+            lambda self: None,
+        )
+        # Create service WITHOUT patching _create_otlp_exporter
+        svc = ObservabilityService(
+            modinput_type="test-input",
+            logger=logger,
+            ta_name="my_ta",
+            ta_version="1.0.0",
+        )
+        logger.reset_mock()
+        assert ObservabilityService._create_otlp_exporter(svc) is None
+        logger.info.assert_called()
+        logger.warning.assert_not_called()
+
+    def test_create_otlp_exporter_missing_cert_is_info(
+        self, logger, monkeypatch, tmp_path
+    ):
+        monkeypatch.setenv("SPOTLIGHT_OTEL_RECEIVER_PORT", "4317")
+        monkeypatch.setenv("SPLUNK_HOME", str(tmp_path))
+        # Create service WITHOUT patching _create_otlp_exporter
+        svc = ObservabilityService(
+            modinput_type="test-input",
+            logger=logger,
+            ta_name="my_ta",
+            ta_version="1.0.0",
+        )
+        logger.reset_mock()
+        assert ObservabilityService._create_otlp_exporter(svc) is None
+        logger.info.assert_called()
+        logger.error.assert_not_called()
+
+    def test_create_otlp_exporter_exception_uses_safe_str_no_exc_info(
+        self, logger, monkeypatch
+    ):
+        monkeypatch.setattr(
+            "solnlib.observability._safe_exception_str", lambda error: "SAFE"
+        )
+        monkeypatch.setenv("SPOTLIGHT_OTEL_RECEIVER_PORT", "4317")
+        monkeypatch.setattr(
+            "solnlib.observability.ObservabilityService._resolve_otlp_port",
+            MagicMock(side_effect=RuntimeError("boom")),
+        )
+        # Create service WITHOUT patching _create_otlp_exporter
+        svc = ObservabilityService(
+            modinput_type="test-input",
+            logger=logger,
+            ta_name="my_ta",
+            ta_version="1.0.0",
+        )
+        logger.reset_mock()
+        assert ObservabilityService._create_otlp_exporter(svc) is None
+        logger.info.assert_called_once()
+        args, kwargs = logger.info.call_args
+        assert "SAFE" in args
+        assert "exc_info" not in kwargs
+        logger.warning.assert_not_called()
+
+    def test_flush_exception_uses_safe_str(self, logger, monkeypatch):
+        monkeypatch.setattr(
+            "solnlib.observability._safe_exception_str", lambda error: "SAFE"
+        )
+        svc = _make_service(logger, monkeypatch)
+        mock_provider = MagicMock()
+        mock_provider.force_flush.side_effect = RuntimeError("boom")
+        svc._provider = mock_provider
+        logger.reset_mock()
+        svc.flush()
+        assert any("SAFE" in call.args for call in logger.info.call_args_list)
+        logger.warning.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# Recorder input validation
+# ---------------------------------------------------------------------------
+
+
+class TestCountValidation:
+    @pytest.mark.parametrize("value", [0, 1, 2**63 - 1])
+    def test_count_error_accepts_valid_values(self, value):
+        from solnlib.observability import _count_error
+
+        assert _count_error(value) is None
+
+    @pytest.mark.parametrize(
+        "value",
+        [-1, 2**63, True, False, 1.0, 2**100, -(2**100)],
+    )
+    def test_count_error_rejects_invalid_values(self, value):
+        from solnlib.observability import _count_error
+
+        assert _count_error(value) is not None
+
+    def test_count_error_message_does_not_render_raw_oversized_int(self):
+        from solnlib.observability import _count_error
+
+        huge = 2**200
+        error = _count_error(huge)
+        assert str(huge) not in error
+        assert str(huge.bit_length()) in error
+
+    def test_count_error_type_name_is_sanitized(self):
+        # type(value).__name__ is derived from a caller-supplied object's
+        # class and is not guaranteed safe: type("bad\r\nname", (), {}) is
+        # a real, constructible class whose __name__ contains raw CR/LF and
+        # can be arbitrarily long. It must go through _sanitize_for_log the
+        # same as any other value that reaches lazy log formatting.
+        from solnlib.observability import _count_error
+
+        evil_type = type("bad\r\nname", (), {})
+        error = _count_error(evil_type())
+        assert "\n" not in error
+        assert "\r" not in error
 
 
 # ---------------------------------------------------------------------------
@@ -727,3 +1780,334 @@ class TestStanzaObservabilityRecorder:
         result = rec.register_instrument(lambda meter: meter.create_counter("x"))
 
         assert result is None
+
+    def test_record_skips_invalid_event_count_keeps_valid_byte_count(
+        self, monkeypatch, clear_stanza_recorder_cache
+    ):
+        rec = self._make_recorder(monkeypatch)
+        mock_count = MagicMock()
+        mock_bytes = MagicMock()
+        rec._service.event_count_counter = mock_count
+        rec._service.event_bytes_counter = mock_bytes
+        mock_count.reset_mock()
+        mock_bytes.reset_mock()
+
+        rec.record(-1, 1024)
+
+        mock_count.add.assert_not_called()
+        mock_bytes.add.assert_called_once_with(
+            1024, attributes={"splunk.modinput.name": "my:stanza"}
+        )
+
+    def test_record_skips_invalid_byte_count_keeps_valid_event_count(
+        self, monkeypatch, clear_stanza_recorder_cache
+    ):
+        rec = self._make_recorder(monkeypatch)
+        mock_count = MagicMock()
+        mock_bytes = MagicMock()
+        rec._service.event_count_counter = mock_count
+        rec._service.event_bytes_counter = mock_bytes
+        mock_count.reset_mock()
+        mock_bytes.reset_mock()
+
+        rec.record(5, True)
+
+        mock_count.add.assert_called_once_with(
+            5, attributes={"splunk.modinput.name": "my:stanza"}
+        )
+        mock_bytes.add.assert_not_called()
+
+    def test_record_rejects_non_dict_extra_attrs(
+        self, monkeypatch, clear_stanza_recorder_cache
+    ):
+        rec = self._make_recorder(monkeypatch)
+        mock_count = MagicMock()
+        rec._service.event_count_counter = mock_count
+        mock_count.reset_mock()
+
+        rec.record(1, 1, extra_attrs=[("a", "b")])
+
+        mock_count.add.assert_called_once_with(
+            1, attributes={"splunk.modinput.name": "my:stanza"}
+        )
+
+    def test_record_drops_invalid_entries_keeps_valid_ones(
+        self, monkeypatch, clear_stanza_recorder_cache
+    ):
+        rec = self._make_recorder(monkeypatch)
+        mock_count = MagicMock()
+        rec._service.event_count_counter = mock_count
+        mock_count.reset_mock()
+
+        rec.record(
+            1,
+            1,
+            extra_attrs={
+                "good.key": "good value",
+                "bad.value": [1, 2, 3],
+                123: "bad key",
+            },
+        )
+
+        mock_count.add.assert_called_once_with(
+            1,
+            attributes={
+                "splunk.modinput.name": "my:stanza",
+                "good.key": "good value",
+            },
+        )
+
+    def test_record_extra_attrs_cannot_override_modinput_name(
+        self, monkeypatch, clear_stanza_recorder_cache
+    ):
+        rec = self._make_recorder(monkeypatch)
+        mock_count = MagicMock()
+        rec._service.event_count_counter = mock_count
+        mock_count.reset_mock()
+
+        rec.record(1, 1, extra_attrs={"splunk.modinput.name": "hijacked"})
+
+        mock_count.add.assert_called_once_with(
+            1, attributes={"splunk.modinput.name": "my:stanza"}
+        )
+
+    def test_record_non_dict_extra_attrs_log_sanitizes_type_name(
+        self, monkeypatch, clear_stanza_recorder_cache
+    ):
+        rec = self._make_recorder(monkeypatch)
+        evil_type = type("bad\r\nname", (), {})
+
+        rec.record(1, 1, extra_attrs=evil_type())
+
+        for call in rec._service._logger.info.call_args_list:
+            for arg in call.args:
+                assert "\n" not in str(arg)
+                assert "\r" not in str(arg)
+
+    @pytest.mark.parametrize(
+        "modinput_type, stanza_name",
+        [
+            (123, "ok"),
+            ("ok", 123),
+            (None, "ok"),
+            ("ok", "bad\nname"),
+            ("ok", "bad\rname"),
+            ("\ud800", "ok"),
+        ],
+    )
+    def test_init_rejects_invalid_identity_values(
+        self, monkeypatch, clear_stanza_recorder_cache, modinput_type, stanza_name
+    ):
+        from solnlib.observability import StanzaObservabilityRecorder
+
+        monkeypatch.setattr(
+            "solnlib.observability.ObservabilityService._create_otlp_exporter",
+            lambda self: None,
+        )
+        with pytest.raises(TypeError):
+            StanzaObservabilityRecorder(
+                modinput_type, MagicMock(spec=logging.Logger), stanza_name
+            )
+
+    def test_init_error_message_omits_raw_value(
+        self, monkeypatch, clear_stanza_recorder_cache
+    ):
+        from solnlib.observability import StanzaObservabilityRecorder
+
+        monkeypatch.setattr(
+            "solnlib.observability.ObservabilityService._create_otlp_exporter",
+            lambda self: None,
+        )
+        secret_value = "TOP-SECRET-SHOULD-NOT-APPEAR"
+        with pytest.raises(TypeError) as exc_info:
+            StanzaObservabilityRecorder(
+                secret_value + "\n", MagicMock(spec=logging.Logger), "ok"
+            )
+        assert secret_value not in str(exc_info.value)
+
+    def test_init_accepts_empty_identity_strings(
+        self, monkeypatch, clear_stanza_recorder_cache
+    ):
+        from solnlib.observability import StanzaObservabilityRecorder
+
+        monkeypatch.setattr(
+            "solnlib.observability.ObservabilityService._create_otlp_exporter",
+            lambda self: None,
+        )
+        rec = StanzaObservabilityRecorder("", MagicMock(spec=logging.Logger), "")
+        assert rec._stanza_name == ""
+
+    def test_init_rejects_invalid_identity_before_cache_lookup(
+        self, monkeypatch, clear_stanza_recorder_cache
+    ):
+        from solnlib.observability import StanzaObservabilityRecorder
+
+        with pytest.raises(TypeError):
+            StanzaObservabilityRecorder(
+                "bad\nmodinput", MagicMock(spec=logging.Logger), "ok"
+            )
+        assert "bad\nmodinput" not in StanzaObservabilityRecorder._instances
+
+    def test_init_type_error_message_sanitizes_evil_type_name(
+        self, monkeypatch, clear_stanza_recorder_cache
+    ):
+        # A non-str modinput_type/stanza_name is reported by class name, and
+        # that class name is caller-controlled: type("bad\r\nname", (), {})
+        # is a real class whose __name__ contains raw CR/LF. This TypeError
+        # propagates to the caller (unlike the internally-caught validation
+        # in ObservabilityService), so its message must be pre-sanitized —
+        # solnlib does not control what the caller does with it afterward.
+        from solnlib.observability import StanzaObservabilityRecorder
+
+        evil_type = type("bad\r\nname", (), {})
+        with pytest.raises(TypeError) as exc_info:
+            StanzaObservabilityRecorder(
+                evil_type(), MagicMock(spec=logging.Logger), "ok"
+            )
+        assert "\n" not in str(exc_info.value)
+        assert "\r" not in str(exc_info.value)
+
+
+class TestAttrValidation:
+    def test_attr_key_error_accepts_valid_key(self):
+        from solnlib.observability import _attr_key_error
+
+        assert _attr_key_error("valid.key") is None
+
+    @pytest.mark.parametrize(
+        "key",
+        [123, b"bytes", None, "", "bad\nkey", "bad\rkey", "\ud800"],
+    )
+    def test_attr_key_error_rejects_invalid_key(self, key):
+        from solnlib.observability import _attr_key_error
+
+        assert _attr_key_error(key) is not None
+
+    @pytest.mark.parametrize(
+        "value",
+        [
+            True,
+            False,
+            0,
+            2**63 - 1,
+            -(2**63),
+            1.5,
+            float("nan"),
+            float("inf"),
+            "ok",
+        ],
+    )
+    def test_attr_value_error_accepts_valid_values(self, value):
+        from solnlib.observability import _attr_value_error
+
+        assert _attr_value_error(value) is None
+
+    def test_attr_value_error_accepts_crlf_in_string_value(self):
+        from solnlib.observability import _attr_value_error
+
+        assert _attr_value_error("has\r\nnewline") is None
+
+    @pytest.mark.parametrize(
+        "value",
+        [2**63, -(2**63) - 1, [1, 2], (1, 2), {"a": 1}, None, "\ud800"],
+    )
+    def test_attr_value_error_rejects_invalid_values(self, value):
+        from solnlib.observability import _attr_value_error
+
+        assert _attr_value_error(value) is not None
+
+    def test_attr_key_error_type_name_is_sanitized(self):
+        from solnlib.observability import _attr_key_error
+
+        evil_type = type("bad\r\nname", (), {})
+        error = _attr_key_error(evil_type())
+        assert "\n" not in error
+        assert "\r" not in error
+
+    def test_attr_value_error_type_name_is_sanitized(self):
+        from solnlib.observability import _attr_value_error
+
+        evil_type = type("bad\r\nname", (), {})
+        error = _attr_value_error(evil_type())
+        assert "\n" not in error
+        assert "\r" not in error
+
+
+class TestGrpcTlsHandshakeStderrSuppression:
+    """Integration check: a real TLS handshake failure logs a gRPC C-core
+    diagnostic line straight to stderr unless GRPC_VERBOSITY=NONE is set
+    before grpc initializes. Requires the system `openssl` binary."""
+
+    @staticmethod
+    def _generate_self_signed_cert(directory, name, subject):
+        key_path = directory / f"{name}.key"
+        crt_path = directory / f"{name}.crt"
+        subprocess.run(
+            [
+                "openssl",
+                "req",
+                "-x509",
+                "-newkey",
+                "rsa:2048",
+                "-keyout",
+                str(key_path),
+                "-out",
+                str(crt_path),
+                "-days",
+                "1",
+                "-nodes",
+                "-subj",
+                subject,
+            ],
+            check=True,
+            capture_output=True,
+        )
+        return key_path, crt_path
+
+    @pytest.mark.skipif(
+        shutil.which("openssl") is None, reason="requires system openssl binary"
+    )
+    def test_grpc_verbosity_none_suppresses_tls_handshake_stderr(self, tmp_path):
+        server_key, server_crt = self._generate_self_signed_cert(
+            tmp_path, "server", "/CN=localhost"
+        )
+        _, wrong_root_crt = self._generate_self_signed_cert(
+            tmp_path, "wrong_root", "/CN=wrong-root"
+        )
+
+        control_env = dict(os.environ)
+        control_env.pop("GRPC_VERBOSITY", None)
+        control = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                _GRPC_TLS_HANDSHAKE_SCRIPT,
+                str(server_key),
+                str(server_crt),
+                str(wrong_root_crt),
+            ],
+            env=control_env,
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+
+        suppressed_env = dict(os.environ)
+        suppressed_env["GRPC_VERBOSITY"] = "NONE"
+        suppressed = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                _GRPC_TLS_HANDSHAKE_SCRIPT,
+                str(server_key),
+                str(server_crt),
+                str(wrong_root_crt),
+            ],
+            env=suppressed_env,
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+
+        assert "Handshake failed" in control.stderr
+        assert "Handshake failed" not in suppressed.stderr

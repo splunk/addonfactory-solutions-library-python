@@ -73,6 +73,73 @@ _SERVICE_NAMESPACE = "splunk.addon"
 ATTR_MODINPUT_NAME = "splunk.modinput.name"
 
 
+def _sanitize_for_log(text) -> str:
+    """Return one bounded, UTF-8-safe physical log-line fragment."""
+    try:
+        # Calling the base implementation directly neutralizes overridden
+        # methods on a str subclass and returns a genuine plain str.
+        text = str.__str__(text) if isinstance(text, str) else str(text)
+        text = text.replace("\r\n", " ").replace("\n", " ").replace("\r", " ")
+        text = text.encode("utf-8", errors="replace").decode("utf-8")
+        if len(text) > 500:
+            text = text[:500] + "...(truncated)"
+        return text
+    except BaseException:
+        return "<unrepresentable>"
+
+
+def _safe_exception_repr(error: BaseException) -> str:
+    try:
+        return _sanitize_for_log(repr(error))
+    except BaseException:
+        pass
+    try:
+        return _sanitize_for_log(f"{type(error).__name__} (repr unavailable)")
+    except BaseException:
+        return "<exception repr unavailable>"
+
+
+def _safe_exception_str(error: BaseException) -> str:
+    try:
+        return _sanitize_for_log(str(error))
+    except BaseException:
+        pass
+    try:
+        return _sanitize_for_log(f"{type(error).__name__} (details unavailable)")
+    except BaseException:
+        return "<exception details unavailable>"
+
+
+class _DowngradeToInfoFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        if record.levelno > logging.INFO:
+            record.levelno = logging.INFO
+            record.levelname = "INFO"
+        return True
+
+
+_downgrade_to_info_filter = _DowngradeToInfoFilter()
+
+# Intentional process-wide policy: observability is auxiliary functionality, so
+# diagnostics emitted by the OpenTelemetry SDK and exporters are capped at INFO
+# across all signal types (metrics, logs, and traces). This preserves diagnostic
+# messages without surfacing observability failures as add-on WARNING/ERROR events.
+_OTLP_LOGGERS = (
+    "opentelemetry.exporter.otlp.proto.grpc.exporter",
+    "opentelemetry.util.re",
+    "opentelemetry.exporter.otlp.proto.common._internal.metrics_encoder",
+    "opentelemetry.exporter.otlp.proto.common._internal",
+)
+
+_METRICS_SDK_LOGGERS = (
+    "opentelemetry.sdk.metrics._internal.export",
+    "opentelemetry.sdk.metrics._internal",
+    "opentelemetry.sdk.metrics._internal.instrument",
+    "opentelemetry.metrics._internal",
+    "opentelemetry.attributes",
+)
+
+
 class LoggerMetricExporter(MetricExporter):
     """An OpenTelemetry ``MetricExporter`` that logs every data point.
 
@@ -166,8 +233,10 @@ class LoggerMetricExporter(MetricExporter):
                     metric_count,
                 )
             return MetricExportResult.SUCCESS
-        except Exception as e:
-            self._logger.error("Failed to export metrics: %s", e, exc_info=True)
+        except Exception as error:
+            self._logger.info(
+                "Failed to export metrics: %s", _safe_exception_str(error)
+            )
             return MetricExportResult.FAILURE
 
     def shutdown(self, timeout_millis: float = 30_000, **kwargs) -> None:
@@ -179,12 +248,79 @@ class LoggerMetricExporter(MetricExporter):
         return True
 
 
+class _CircuitBreakerExporter(MetricExporter):
+    """Wraps the internally constructed OTLP exporter and stops calling it
+    after 3 consecutive failed exports in this process."""
+
+    _MAX_CONSECUTIVE_FAILURES = 3
+
+    def __init__(self, inner: MetricExporter, logger: _Logger) -> None:
+        super().__init__(
+            preferred_temporality=inner._preferred_temporality,
+            preferred_aggregation=inner._preferred_aggregation,
+        )
+        self._inner = inner
+        self._logger = logger
+        self._consecutive_failures = 0
+        self._tripped = False
+        self._shutdown_called = False
+        self._lock = threading.Lock()
+
+    def export(
+        self,
+        metrics_data: MetricsData,
+        timeout_millis: float = 10_000,
+        **kwargs,
+    ) -> MetricExportResult:
+        with self._lock:
+            if self._tripped:
+                return MetricExportResult.SUCCESS
+
+        # Never hold _lock across this blocking call: shutdown() must be able
+        # to reach the inner exporter and interrupt an in-flight retry even
+        # while an export is still outstanding on another thread.
+        try:
+            result = self._inner.export(
+                metrics_data, timeout_millis=timeout_millis, **kwargs
+            )
+        except Exception as error:
+            self._logger.info(
+                "OTLP export raised an exception: %s",
+                _safe_exception_repr(error),
+            )
+            result = MetricExportResult.FAILURE
+
+        with self._lock:
+            if result == MetricExportResult.SUCCESS:
+                self._consecutive_failures = 0
+                return result
+
+            self._consecutive_failures += 1
+            if self._consecutive_failures >= self._MAX_CONSECUTIVE_FAILURES:
+                self._tripped = True
+                self._logger.info("OTLP export disabled after 3 consecutive failures")
+            return result
+
+    def force_flush(self, timeout_millis: float = 10_000) -> bool:
+        with self._lock:
+            if self._tripped:
+                return True
+        return self._inner.force_flush(timeout_millis=timeout_millis)
+
+    def shutdown(self, timeout_millis: float = 30_000, **kwargs) -> None:
+        with self._lock:
+            if self._shutdown_called:
+                return
+            self._shutdown_called = True
+        self._inner.shutdown(timeout_millis=timeout_millis, **kwargs)
+
+
 class ObservabilityService:
     """OpenTelemetry observability service for a Splunk modular input.
 
     Sets up a ``MeterProvider`` with two built-in event counters and,
     when the Spotlight collector is reachable, an OTLP gRPC exporter.
-    Initialisation failures are caught and logged as warnings so that a
+    Initialisation failures are caught and logged at INFO so that a
     missing or misconfigured observability stack never breaks the add-on.
 
     **Resource attributes** (fixed for the lifetime of the process):
@@ -275,7 +411,18 @@ class ObservabilityService:
         self._meter: Optional[Meter] = None
         self._provider: Optional[MeterProvider] = None
 
+        for logger_name in _METRICS_SDK_LOGGERS:
+            logging.getLogger(logger_name).addFilter(_downgrade_to_info_filter)
+
         try:
+            if type(modinput_type) is not str or not _is_safe_identifier_str(
+                modinput_type
+            ):
+                raise ValueError(
+                    "modinput_type must be a str without CR/LF, got "
+                    f"{_sanitize_for_log(type(modinput_type).__name__)}"
+                )
+
             if ta_name is None or ta_version is None:
                 _ta_name, _ta_version = self._read_ta_info()
                 ta_name = ta_name or _ta_name
@@ -327,8 +474,11 @@ class ObservabilityService:
                 ta_version,
                 modinput_type,
             )
-        except Exception as e:
-            self._logger.warning("Failed to initialise ObservabilityService: %s", e)
+        except Exception as error:
+            self._logger.info(
+                "Failed to initialise ObservabilityService: %s",
+                _safe_exception_str(error),
+            )
 
     def _read_ta_info(self) -> tuple[Optional[str], Optional[str]]:
         """Read the add-on name and version from ``app.conf``.
@@ -345,8 +495,11 @@ class ObservabilityService:
             )
             ta_version = scoped_stanzas.get("launcher", {}).get("version") or None
             return ta_name, ta_version
-        except Exception as e:
-            self._logger.warning("Failed to read TA info from app.conf: %s", e)
+        except Exception as error:
+            self._logger.info(
+                "Failed to read TA info from app.conf: %s",
+                _safe_exception_str(error),
+            )
             return None, None
 
     def _get_ipc_broker_port(self) -> Optional[int]:
@@ -359,9 +512,10 @@ class ObservabilityService:
         try:
             stanzas = get_conf_stanzas("server")
             return int(stanzas["ipc_broker"]["port"])
-        except Exception as e:
-            self._logger.warning(
-                "Failed to read IPC broker port from server.conf: %s", e
+        except Exception as error:
+            self._logger.info(
+                "Failed to read IPC broker port from server.conf: %s",
+                _safe_exception_str(error),
             )
             return None
 
@@ -376,7 +530,7 @@ class ObservabilityService:
         """
         ipc_broker_port = self._get_ipc_broker_port()
         if ipc_broker_port is None:
-            self._logger.warning("IPC broker port not found in server.conf")
+            self._logger.info("IPC broker port not found in server.conf")
             return None
 
         url = (
@@ -397,15 +551,18 @@ class ObservabilityService:
                 data = json.loads(resp.read().decode())
 
             if not data.get("success"):
-                self._logger.warning(
+                self._logger.info(
                     "IPC broker discovery returned unsuccessful response: %s", data
                 )
                 return None
             port = str(data["port"])
             self._logger.info("Discovered OTLP port via IPC broker: %s", port)
             return port
-        except Exception as e:
-            self._logger.warning("IPC broker OTLP port discovery failed: %s", e)
+        except Exception as error:
+            self._logger.info(
+                "IPC broker OTLP port discovery failed: %s",
+                _safe_exception_str(error),
+            )
             return None
 
     def _resolve_otlp_port(self) -> Optional[str]:
@@ -443,13 +600,16 @@ class ObservabilityService:
         ``AggregationTemporality.DELTA`` so that each export interval reports
         only the change since the previous interval.
 
-        Returns the configured exporter, or ``None`` when:
+        Returns the configured exporter wrapped in ``_CircuitBreakerExporter``,
+        or ``None`` when:
 
         - The OTLP port cannot be resolved (see :meth:`_resolve_otlp_port`).
         - The certificate file does not exist.
         - Any other exception occurs during exporter construction (including a
           missing ``grpcio`` package).
         """
+        os.environ.setdefault("GRPC_VERBOSITY", "NONE")
+
         try:
             import grpc
             from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import (
@@ -466,7 +626,7 @@ class ObservabilityService:
             )
 
             if not otel_port:
-                self._logger.warning(
+                self._logger.info(
                     "OTLP port could not be determined from env or IPC broker, "
                     "OTLP export disabled"
                 )
@@ -481,11 +641,14 @@ class ObservabilityService:
             )
 
             if not os.path.exists(cert_file):
-                self._logger.error(
+                self._logger.info(
                     "OTel Collector certificate not found at %s, OTLP export disabled",
                     cert_file,
                 )
                 return None
+
+            for logger_name in _OTLP_LOGGERS:
+                logging.getLogger(logger_name).addFilter(_downgrade_to_info_filter)
 
             with open(cert_file, "rb") as f:
                 server_cert = f.read()
@@ -500,11 +663,12 @@ class ObservabilityService:
                 },
             )
             self._logger.info("OTLP gRPC exporter configured with TLS for %s", endpoint)
-            return exporter
+            return _CircuitBreakerExporter(exporter, self._logger)
 
-        except Exception as e:
-            self._logger.warning(
-                "Failed to configure OTLP exporter: %s", e, exc_info=True
+        except Exception as error:
+            self._logger.info(
+                "Failed to configure OTLP exporter: %s",
+                _safe_exception_str(error),
             )
             return None
 
@@ -565,8 +729,65 @@ class ObservabilityService:
             return
         try:
             self._provider.force_flush(timeout_millis=int(timeout_millis))
-        except Exception as e:
-            self._logger.warning("Failed to flush metrics: %s", e)
+        except Exception as error:
+            self._logger.info("Failed to flush metrics: %s", _safe_exception_str(error))
+
+
+_INT64_MIN = -(2**63)
+_INT64_MAX = 2**63 - 1
+
+
+def _is_encodable_str(value: str) -> bool:
+    # Caller guarantees type(value) is str.
+    try:
+        value.encode("utf-8")
+        return True
+    except UnicodeEncodeError:
+        return False
+
+
+def _is_safe_identifier_str(value: str) -> bool:
+    return _is_encodable_str(value) and "\n" not in value and "\r" not in value
+
+
+def _count_error(value) -> Optional[str]:
+    """Return None for a valid event/byte count, else a safe reason string."""
+    if type(value) is not int:
+        return f"expected int, got {_sanitize_for_log(type(value).__name__)}"
+    if value < 0:
+        return "count is negative"
+    if value > _INT64_MAX:
+        return f"count exceeds int64 range ({value.bit_length()} bits)"
+    return None
+
+
+def _attr_key_error(key) -> Optional[str]:
+    """Return None for a valid attribute key, else a safe reason string."""
+    if type(key) is not str:
+        return f"expected str key, got {_sanitize_for_log(type(key).__name__)}"
+    if not key:
+        return "key is empty"
+    if not _is_safe_identifier_str(key):
+        return "key is not UTF-8 encodable or contains CR/LF"
+    return None
+
+
+def _attr_value_error(value) -> Optional[str]:
+    """Return None for a valid attribute value, else a safe reason string."""
+    value_type = type(value)
+    if value_type is bool:
+        return None
+    if value_type is int:
+        if _INT64_MIN <= value <= _INT64_MAX:
+            return None
+        return f"int value out of int64 range ({value.bit_length()} bits)"
+    if value_type is float:
+        return None
+    if value_type is str:
+        if _is_encodable_str(value):
+            return None
+        return "value is not UTF-8 encodable"
+    return f"unsupported value type: {_sanitize_for_log(value_type.__name__)}"
 
 
 class StanzaObservabilityRecorder:
@@ -654,6 +875,17 @@ class StanzaObservabilityRecorder:
                 ``"my_stanza"``).  Attached as ``"splunk.modinput.name"``
                 on every recorded data point.
         """
+        self._logger = logger
+        if type(modinput_type) is not str or not _is_safe_identifier_str(modinput_type):
+            raise TypeError(
+                "modinput_type must be a str without CR/LF, got "
+                f"{_sanitize_for_log(type(modinput_type).__name__)}"
+            )
+        if type(stanza_name) is not str or not _is_safe_identifier_str(stanza_name):
+            raise TypeError(
+                "stanza_name must be a str without CR/LF, got "
+                f"{_sanitize_for_log(type(stanza_name).__name__)}"
+            )
         self._stanza_name = stanza_name
         self._service = self._get_or_create_service(modinput_type, logger)
         self._emit_zero_baseline()
@@ -744,11 +976,40 @@ class StanzaObservabilityRecorder:
                 extra_attrs={"my_ta.partition": partition_id},
             )
         """
-        attrs = dict(extra_attrs) if extra_attrs else {}
+        attrs = {}
+        if extra_attrs is not None:
+            if type(extra_attrs) is not dict:
+                self._logger.info(
+                    "Ignoring extra_attrs: expected dict or None, got %s",
+                    _sanitize_for_log(type(extra_attrs).__name__),
+                )
+            else:
+                for key, value in extra_attrs.items():
+                    key_error = _attr_key_error(key)
+                    if key_error is not None:
+                        self._logger.info("Ignoring invalid attribute: %s", key_error)
+                        continue
+                    value_error = _attr_value_error(value)
+                    if value_error is not None:
+                        self._logger.info(
+                            "Ignoring invalid value for attribute %r: %s",
+                            key,
+                            value_error,
+                        )
+                        continue
+                    attrs[key] = value
         attrs[ATTR_MODINPUT_NAME] = self._stanza_name
-        if self._service.event_count_counter:
+
+        event_count_error = _count_error(event_count)
+        if event_count_error is not None:
+            self._logger.info("Skipping invalid event_count: %s", event_count_error)
+        elif self._service.event_count_counter:
             self._service.event_count_counter.add(event_count, attributes=attrs)
-        if self._service.event_bytes_counter:
+
+        byte_count_error = _count_error(byte_count)
+        if byte_count_error is not None:
+            self._logger.info("Skipping invalid byte_count: %s", byte_count_error)
+        elif self._service.event_bytes_counter:
             self._service.event_bytes_counter.add(byte_count, attributes=attrs)
 
     def flush(self) -> None:
