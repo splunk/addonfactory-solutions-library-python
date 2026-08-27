@@ -25,7 +25,11 @@ from functools import wraps
 from typing import Any, Callable, Union
 from urllib import parse as urlparse
 
+from solnlib.log import Logs
+
+
 __all__ = [
+    "get_solnlib_logger",
     "handle_teardown_signals",
     "datetime_to_seconds",
     "is_true",
@@ -155,7 +159,7 @@ def retry(
                         "Run function: %s failed: %s.",
                         func.__name__,
                         traceback.format_exc(),
-                    )
+                    )  # deprecated
                     if not exceptions or any(
                         isinstance(e, exception) for exception in exceptions
                     ):
@@ -218,3 +222,15 @@ def get_appname_from_path(absolute_path):
                 pass
             continue
     return "-"
+
+
+def get_solnlib_logger(name):
+    _logger = None
+
+    def logger():
+        nonlocal _logger
+        if _logger is None:
+            _logger = Logs().get_logger(name)
+        return _logger
+
+    return logger
