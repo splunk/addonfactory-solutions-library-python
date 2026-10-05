@@ -288,9 +288,10 @@ def test_log_exceptions_full_msg():
             json.loads(test_jsons)
         except Exception as e:
             log.log_exception(mock_logger, e, "test type1", msg_before=start_msg)
+            err_msg = traceback.format_exc().replace("\n", " ").rstrip()
             mock_logger.log.assert_called_with(
                 logging.ERROR,
-                f'exc_l="test type1" {start_msg}\n{traceback.format_exc()}\n',
+                f'exc_l="test type1" | {start_msg} | {err_msg}',
             )
 
 
@@ -312,8 +313,8 @@ def test_log_exceptions_partial_msg():
             )
             mock_logger.log.assert_called_with(
                 logging.ERROR,
-                'exc_l="test type" some msg before exception\njson.decoder.JSONDecodeError: Expecting property '
-                "name enclosed in double quotes: line 1 column 2 (char 1)\n\nsome msg after exception",
+                'exc_l="test type" | some msg before exception | json.decoder.JSONDecodeError: Expecting property '
+                "name enclosed in double quotes: line 1 column 2 (char 1) | some msg after exception",
             )
 
 
@@ -337,8 +338,9 @@ def test_log_basic_error(func, result):
         except AddonComplexError as e:
             fun = getattr(log, func)
             fun(mock_logger, e)
+            err_msg = traceback.format_exc().replace("\n", " ").rstrip()
             mock_logger.log.assert_called_with(
-                logging.ERROR, f"exc_l={result} \n{traceback.format_exc()}\n"
+                logging.ERROR, f"exc_l={result} | {err_msg}"
             )
 
 
