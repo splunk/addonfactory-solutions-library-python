@@ -38,7 +38,7 @@
 - Produces: `_AsyncFlushController(provider, logger, format_error)`, `request_flush(timeout_millis: float) -> None`, `request_shutdown(deadline: float) -> None`, `join_until(deadline: float) -> None`, `restart_after_fork() -> None`.
 - Consumes: an OTel-like provider exposing `force_flush(timeout_millis=...)` and `shutdown(timeout_millis=...)`, a logger with `info`, and a safe exception formatter.
 
-- [ ] **Step 1: Write failing tests** in `tests/unit/test_observability_flush.py` for prompt return and coalescing. Use `threading.Event` gates so no network or sleeps are needed:
+- [x] **Step 1: Write failing tests** in `tests/unit/test_observability_flush.py` for prompt return and coalescing. Use `threading.Event` gates so no network or sleeps are needed:
 
 ```python
 import logging
@@ -102,8 +102,8 @@ def test_repeated_requests_during_export_coalesce_to_one_followup():
         controller.join_until(time.monotonic() + 1)
 ```
 
-- [ ] **Step 2: Verify red.** Run `. .venv/bin/activate && pytest tests/unit/test_observability_flush.py -q`. Expect import failure because the private module does not exist.
-- [ ] **Step 3: Implement the worker** in `solnlib/_observability_flush.py` with one pending timeout slot; never hold its condition across an OTel call:
+- [x] **Step 2: Verify red.** Run `. .venv/bin/activate && pytest tests/unit/test_observability_flush.py -q`. Expect import failure because the private module does not exist.
+- [x] **Step 3: Implement the worker** in `solnlib/_observability_flush.py` with one pending timeout slot; never hold its condition across an OTel call:
 
 ```python
 import threading
@@ -166,7 +166,7 @@ class _AsyncFlushController:
         self._worker.start()
 ```
 
-- [ ] **Step 4: Add error/idempotency tests** below the first tests, then run `. .venv/bin/activate && pytest tests/unit/test_observability_flush.py -q` and expect PASS:
+- [x] **Step 4: Add error/idempotency tests** below the first tests, then run `. .venv/bin/activate && pytest tests/unit/test_observability_flush.py -q` and expect PASS:
 
 ```python
 def test_worker_logs_export_error_without_raising_to_caller():
@@ -196,7 +196,7 @@ def test_shutdown_is_once_and_later_flush_is_ignored():
     provider.shutdown.assert_called_once()
     provider.force_flush.assert_not_called()
 ```
-- [ ] **Step 5: Commit only these two files** with `git add -- solnlib/_observability_flush.py tests/unit/test_observability_flush.py` and `git commit -m "feat: add async metric flush worker"`.
+- [x] **Step 5: Commit only these two files** with `git add -- solnlib/_observability_flush.py tests/unit/test_observability_flush.py` and `git commit -m "feat: add async metric flush worker"`.
 
 ### Task 2: One process-wide exit deadline and fork reset
 
@@ -208,7 +208,7 @@ def test_shutdown_is_once_and_later_flush_is_ignored():
 - Consumes: `_AsyncFlushController` from Task 1.
 - Produces: module-level `_register_controller(provider, logger, format_error) -> _AsyncFlushController` backed by `_FlushRegistry`; `_shutdown_all()` is the `atexit` entry point.
 
-- [ ] **Step 1: Write failing registry tests** in the same test file. Use a local registry instance so tests never shut down production's module-level registry:
+- [x] **Step 1: Write failing registry tests** in the same test file. Use a local registry instance so tests never shut down production's module-level registry:
 
 ```python
 from solnlib import _observability_flush as flushmod
@@ -247,8 +247,8 @@ def test_one_atexit_registration_for_multiple_controllers(monkeypatch):
     registry.add(MagicMock())
     register.assert_called_once_with(flushmod._shutdown_all)
 ```
-- [ ] **Step 2: Verify red.** Run `. .venv/bin/activate && pytest tests/unit/test_observability_flush.py -q` and confirm `_register_controller`/`_shutdown_all` are missing.
-- [ ] **Step 3: Implement the registry** in the private module. Use a global registry object and these exact operations; guard `os.register_at_fork` for platforms without fork:
+- [x] **Step 2: Verify red.** Run `. .venv/bin/activate && pytest tests/unit/test_observability_flush.py -q` and confirm `_register_controller`/`_shutdown_all` are missing.
+- [x] **Step 3: Implement the registry** in the private module. Use a global registry object and these exact operations; guard `os.register_at_fork` for platforms without fork:
 
 ```python
 import atexit
@@ -300,8 +300,8 @@ def _shutdown_all():
     _registry.shutdown_all()
 ```
 
-- [ ] **Step 4: Verify green** with `. .venv/bin/activate && pytest tests/unit/test_observability_flush.py -q`; verify the shared deadline and single registration assertions.
-- [ ] **Step 5: Commit only these two files** with `git add -- solnlib/_observability_flush.py tests/unit/test_observability_flush.py` and `git commit -m "feat: bound metric shutdown across services"`.
+- [x] **Step 4: Verify green** with `. .venv/bin/activate && pytest tests/unit/test_observability_flush.py -q`; verify the shared deadline and single registration assertions.
+- [x] **Step 5: Commit only these two files** with `git add -- solnlib/_observability_flush.py tests/unit/test_observability_flush.py` and `git commit -m "feat: bound metric shutdown across services"`.
 
 ### Task 3: Wire the public solnlib API and document the contract change
 
@@ -313,7 +313,7 @@ def _shutdown_all():
 - Consumes: `_register_controller` and `_AsyncFlushController.request_flush` from Tasks 1–2.
 - Produces: unchanged public method signatures, but asynchronous `flush()` semantics and `MeterProvider(..., shutdown_on_exit=False)`.
 
-- [ ] **Step 1: Replace the old synchronous test** with this integration test in `tests/unit/test_observability.py`. Task 1 separately proves that the real controller runs exports off-thread:
+- [x] **Step 1: Replace the old synchronous test** with this integration test in `tests/unit/test_observability.py`. Task 1 separately proves that the real controller runs exports off-thread:
 
 ```python
 def test_flush_schedules_without_calling_provider_on_caller(logger, monkeypatch):
@@ -356,8 +356,8 @@ def test_flush_scheduling_error_uses_safe_str(logger, monkeypatch):
     svc.flush()
     assert any("SAFE" in call.args for call in logger.info.call_args_list)
 ```
-- [ ] **Step 2: Verify red.** Run `. .venv/bin/activate && pytest tests/unit/test_observability.py -q`; expect the new thread/constructor assertions to fail.
-- [ ] **Step 3: Wire the constructor and method:**
+- [x] **Step 2: Verify red.** Run `. .venv/bin/activate && pytest tests/unit/test_observability.py -q`; expect the new thread/constructor assertions to fail.
+- [x] **Step 3: Wire the constructor and method:**
 
 ```python
 from ._observability_flush import _register_controller
@@ -383,8 +383,8 @@ if self._flush_controller is not None:
 ```
 
   Keep the existing `try/except` boundary around `flush()` so scheduling failures stay at INFO. Update `ObservabilityService.flush`, `StanzaObservabilityRecorder.flush`, `__exit__`, and module/class docstrings: returned flush means scheduled attempt, not completed attempt; `timeout_millis` is a worker budget; normal exit may wait up to 5 seconds total.
-- [ ] **Step 4: Verify green** with `. .venv/bin/activate && pytest tests/unit/test_observability.py tests/unit/test_observability_flush.py -q`. Ensure existing recorder `with` tests still call `flush()` once and propagate user exceptions.
-- [ ] **Step 5: Commit only intended files** with `git add -- solnlib/observability.py tests/unit/test_observability.py` and `git commit -m "feat: make solnlib observability flush nonblocking"`.
+- [x] **Step 4: Verify green** with `. .venv/bin/activate && pytest tests/unit/test_observability.py tests/unit/test_observability_flush.py -q`. Ensure existing recorder `with` tests still call `flush()` once and propagate user exceptions.
+- [x] **Step 5: Commit only intended files** with `git add -- solnlib/observability.py tests/unit/test_observability.py` and `git commit -m "feat: make solnlib observability flush nonblocking"`.
 
 ### Task 4: Process-exit regression tests and cross-version verification
 
@@ -396,7 +396,7 @@ if self._flush_controller is not None:
 - Consumes: final registry and public API from Tasks 1–3.
 - Produces: reproducible evidence that normal exit attempts a final export and an unavailable exporter cannot hold solnlib's exit hook beyond its grace period.
 
-- [ ] **Step 1: Add subprocess tests** to `tests/unit/test_observability_flush.py`, with these imports and tests. They use a fake provider and never contact a collector:
+- [x] **Step 1: Add subprocess tests** to `tests/unit/test_observability_flush.py`, with these imports and tests. They use a fake provider and never contact a collector:
 
 ```python
 import os
@@ -471,6 +471,6 @@ sys.exit(os.waitstatus_to_exitcode(status))
     assert "PARENT_WORKER_ALIVE=True" in result.stdout
 ```
 
-- [ ] **Step 2: Run exit/fork tests.** Run `. .venv/bin/activate && pytest tests/unit/test_observability_flush.py -q`. Expect all to pass; if the fork test fails, inspect whether the child's callback ran and repair `restart_after_fork()` before proceeding.
-- [ ] **Step 3: Verify both supported runtimes.** Run `. .venv/bin/activate && pytest tests/unit/test_observability.py tests/unit/test_observability_flush.py -q` and `. .venv/bin/activate && pytest tests/unit -q`. Run the focused suite under Python 3.13 if dependencies are installed; otherwise run `python3.13 -m py_compile solnlib/observability.py solnlib/_observability_flush.py` and report that runtime tests on 3.13 remain CI-only. Check `git diff --check` and `git status --short`.
-- [ ] **Step 4: Commit only intended files** with `git add -- tests/unit/test_observability_flush.py solnlib/_observability_flush.py` and `git commit -m "test: cover bounded metric export at process exit"`.
+- [x] **Step 2: Run exit/fork tests.** Run `. .venv/bin/activate && pytest tests/unit/test_observability_flush.py -q`. Expect all to pass; if the fork test fails, inspect whether the child's callback ran and repair `restart_after_fork()` before proceeding.
+- [x] **Step 3: Verify both supported runtimes.** Run `. .venv/bin/activate && pytest tests/unit/test_observability.py tests/unit/test_observability_flush.py -q` and `. .venv/bin/activate && pytest tests/unit -q`. Run the focused suite under Python 3.13 if dependencies are installed; otherwise run `python3.13 -m py_compile solnlib/observability.py solnlib/_observability_flush.py` and report that runtime tests on 3.13 remain CI-only. Check `git diff --check` and `git status --short`.
+- [x] **Step 4: Commit only intended files** with `git add -- tests/unit/test_observability_flush.py solnlib/_observability_flush.py` and `git commit -m "test: cover bounded metric export at process exit"`.
