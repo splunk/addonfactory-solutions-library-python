@@ -15,9 +15,13 @@
 #
 """Private background worker for OpenTelemetry metric flush and shutdown."""
 
+import atexit
+import os
 import threading
 import time
 from typing import Callable
+
+_EXIT_GRACE_SECONDS = 5.0
 
 
 class _AsyncFlushController:
@@ -86,3 +90,48 @@ class _AsyncFlushController:
             target=self._run, name="SolnlibMetricFlush", daemon=True
         )
         self._worker.start()
+
+
+class _FlushRegistry:
+    """Coordinate all metric providers against one process-exit deadline."""
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._controllers = []
+        self._registered = False
+
+    def add(self, controller: _AsyncFlushController) -> None:
+        with self._lock:
+            if not self._registered:
+                atexit.register(_shutdown_all)
+                if hasattr(os, "register_at_fork"):
+                    os.register_at_fork(after_in_child=self._after_fork_child)
+                self._registered = True
+            self._controllers.append(controller)
+
+    def shutdown_all(self) -> None:
+        deadline = time.monotonic() + _EXIT_GRACE_SECONDS
+        with self._lock:
+            controllers = tuple(self._controllers)
+        for controller in controllers:
+            controller.request_shutdown(deadline)
+        for controller in controllers:
+            controller.join_until(deadline)
+
+    def _after_fork_child(self) -> None:
+        self._lock = threading.Lock()
+        for controller in self._controllers:
+            controller.restart_after_fork()
+
+
+_registry = _FlushRegistry()
+
+
+def _register_controller(provider, logger, format_error) -> _AsyncFlushController:
+    controller = _AsyncFlushController(provider, logger, format_error)
+    _registry.add(controller)
+    return controller
+
+
+def _shutdown_all() -> None:
+    _registry.shutdown_all()
