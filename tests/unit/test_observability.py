@@ -944,15 +944,29 @@ class TestObservabilityService:
         assert temporality[Counter] == AggregationTemporality.DELTA
         assert temporality[Histogram] == AggregationTemporality.DELTA
 
-    def test_flush_calls_provider_force_flush(self, logger, monkeypatch):
-        # Arrange
-        svc = _make_service(logger, monkeypatch)
-        mock_provider = MagicMock()
-        svc._provider = mock_provider
-        # Act
+    def test_flush_schedules_without_calling_provider_on_caller(
+        self, logger, monkeypatch
+    ):
+        controller = MagicMock()
+        provider_cls = MagicMock()
+        monkeypatch.setattr("solnlib.observability.MeterProvider", provider_cls)
+        monkeypatch.setattr(
+            "solnlib.observability.ObservabilityService._create_otlp_exporter",
+            lambda self: None,
+        )
+        monkeypatch.setattr(
+            "solnlib.observability._register_controller",
+            lambda provider, logger, formatter: controller,
+        )
+        svc = ObservabilityService(
+            "test-input", logger, ta_name="my_ta", ta_version="1.0.0"
+        )
+
         svc.flush(timeout_millis=5_000)
-        # Assert
-        mock_provider.force_flush.assert_called_once_with(timeout_millis=5000)
+
+        controller.request_flush.assert_called_once_with(5_000)
+        provider_cls.return_value.force_flush.assert_not_called()
+        assert provider_cls.call_args.kwargs["shutdown_on_exit"] is False
 
     def test_flush_is_noop_when_provider_missing(self, logger, monkeypatch):
         # Arrange
@@ -961,16 +975,14 @@ class TestObservabilityService:
         # Act / Assert — must not raise
         svc.flush()
 
-    def test_flush_logs_info_on_exception(self, logger, monkeypatch):
-        # Arrange
+    def test_flush_logs_info_when_scheduling_fails(self, logger, monkeypatch):
         svc = _make_service(logger, monkeypatch)
-        mock_provider = MagicMock()
-        mock_provider.force_flush.side_effect = RuntimeError("boom")
-        svc._provider = mock_provider
-        # Act
+        svc._flush_controller = MagicMock()
+        svc._flush_controller.request_flush.side_effect = RuntimeError("boom")
+
         svc.flush()
-        # Assert
-        logger.info.assert_called()
+
+        assert any("boom" in call.args for call in logger.info.call_args_list)
         logger.warning.assert_not_called()
 
     def test_init_attaches_filter_to_metrics_sdk_loggers(self, logger, monkeypatch):
@@ -1554,16 +1566,17 @@ class TestLogLevelDowngrade:
         assert "exc_info" not in kwargs
         logger.warning.assert_not_called()
 
-    def test_flush_exception_uses_safe_str(self, logger, monkeypatch):
+    def test_flush_scheduling_error_uses_safe_str(self, logger, monkeypatch):
         monkeypatch.setattr(
             "solnlib.observability._safe_exception_str", lambda error: "SAFE"
         )
         svc = _make_service(logger, monkeypatch)
-        mock_provider = MagicMock()
-        mock_provider.force_flush.side_effect = RuntimeError("boom")
-        svc._provider = mock_provider
+        svc._flush_controller = MagicMock()
+        svc._flush_controller.request_flush.side_effect = RuntimeError("boom")
         logger.reset_mock()
+
         svc.flush()
+
         assert any("SAFE" in call.args for call in logger.info.call_args_list)
         logger.warning.assert_not_called()
 

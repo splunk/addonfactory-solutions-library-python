@@ -31,8 +31,8 @@ This module provides three public components:
 - :class:`StanzaObservabilityRecorder` — a stanza-scoped recorder that wraps
   ``ObservabilityService`` with a per-process singleton cache.  Bind it to a
   single stanza name and call :meth:`~StanzaObservabilityRecorder.record` after
-  each batch of ingested events.  Use as a context manager for automatic flush
-  on exit.
+  each batch of ingested events.  Use as a context manager to schedule a
+  background flush on exit.
 
 Typical usage::
 
@@ -52,6 +52,7 @@ import ssl
 import threading
 import urllib.request
 from typing import Callable, ClassVar, Optional, Union
+from ._observability_flush import _register_controller
 from .splunkenv import get_conf_stanzas
 from opentelemetry.metrics import Instrument, Meter
 from opentelemetry.sdk.metrics import MeterProvider, Counter, Histogram
@@ -410,6 +411,7 @@ class ObservabilityService:
         self.event_bytes_counter: Optional[Counter] = None
         self._meter: Optional[Meter] = None
         self._provider: Optional[MeterProvider] = None
+        self._flush_controller = None
 
         for logger_name in _METRICS_SDK_LOGGERS:
             logging.getLogger(logger_name).addFilter(_downgrade_to_info_filter)
@@ -452,7 +454,9 @@ class ObservabilityService:
                 metric_readers.append(PeriodicExportingMetricReader(exporter))
 
             self._provider = MeterProvider(
-                resource=resource, metric_readers=metric_readers
+                resource=resource,
+                metric_readers=metric_readers,
+                shutdown_on_exit=False,
             )
             self._meter = self._provider.get_meter(ta_name, ta_version)
 
@@ -465,6 +469,10 @@ class ObservabilityService:
                 name="splunk.addon.events.bytes",
                 description="Volume of data ingested by the add-on modular input",
                 unit="By",
+            )
+
+            self._flush_controller = _register_controller(
+                self._provider, self._logger, _safe_exception_str
             )
 
             self._logger.info(
@@ -711,26 +719,31 @@ class ObservabilityService:
         return callback(self._meter)
 
     def flush(self, timeout_millis: float = 30_000) -> None:
-        """Force-flush all metric readers.
+        """Schedule a background flush of all metric readers.
 
-        Blocks until all buffered data points have been handed off to their
-        exporters or *timeout_millis* elapses.  Call this before the modular
-        input process exits to avoid dropping the last batch of metrics.
+        Returns promptly without waiting for an export attempt to finish.
+        Repeated calls while an export is active are coalesced.  At normal
+        process exit, solnlib gives its metric workers a single five-second
+        grace period for final export; the last metrics can be lost if it
+        expires.
 
         Prefer using :class:`StanzaObservabilityRecorder` as a context manager
         rather than calling this method directly — it calls
         :meth:`StanzaObservabilityRecorder.flush` on exit automatically.
 
         Args:
-            timeout_millis: Maximum time to wait for exporters to drain, in
-                milliseconds.  Defaults to 30 seconds.
+            timeout_millis: Budget passed to the background force-flush call,
+                in milliseconds.  It is not a caller-side wait.  Defaults to
+                30 seconds.
         """
-        if self._provider is None:
+        if self._provider is None or self._flush_controller is None:
             return
         try:
-            self._provider.force_flush(timeout_millis=int(timeout_millis))
+            self._flush_controller.request_flush(timeout_millis)
         except Exception as error:
-            self._logger.info("Failed to flush metrics: %s", _safe_exception_str(error))
+            self._logger.info(
+                "Failed to schedule metrics flush: %s", _safe_exception_str(error)
+            )
 
 
 _INT64_MIN = -(2**63)
@@ -806,7 +819,8 @@ class StanzaObservabilityRecorder:
     **Best practices:**
 
     - Use as a context manager (``with`` statement) so that :meth:`flush` is
-      always called when the stanza collection loop exits, even on exceptions.
+      always scheduled when the stanza collection loop exits, even on
+      exceptions.  This does not wait for export completion.
     - Pass the same *modinput_type* string for all stanzas of the same input
       type.  The string should be lowercase, hyphenated, and stable across
       restarts (e.g. ``"event-hub"``).
@@ -1013,15 +1027,15 @@ class StanzaObservabilityRecorder:
             self._service.event_bytes_counter.add(byte_count, attributes=attrs)
 
     def flush(self) -> None:
-        """Force-flush all metric readers.
+        """Schedule a background flush of all metric readers.
 
-        Delegates to :meth:`ObservabilityService.flush` (which calls
-        ``MeterProvider.force_flush()`` internally).  Called automatically by
-        ``__exit__`` when the recorder is used as a context manager, so you
-        rarely need to call this directly.
+        Delegates to :meth:`ObservabilityService.flush`, which calls
+        ``MeterProvider.force_flush()`` on a daemon worker.  Called
+        automatically by ``__exit__`` when used as a context manager.  A
+        returned call means the attempt was scheduled, not completed.
 
         Call it explicitly only when you are not using the context manager and
-        need to guarantee delivery before the process exits::
+        want to request an export before the process exits::
 
             obs = StanzaObservabilityRecorder("my-input", logger, stanza_name)
             try:
@@ -1036,10 +1050,10 @@ class StanzaObservabilityRecorder:
         return self
 
     def __exit__(self, *_) -> bool:
-        """Flush all metric readers and allow exceptions to propagate.
+        """Schedule a flush and allow exceptions to propagate.
 
         Returns ``False`` so any exception raised inside the ``with`` block
-        is re-raised after flushing.
+        is re-raised after the flush has been scheduled.
         """
         self.flush()
         return False
