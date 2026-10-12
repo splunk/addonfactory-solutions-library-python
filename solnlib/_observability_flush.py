@@ -51,7 +51,6 @@ class _AsyncFlushController:
         with self._condition:
             if self._shutdown_deadline is None:
                 self._shutdown_deadline = deadline
-                self._pending_timeout = None
                 self._condition.notify()
 
     def join_until(self, deadline: float) -> None:
@@ -66,6 +65,18 @@ class _AsyncFlushController:
                 timeout = self._pending_timeout
                 self._pending_timeout = None
             if deadline is not None:
+                if timeout is not None:
+                    # A reader with an infinite interval does not collect on shutdown.
+                    try:
+                        remaining_ms = max(0, int((deadline - time.monotonic()) * 1000))
+                        if remaining_ms:
+                            self._provider.force_flush(
+                                timeout_millis=min(timeout, remaining_ms)
+                            )
+                    except Exception as error:
+                        self._logger.info(
+                            "Failed to flush metrics: %s", self._format_error(error)
+                        )
                 try:
                     remaining_ms = max(0, int((deadline - time.monotonic()) * 1000))
                     self._provider.shutdown(timeout_millis=remaining_ms)

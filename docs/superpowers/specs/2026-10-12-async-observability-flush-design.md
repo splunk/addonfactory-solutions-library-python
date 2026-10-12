@@ -43,13 +43,15 @@ Construct solnlib's `MeterProvider` with `shutdown_on_exit=False`; otherwise
 OTel's synchronous exit hook would bypass the grace period. Register one
 process-wide solnlib `atexit` handler. It signals shutdown to all service
 workers, then joins them against one monotonic 5-second deadline rather than
-waiting 5 seconds for each service. A worker that receives shutdown skips
-redundant queued flushes and calls `provider.shutdown()` once, which triggers
-the periodic reader's final collection. It passes the remaining grace period
-as the provider's shutdown timeout. If it is already inside a flush, it
-finishes that operation before shutdown; if that exceeds the grace period,
-the daemon worker can be abandoned at interpreter exit. The handler never
-starts a new thread, which is required on Python 3.12+.
+waiting 5 seconds for each service. A worker that receives shutdown performs
+one pending explicit flush, if present, within the remaining grace period,
+then calls `provider.shutdown()` once with the remaining budget. This matters
+when the periodic reader has an infinite interval: its shutdown does not
+perform a final collection. If the worker is already inside a flush, it
+finishes that operation before handling the pending request and shutdown; if
+the grace period expires, the daemon worker can be abandoned at interpreter
+exit. The handler never starts a new thread, which is required on Python
+3.12+.
 
 Service initialization that fails before a provider exists does not start a
 worker. The existing singleton cache continues to share one service and

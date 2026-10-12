@@ -234,6 +234,62 @@ print('MAIN_DONE', flush=True)
     assert time.monotonic() - start < 2.0
 
 
+def test_shutdown_exports_pending_flush_without_periodic_reader():
+    result = _run_child(
+        """
+import logging
+import os
+import threading
+import time
+from opentelemetry.sdk.metrics.export import MetricExporter, MetricExportResult
+from solnlib.observability import ObservabilityService
+
+os.environ['OTEL_METRIC_EXPORT_INTERVAL'] = 'inf'
+ObservabilityService._create_otlp_exporter = lambda self: None
+entered = threading.Event()
+release = threading.Event()
+exported_values = []
+
+class RecordingExporter(MetricExporter):
+    def export(self, metrics_data, timeout_millis=10_000, **kwargs):
+        value = sum(
+            point.value
+            for resource in metrics_data.resource_metrics
+            for scope in resource.scope_metrics
+            for metric in scope.metrics
+            if metric.name == 'splunk.addon.events'
+            for point in metric.data.data_points
+        )
+        exported_values.append(value)
+        if len(exported_values) == 1:
+            entered.set()
+            assert release.wait(1)
+        return MetricExportResult.SUCCESS
+
+    def shutdown(self, timeout_millis=30_000, **kwargs): pass
+    def force_flush(self, timeout_millis=10_000): return True
+
+service = ObservabilityService(
+    'test-input', logging.getLogger('test'), ta_name='test-ta',
+    ta_version='1.0.0', extra_exporters=[RecordingExporter()],
+)
+service.event_count_counter.add(1)
+service.flush()
+assert entered.wait(1)
+service.event_count_counter.add(2)
+service.flush()
+deadline = time.monotonic() + 1
+service._flush_controller.request_shutdown(deadline)
+release.set()
+service._flush_controller.join_until(deadline)
+print('EXPORTED_VALUES=' + repr(exported_values), flush=True)
+assert exported_values == [1, 3]
+"""
+    )
+    assert result.returncode == 0, result.stderr + result.stdout
+    assert "EXPORTED_VALUES=[1, 3]" in result.stdout
+
+
 @pytest.mark.skipif(not hasattr(os, "fork"), reason="fork is unavailable")
 def test_child_gets_fresh_worker_after_fork():
     result = _run_child(
