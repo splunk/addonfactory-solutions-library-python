@@ -15,9 +15,15 @@
 #
 
 import logging
+import os
+import subprocess
+import sys
 import threading
 import time
+from pathlib import Path
 from unittest.mock import MagicMock
+
+import pytest
 
 from solnlib import _observability_flush as flushmod
 from solnlib._observability_flush import _AsyncFlushController
@@ -143,3 +149,114 @@ def test_one_atexit_registration_for_multiple_controllers(monkeypatch):
     registry.add(MagicMock())
     registry.add(MagicMock())
     register.assert_called_once_with(flushmod._shutdown_all)
+
+
+def _run_child(script):
+    repo_root = Path(__file__).resolve().parents[2]
+    env = dict(os.environ, PYTHONPATH=str(repo_root))
+    return subprocess.run(
+        [sys.executable, "-c", script],
+        capture_output=True,
+        text=True,
+        env=env,
+        timeout=3,
+    )
+
+
+def test_normal_exit_attempts_final_shutdown_without_explicit_flush():
+    result = _run_child(
+        """
+import logging
+from solnlib._observability_flush import _register_controller
+class Provider:
+    def force_flush(self, **kwargs): pass
+    def shutdown(self, **kwargs): print('FINAL_SHUTDOWN', flush=True)
+_register_controller(Provider(), logging.getLogger('test'), str)
+"""
+    )
+    assert result.returncode == 0, result.stderr
+    assert "FINAL_SHUTDOWN" in result.stdout
+
+
+def test_blocked_final_export_uses_shortened_grace_period():
+    start = time.monotonic()
+    result = _run_child(
+        """
+import logging
+import threading
+import solnlib._observability_flush as flushmod
+flushmod._EXIT_GRACE_SECONDS = 0.05
+class Provider:
+    def force_flush(self, **kwargs): pass
+    def shutdown(self, **kwargs):
+        print('SHUTDOWN_ENTERED', flush=True)
+        threading.Event().wait(10)
+flushmod._register_controller(Provider(), logging.getLogger('test'), str)
+"""
+    )
+    assert result.returncode == 0, result.stderr
+    assert "SHUTDOWN_ENTERED" in result.stdout
+    assert time.monotonic() - start < 1.5
+
+
+def test_real_otel_reader_does_not_restore_blocking_exit():
+    start = time.monotonic()
+    result = _run_child(
+        """
+import logging
+import threading
+from opentelemetry.sdk.metrics.export import MetricExporter, MetricExportResult
+import solnlib._observability_flush as flushmod
+from solnlib.observability import ObservabilityService
+
+flushmod._EXIT_GRACE_SECONDS = 0.5
+ObservabilityService._create_otlp_exporter = lambda self: None
+
+class SlowExporter(MetricExporter):
+    def export(self, metrics_data, timeout_millis=10_000, **kwargs):
+        print('OTEL_EXPORT_ENTERED', flush=True)
+        threading.Event().wait(10)
+        return MetricExportResult.SUCCESS
+    def shutdown(self, timeout_millis=30_000, **kwargs): pass
+    def force_flush(self, timeout_millis=10_000): return True
+
+service = ObservabilityService(
+    'test-input', logging.getLogger('test'), ta_name='test-ta',
+    ta_version='1.0.0', extra_exporters=[SlowExporter()],
+)
+service.event_count_counter.add(1)
+print('MAIN_DONE', flush=True)
+"""
+    )
+    assert result.returncode == 0, result.stderr
+    assert "MAIN_DONE" in result.stdout
+    assert "OTEL_EXPORT_ENTERED" in result.stdout
+    assert time.monotonic() - start < 2.0
+
+
+@pytest.mark.skipif(not hasattr(os, "fork"), reason="fork is unavailable")
+def test_child_gets_fresh_worker_after_fork():
+    result = _run_child(
+        """
+import logging
+import os
+import sys
+from solnlib._observability_flush import _register_controller
+class Provider:
+    def force_flush(self, **kwargs): pass
+    def shutdown(self, **kwargs): pass
+controller = _register_controller(Provider(), logging.getLogger('test'), str)
+parent_worker = controller._worker
+pid = os.fork()
+if pid == 0:
+    fresh = controller._worker is not parent_worker and controller._worker.is_alive()
+    print('CHILD_FRESH_WORKER=' + str(fresh), flush=True)
+    sys.exit(0 if fresh else 2)
+_, status = os.waitpid(pid, 0)
+print('PARENT_WORKER_ALIVE=' + str(parent_worker.is_alive()), flush=True)
+sys.exit(os.waitstatus_to_exitcode(status))
+"""
+    )
+    assert result.returncode == 0, result.stderr
+    assert "CHILD_FRESH_WORKER=True" in result.stdout
+    assert "PARENT_WORKER_ALIVE=True" in result.stdout
