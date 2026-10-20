@@ -416,6 +416,7 @@ class ObservabilityService:
         for logger_name in _METRICS_SDK_LOGGERS:
             logging.getLogger(logger_name).addFilter(_downgrade_to_info_filter)
 
+        provider = None
         try:
             if type(modinput_type) is not str or not _is_safe_identifier_str(
                 modinput_type
@@ -453,40 +454,54 @@ class ObservabilityService:
             for exporter in extra_exporters or []:
                 metric_readers.append(PeriodicExportingMetricReader(exporter))
 
-            self._provider = MeterProvider(
+            provider = MeterProvider(
                 resource=resource,
                 metric_readers=metric_readers,
                 shutdown_on_exit=False,
             )
-            self._meter = self._provider.get_meter(ta_name, ta_version)
+            meter = provider.get_meter(ta_name, ta_version)
 
-            self.event_count_counter = self._meter.create_counter(
+            event_count_counter = meter.create_counter(
                 name="splunk.addon.events",
                 description="Number of events ingested by the add-on modular input",
                 unit="1",
             )
-            self.event_bytes_counter = self._meter.create_counter(
+            event_bytes_counter = meter.create_counter(
                 name="splunk.addon.events.bytes",
                 description="Volume of data ingested by the add-on modular input",
                 unit="By",
             )
 
-            self._flush_controller = _register_controller(
-                self._provider, self._logger, _safe_exception_str
-            )
-
-            self._logger.info(
-                "ObservabilityService initialised: ta_name=%s ta_version=%s "
-                "modinput_type=%s",
-                ta_name,
-                ta_version,
-                modinput_type,
+            controller = _register_controller(
+                provider, self._logger, _safe_exception_str
             )
         except Exception as error:
+            if provider is not None:
+                try:
+                    provider.shutdown()
+                except Exception as cleanup_error:
+                    self._logger.info(
+                        "Failed to clean up metrics after init failure: %s",
+                        _safe_exception_str(cleanup_error),
+                    )
             self._logger.info(
                 "Failed to initialise ObservabilityService: %s",
                 _safe_exception_str(error),
             )
+            return
+
+        self._provider = provider
+        self._meter = meter
+        self.event_count_counter = event_count_counter
+        self.event_bytes_counter = event_bytes_counter
+        self._flush_controller = controller
+        self._logger.info(
+            "ObservabilityService initialised: ta_name=%s ta_version=%s "
+            "modinput_type=%s",
+            ta_name,
+            ta_version,
+            modinput_type,
+        )
 
     def _read_ta_info(self) -> tuple[Optional[str], Optional[str]]:
         """Read the add-on name and version from ``app.conf``.
@@ -665,6 +680,7 @@ class ObservabilityService:
             exporter = OTLPMetricExporter(
                 endpoint=endpoint,
                 credentials=credentials,
+                timeout=2.0,
                 preferred_temporality={
                     Counter: AggregationTemporality.DELTA,
                     Histogram: AggregationTemporality.DELTA,
@@ -732,9 +748,12 @@ class ObservabilityService:
         :meth:`StanzaObservabilityRecorder.flush` on exit automatically.
 
         Args:
-            timeout_millis: Budget passed to the background force-flush call,
-                in milliseconds.  It is not a caller-side wait.  Defaults to
-                30 seconds.
+            timeout_millis: Budget forwarded to the background
+                ``MeterProvider.force_flush()`` call, in milliseconds.
+                The budget starts when that call begins; waiting for the
+                worker is not included. Readers and exporters may exceed
+                this budget. It is not a hard limit on export duration.
+                Defaults to 30 seconds.
         """
         if self._provider is None or self._flush_controller is None:
             return

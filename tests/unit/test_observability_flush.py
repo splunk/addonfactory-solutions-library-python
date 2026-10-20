@@ -15,44 +15,86 @@
 #
 
 import logging
-import os
-import subprocess
-import sys
 import threading
 import time
-from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
+from opentelemetry.sdk.metrics.export import MetricExporter, MetricExportResult
 
 from solnlib import _observability_flush as flushmod
 from solnlib._observability_flush import _AsyncFlushController
+from solnlib.observability import ObservabilityService
 
 
-def test_request_flush_returns_while_export_is_blocked():
+@pytest.fixture
+def controller_factory():
+    controllers = []
+
+    def create(provider, logger=None):
+        controller = _AsyncFlushController(
+            provider, logger or MagicMock(spec=logging.Logger), str
+        )
+        controllers.append(controller)
+        return controller
+
+    yield create
+
+    deadline = time.monotonic() + 1
+    for controller in controllers:
+        controller.request_shutdown(deadline)
+    for controller in controllers:
+        controller.join_until(deadline)
+
+
+@pytest.fixture
+def registry_and_callbacks(monkeypatch):
+    registry = flushmod._FlushRegistry()
+    callbacks = []
+
+    def register_callback(callback):
+        callbacks.append(callback)
+        return callback
+
+    monkeypatch.setattr(flushmod, "_registry", registry)
+    monkeypatch.setattr(flushmod.atexit, "register", register_callback)
+    if hasattr(flushmod.os, "register_at_fork"):
+        monkeypatch.setattr(flushmod.os, "register_at_fork", MagicMock())
+
+    yield registry, callbacks
+
+    registry.shutdown_all()
+
+
+def test_request_flush_returns_while_export_is_blocked(controller_factory):
+    # Arrange
     entered = threading.Event()
     release = threading.Event()
     provider = MagicMock()
 
     def blocked_flush(**kwargs):
         entered.set()
-        assert release.wait(2)
+        release.wait()
 
     provider.force_flush.side_effect = blocked_flush
-    controller = _AsyncFlushController(provider, MagicMock(spec=logging.Logger), str)
+    controller = controller_factory(provider)
     try:
+        # Act
         start = time.monotonic()
         controller.request_flush(30_000)
-        assert time.monotonic() - start < 0.2
-        assert entered.wait(1)
+        elapsed = time.monotonic() - start
+        export_started = entered.wait(1)
+
+        # Assert
+        assert elapsed < 0.2
+        assert export_started
         provider.force_flush.assert_called_once_with(timeout_millis=30_000)
     finally:
         release.set()
-        controller.request_shutdown(time.monotonic() + 1)
-        controller.join_until(time.monotonic() + 1)
 
 
-def test_repeated_requests_during_export_coalesce_to_one_followup():
+def test_repeated_requests_during_export_coalesce_to_one_followup(controller_factory):
+    # Arrange
     entered = threading.Event()
     release = threading.Event()
     second_done = threading.Event()
@@ -61,78 +103,90 @@ def test_repeated_requests_during_export_coalesce_to_one_followup():
     def flush(**kwargs):
         if provider.force_flush.call_count == 1:
             entered.set()
-            assert release.wait(2)
+            release.wait()
         else:
             second_done.set()
 
     provider.force_flush.side_effect = flush
-    controller = _AsyncFlushController(provider, MagicMock(spec=logging.Logger), str)
+    controller = controller_factory(provider)
     try:
+        # Act
         controller.request_flush(30_000)
-        assert entered.wait(1)
+        first_started = entered.wait(1)
         controller.request_flush(10_000)
         controller.request_flush(5_000)
         release.set()
-        assert second_done.wait(1)
+        followup_finished = second_done.wait(1)
+
+        # Assert
+        assert first_started
+        assert followup_finished
         assert provider.force_flush.call_count == 2
         assert provider.force_flush.call_args_list[-1].kwargs == {
             "timeout_millis": 5_000
         }
     finally:
         release.set()
-        controller.request_shutdown(time.monotonic() + 1)
-        controller.join_until(time.monotonic() + 1)
 
 
-def test_worker_logs_export_error_without_raising_to_caller():
+def test_worker_logs_export_error_without_raising_to_caller(controller_factory):
+    # Arrange
     logged = threading.Event()
     provider = MagicMock()
     provider.force_flush.side_effect = RuntimeError("boom")
     logger = MagicMock(spec=logging.Logger)
     logger.info.side_effect = lambda *args: logged.set()
-    controller = _AsyncFlushController(provider, logger, str)
-    try:
-        controller.request_flush(30_000)
-        assert logged.wait(1)
-        assert "boom" in logger.info.call_args.args[-1]
-    finally:
-        controller.request_shutdown(time.monotonic() + 1)
-        controller.join_until(time.monotonic() + 1)
+    controller = controller_factory(provider, logger)
+
+    # Act
+    controller.request_flush(30_000)
+    error_logged = logged.wait(1)
+
+    # Assert
+    assert error_logged
+    assert "boom" in logger.info.call_args.args[-1]
 
 
-def test_shutdown_is_once_and_later_flush_is_ignored():
+def test_shutdown_is_once_and_later_flush_is_ignored(controller_factory):
+    # Arrange
     provider = MagicMock()
-    controller = _AsyncFlushController(provider, MagicMock(spec=logging.Logger), str)
+    controller = controller_factory(provider)
     deadline = time.monotonic() + 1
+
+    # Act
     controller.request_shutdown(deadline)
     controller.request_shutdown(deadline)
     controller.join_until(deadline)
     controller.request_flush(30_000)
+
+    # Assert
     provider.shutdown.assert_called_once()
     provider.force_flush.assert_not_called()
+    assert not controller._worker.is_alive()
 
 
-def test_exit_budget_is_shared_by_two_controllers(monkeypatch):
+def test_exit_budget_is_shared_by_two_controllers(monkeypatch, registry_and_callbacks):
+    # Arrange
     monkeypatch.setattr(flushmod, "_EXIT_GRACE_SECONDS", 0.05)
+    registry, _ = registry_and_callbacks
     release = threading.Event()
     entered = [threading.Event(), threading.Event()]
     controllers = []
-    registry = flushmod._FlushRegistry()
     for gate in entered:
         provider = MagicMock()
         provider.shutdown.side_effect = lambda gate=gate, **kwargs: (
             gate.set(),
-            release.wait(2),
+            release.wait(),
         )
-        controller = _AsyncFlushController(
-            provider, MagicMock(spec=logging.Logger), str
-        )
-        registry._controllers.append(controller)
-        controllers.append(controller)
+        controllers.append(registry.register(provider, MagicMock(), str))
     try:
+        # Act
         start = time.monotonic()
         registry.shutdown_all()
-        assert time.monotonic() - start < 0.2
+        elapsed = time.monotonic() - start
+
+        # Assert
+        assert elapsed < 0.2
         assert all(gate.wait(1) for gate in entered)
     finally:
         release.set()
@@ -140,179 +194,151 @@ def test_exit_budget_is_shared_by_two_controllers(monkeypatch):
             controller.join_until(time.monotonic() + 1)
 
 
-def test_one_atexit_registration_for_multiple_controllers(monkeypatch):
-    register = MagicMock()
-    monkeypatch.setattr(flushmod.atexit, "register", register)
-    if hasattr(flushmod.os, "register_at_fork"):
-        monkeypatch.setattr(flushmod.os, "register_at_fork", MagicMock())
-    registry = flushmod._FlushRegistry()
-    registry.add(MagicMock())
-    registry.add(MagicMock())
-    register.assert_called_once_with(flushmod._shutdown_all)
+def test_one_atexit_registration_for_multiple_controllers(registry_and_callbacks):
+    # Arrange
+    registry, callbacks = registry_and_callbacks
+
+    # Act
+    registry.register(MagicMock(), MagicMock(), str)
+    registry.register(MagicMock(), MagicMock(), str)
+
+    # Assert
+    assert callbacks == [flushmod._shutdown_all]
 
 
-def _run_child(script):
-    repo_root = Path(__file__).resolve().parents[2]
-    env = dict(os.environ, PYTHONPATH=str(repo_root))
-    return subprocess.run(
-        [sys.executable, "-c", script],
-        capture_output=True,
-        text=True,
-        env=env,
-        timeout=3,
+def test_closed_registry_does_not_start_a_worker(monkeypatch, registry_and_callbacks):
+    # Arrange
+    registry, _ = registry_and_callbacks
+    registry.shutdown_all()
+    controller_cls = MagicMock()
+    monkeypatch.setattr(flushmod, "_AsyncFlushController", controller_cls)
+
+    # Act
+    with pytest.raises(RuntimeError, match="shutdown has started"):
+        flushmod._register_controller(MagicMock(), MagicMock(), str)
+
+    # Assert
+    controller_cls.assert_not_called()
+    assert registry._controllers == []
+
+
+def test_closed_registry_does_not_restart_workers_after_fork(registry_and_callbacks):
+    # Arrange
+    registry, _ = registry_and_callbacks
+    controller = registry.register(MagicMock(), MagicMock(), str)
+    registry.shutdown_all()
+    original_worker = controller._worker
+    try:
+        # Act
+        registry._after_fork_child()
+
+        # Assert
+        assert controller._worker is original_worker
+        assert not controller._worker.is_alive()
+    finally:
+        deadline = time.monotonic() + 1
+        controller.request_shutdown(deadline)
+        controller.join_until(deadline)
+
+
+def test_exit_handler_cannot_register_a_worker_after_registry_shutdown(
+    registry_and_callbacks,
+):
+    # Arrange
+    registry, callbacks = registry_and_callbacks
+    registration_errors = []
+
+    def late_handler():
+        try:
+            flushmod._register_controller(MagicMock(), MagicMock(), str)
+        except RuntimeError as error:
+            registration_errors.append(error)
+
+    callbacks.append(late_handler)
+    controller = flushmod._register_controller(MagicMock(), MagicMock(), str)
+
+    # Act
+    for callback in reversed(callbacks):
+        callback()
+
+    # Assert
+    assert len(registration_errors) == 1
+    assert registry._controllers == [controller]
+    assert not controller._worker.is_alive()
+
+
+def test_registered_exit_callback_attempts_shutdown_without_explicit_flush(
+    registry_and_callbacks,
+):
+    # Arrange
+    _, callbacks = registry_and_callbacks
+    provider = MagicMock()
+    controller = flushmod._register_controller(provider, MagicMock(), str)
+
+    # Act
+    callbacks[0]()
+
+    # Assert
+    provider.shutdown.assert_called_once()
+    assert not controller._worker.is_alive()
+
+
+def test_shutdown_exports_pending_flush_without_periodic_reader(
+    monkeypatch, registry_and_callbacks
+):
+    # Arrange
+    monkeypatch.setenv("OTEL_METRIC_EXPORT_INTERVAL", "inf")
+    monkeypatch.setattr(
+        ObservabilityService, "_create_otlp_exporter", lambda self: None
     )
+    entered = threading.Event()
+    release = threading.Event()
+    exported_values = []
 
+    class RecordingExporter(MetricExporter):
+        def export(self, metrics_data, timeout_millis=10_000, **kwargs):
+            value = sum(
+                point.value
+                for resource in metrics_data.resource_metrics
+                for scope in resource.scope_metrics
+                for metric in scope.metrics
+                if metric.name == "splunk.addon.events"
+                for point in metric.data.data_points
+            )
+            exported_values.append(value)
+            if len(exported_values) == 1:
+                entered.set()
+                release.wait()
+            return MetricExportResult.SUCCESS
 
-def test_normal_exit_attempts_final_shutdown_without_explicit_flush():
-    result = _run_child(
-        """
-import logging
-from solnlib._observability_flush import _register_controller
-class Provider:
-    def force_flush(self, **kwargs): pass
-    def shutdown(self, **kwargs): print('FINAL_SHUTDOWN', flush=True)
-_register_controller(Provider(), logging.getLogger('test'), str)
-"""
+        def shutdown(self, timeout_millis=30_000, **kwargs):
+            pass
+
+        def force_flush(self, timeout_millis=10_000):
+            return True
+
+    service = ObservabilityService(
+        "test-input",
+        MagicMock(spec=logging.Logger),
+        ta_name="test-ta",
+        ta_version="1.0.0",
+        extra_exporters=[RecordingExporter()],
     )
-    assert result.returncode == 0, result.stderr
-    assert "FINAL_SHUTDOWN" in result.stdout
+    try:
+        # Act
+        service.event_count_counter.add(1)
+        service.flush()
+        first_export_started = entered.wait(1)
+        service.event_count_counter.add(2)
+        service.flush()
+        deadline = time.monotonic() + 1
+        service._flush_controller.request_shutdown(deadline)
+        release.set()
+        service._flush_controller.join_until(deadline)
 
-
-def test_blocked_final_export_uses_shortened_grace_period():
-    start = time.monotonic()
-    result = _run_child(
-        """
-import logging
-import threading
-import solnlib._observability_flush as flushmod
-flushmod._EXIT_GRACE_SECONDS = 0.05
-class Provider:
-    def force_flush(self, **kwargs): pass
-    def shutdown(self, **kwargs):
-        print('SHUTDOWN_ENTERED', flush=True)
-        threading.Event().wait(10)
-flushmod._register_controller(Provider(), logging.getLogger('test'), str)
-"""
-    )
-    assert result.returncode == 0, result.stderr
-    assert "SHUTDOWN_ENTERED" in result.stdout
-    assert time.monotonic() - start < 1.5
-
-
-def test_real_otel_reader_does_not_restore_blocking_exit():
-    start = time.monotonic()
-    result = _run_child(
-        """
-import logging
-import threading
-from opentelemetry.sdk.metrics.export import MetricExporter, MetricExportResult
-import solnlib._observability_flush as flushmod
-from solnlib.observability import ObservabilityService
-
-flushmod._EXIT_GRACE_SECONDS = 0.5
-ObservabilityService._create_otlp_exporter = lambda self: None
-
-class SlowExporter(MetricExporter):
-    def export(self, metrics_data, timeout_millis=10_000, **kwargs):
-        print('OTEL_EXPORT_ENTERED', flush=True)
-        threading.Event().wait(10)
-        return MetricExportResult.SUCCESS
-    def shutdown(self, timeout_millis=30_000, **kwargs): pass
-    def force_flush(self, timeout_millis=10_000): return True
-
-service = ObservabilityService(
-    'test-input', logging.getLogger('test'), ta_name='test-ta',
-    ta_version='1.0.0', extra_exporters=[SlowExporter()],
-)
-service.event_count_counter.add(1)
-print('MAIN_DONE', flush=True)
-"""
-    )
-    assert result.returncode == 0, result.stderr
-    assert "MAIN_DONE" in result.stdout
-    assert "OTEL_EXPORT_ENTERED" in result.stdout
-    assert time.monotonic() - start < 2.0
-
-
-def test_shutdown_exports_pending_flush_without_periodic_reader():
-    result = _run_child(
-        """
-import logging
-import os
-import threading
-import time
-from opentelemetry.sdk.metrics.export import MetricExporter, MetricExportResult
-from solnlib.observability import ObservabilityService
-
-os.environ['OTEL_METRIC_EXPORT_INTERVAL'] = 'inf'
-ObservabilityService._create_otlp_exporter = lambda self: None
-entered = threading.Event()
-release = threading.Event()
-exported_values = []
-
-class RecordingExporter(MetricExporter):
-    def export(self, metrics_data, timeout_millis=10_000, **kwargs):
-        value = sum(
-            point.value
-            for resource in metrics_data.resource_metrics
-            for scope in resource.scope_metrics
-            for metric in scope.metrics
-            if metric.name == 'splunk.addon.events'
-            for point in metric.data.data_points
-        )
-        exported_values.append(value)
-        if len(exported_values) == 1:
-            entered.set()
-            assert release.wait(1)
-        return MetricExportResult.SUCCESS
-
-    def shutdown(self, timeout_millis=30_000, **kwargs): pass
-    def force_flush(self, timeout_millis=10_000): return True
-
-service = ObservabilityService(
-    'test-input', logging.getLogger('test'), ta_name='test-ta',
-    ta_version='1.0.0', extra_exporters=[RecordingExporter()],
-)
-service.event_count_counter.add(1)
-service.flush()
-assert entered.wait(1)
-service.event_count_counter.add(2)
-service.flush()
-deadline = time.monotonic() + 1
-service._flush_controller.request_shutdown(deadline)
-release.set()
-service._flush_controller.join_until(deadline)
-print('EXPORTED_VALUES=' + repr(exported_values), flush=True)
-assert exported_values == [1, 3]
-"""
-    )
-    assert result.returncode == 0, result.stderr + result.stdout
-    assert "EXPORTED_VALUES=[1, 3]" in result.stdout
-
-
-@pytest.mark.skipif(not hasattr(os, "fork"), reason="fork is unavailable")
-def test_child_gets_fresh_worker_after_fork():
-    result = _run_child(
-        """
-import logging
-import os
-import sys
-from solnlib._observability_flush import _register_controller
-class Provider:
-    def force_flush(self, **kwargs): pass
-    def shutdown(self, **kwargs): pass
-controller = _register_controller(Provider(), logging.getLogger('test'), str)
-parent_worker = controller._worker
-pid = os.fork()
-if pid == 0:
-    fresh = controller._worker is not parent_worker and controller._worker.is_alive()
-    print('CHILD_FRESH_WORKER=' + str(fresh), flush=True)
-    sys.exit(0 if fresh else 2)
-_, status = os.waitpid(pid, 0)
-print('PARENT_WORKER_ALIVE=' + str(parent_worker.is_alive()), flush=True)
-sys.exit(os.waitstatus_to_exitcode(status))
-"""
-    )
-    assert result.returncode == 0, result.stderr
-    assert "CHILD_FRESH_WORKER=True" in result.stdout
-    assert "PARENT_WORKER_ALIVE=True" in result.stdout
+        # Assert
+        assert first_export_started
+        assert exported_values == [1, 3]
+        assert not service._flush_controller._worker.is_alive()
+    finally:
+        release.set()

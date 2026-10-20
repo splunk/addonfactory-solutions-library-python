@@ -19,9 +19,13 @@ import atexit
 import os
 import threading
 import time
-from typing import Callable
+from typing import Callable, Optional
 
 _EXIT_GRACE_SECONDS = 5.0
+
+
+def _remaining_ms(deadline: float) -> int:
+    return max(0, int((deadline - time.monotonic()) * 1000))
 
 
 class _AsyncFlushController:
@@ -58,39 +62,40 @@ class _AsyncFlushController:
 
     def _run(self) -> None:
         while True:
-            with self._condition:
-                while self._pending_timeout is None and self._shutdown_deadline is None:
-                    self._condition.wait()
-                deadline = self._shutdown_deadline
-                timeout = self._pending_timeout
-                self._pending_timeout = None
-            if deadline is not None:
-                if timeout is not None:
-                    # A reader with an infinite interval does not collect on shutdown.
-                    try:
-                        remaining_ms = max(0, int((deadline - time.monotonic()) * 1000))
-                        if remaining_ms:
-                            self._provider.force_flush(
-                                timeout_millis=min(timeout, remaining_ms)
-                            )
-                    except Exception as error:
-                        self._logger.info(
-                            "Failed to flush metrics: %s", self._format_error(error)
-                        )
-                try:
-                    remaining_ms = max(0, int((deadline - time.monotonic()) * 1000))
-                    self._provider.shutdown(timeout_millis=remaining_ms)
-                except Exception as error:
-                    self._logger.info(
-                        "Failed to shut down metrics: %s", self._format_error(error)
-                    )
-                return
-            try:
-                self._provider.force_flush(timeout_millis=timeout)
-            except Exception as error:
-                self._logger.info(
-                    "Failed to flush metrics: %s", self._format_error(error)
-                )
+            flush_timeout, shutdown_deadline = self._wait_for_request()
+            if shutdown_deadline is None:
+                if flush_timeout is not None:
+                    self._flush(flush_timeout)
+                continue
+            self._shut_down(flush_timeout, shutdown_deadline)
+            return
+
+    def _has_request(self) -> bool:
+        return self._pending_timeout is not None or self._shutdown_deadline is not None
+
+    def _wait_for_request(self) -> tuple[Optional[int], Optional[float]]:
+        with self._condition:
+            self._condition.wait_for(self._has_request)
+            flush_timeout, self._pending_timeout = self._pending_timeout, None
+            return flush_timeout, self._shutdown_deadline
+
+    def _shut_down(self, flush_timeout: Optional[int], deadline: float) -> None:
+        # Readers with an infinite export interval do not collect on shutdown.
+        remaining = _remaining_ms(deadline)
+        if flush_timeout is not None and remaining:
+            self._flush(min(flush_timeout, remaining))
+        try:
+            self._provider.shutdown(timeout_millis=_remaining_ms(deadline))
+        except Exception as error:
+            self._logger.info(
+                "Failed to shut down metrics: %s", self._format_error(error)
+            )
+
+    def _flush(self, timeout_ms: int) -> None:
+        try:
+            self._provider.force_flush(timeout_millis=timeout_ms)
+        except Exception as error:
+            self._logger.info("Failed to flush metrics: %s", self._format_error(error))
 
     def restart_after_fork(self) -> None:
         """Replace parent-thread state after fork in the child process."""
@@ -110,19 +115,27 @@ class _FlushRegistry:
         self._lock = threading.Lock()
         self._controllers = []
         self._registered = False
+        self._closed = False
 
-    def add(self, controller: _AsyncFlushController) -> None:
+    def register(self, provider, logger, format_error) -> _AsyncFlushController:
         with self._lock:
+            if self._closed:
+                raise RuntimeError("Metrics shutdown has started")
             if not self._registered:
                 atexit.register(_shutdown_all)
                 if hasattr(os, "register_at_fork"):
                     os.register_at_fork(after_in_child=self._after_fork_child)
                 self._registered = True
+            controller = _AsyncFlushController(provider, logger, format_error)
             self._controllers.append(controller)
+            return controller
 
     def shutdown_all(self) -> None:
         deadline = time.monotonic() + _EXIT_GRACE_SECONDS
         with self._lock:
+            if self._closed:
+                return
+            self._closed = True
             controllers = tuple(self._controllers)
         for controller in controllers:
             controller.request_shutdown(deadline)
@@ -131,6 +144,8 @@ class _FlushRegistry:
 
     def _after_fork_child(self) -> None:
         self._lock = threading.Lock()
+        if self._closed:
+            return
         for controller in self._controllers:
             controller.restart_after_fork()
 
@@ -139,9 +154,7 @@ _registry = _FlushRegistry()
 
 
 def _register_controller(provider, logger, format_error) -> _AsyncFlushController:
-    controller = _AsyncFlushController(provider, logger, format_error)
-    _registry.add(controller)
-    return controller
+    return _registry.register(provider, logger, format_error)
 
 
 def _shutdown_all() -> None:
