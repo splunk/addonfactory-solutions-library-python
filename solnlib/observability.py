@@ -31,8 +31,8 @@ This module provides three public components:
 - :class:`StanzaObservabilityRecorder` — a stanza-scoped recorder that wraps
   ``ObservabilityService`` with a per-process singleton cache.  Bind it to a
   single stanza name and call :meth:`~StanzaObservabilityRecorder.record` after
-  each batch of ingested events.  Use as a context manager for automatic flush
-  on exit.
+  each batch of ingested events.  Use as a context manager to schedule a
+  background flush on exit.
 
 Typical usage::
 
@@ -52,6 +52,7 @@ import ssl
 import threading
 import urllib.request
 from typing import Callable, ClassVar, Optional, Union
+from ._observability_flush import _register_controller
 from .splunkenv import get_conf_stanzas
 from opentelemetry.metrics import Instrument, Meter
 from opentelemetry.sdk.metrics import MeterProvider, Counter, Histogram
@@ -410,10 +411,12 @@ class ObservabilityService:
         self.event_bytes_counter: Optional[Counter] = None
         self._meter: Optional[Meter] = None
         self._provider: Optional[MeterProvider] = None
+        self._flush_controller = None
 
         for logger_name in _METRICS_SDK_LOGGERS:
             logging.getLogger(logger_name).addFilter(_downgrade_to_info_filter)
 
+        provider = None
         try:
             if type(modinput_type) is not str or not _is_safe_identifier_str(
                 modinput_type
@@ -451,34 +454,54 @@ class ObservabilityService:
             for exporter in extra_exporters or []:
                 metric_readers.append(PeriodicExportingMetricReader(exporter))
 
-            self._provider = MeterProvider(
-                resource=resource, metric_readers=metric_readers
+            provider = MeterProvider(
+                resource=resource,
+                metric_readers=metric_readers,
+                shutdown_on_exit=False,
             )
-            self._meter = self._provider.get_meter(ta_name, ta_version)
+            meter = provider.get_meter(ta_name, ta_version)
 
-            self.event_count_counter = self._meter.create_counter(
+            event_count_counter = meter.create_counter(
                 name="splunk.addon.events",
                 description="Number of events ingested by the add-on modular input",
                 unit="1",
             )
-            self.event_bytes_counter = self._meter.create_counter(
+            event_bytes_counter = meter.create_counter(
                 name="splunk.addon.events.bytes",
                 description="Volume of data ingested by the add-on modular input",
                 unit="By",
             )
 
-            self._logger.info(
-                "ObservabilityService initialised: ta_name=%s ta_version=%s "
-                "modinput_type=%s",
-                ta_name,
-                ta_version,
-                modinput_type,
+            controller = _register_controller(
+                provider, self._logger, _safe_exception_str
             )
         except Exception as error:
+            if provider is not None:
+                try:
+                    provider.shutdown()
+                except Exception as cleanup_error:
+                    self._logger.info(
+                        "Failed to clean up metrics after init failure: %s",
+                        _safe_exception_str(cleanup_error),
+                    )
             self._logger.info(
                 "Failed to initialise ObservabilityService: %s",
                 _safe_exception_str(error),
             )
+            return
+
+        self._provider = provider
+        self._meter = meter
+        self.event_count_counter = event_count_counter
+        self.event_bytes_counter = event_bytes_counter
+        self._flush_controller = controller
+        self._logger.info(
+            "ObservabilityService initialised: ta_name=%s ta_version=%s "
+            "modinput_type=%s",
+            ta_name,
+            ta_version,
+            modinput_type,
+        )
 
     def _read_ta_info(self) -> tuple[Optional[str], Optional[str]]:
         """Read the add-on name and version from ``app.conf``.
@@ -657,6 +680,7 @@ class ObservabilityService:
             exporter = OTLPMetricExporter(
                 endpoint=endpoint,
                 credentials=credentials,
+                timeout=2.0,
                 preferred_temporality={
                     Counter: AggregationTemporality.DELTA,
                     Histogram: AggregationTemporality.DELTA,
@@ -711,26 +735,34 @@ class ObservabilityService:
         return callback(self._meter)
 
     def flush(self, timeout_millis: float = 30_000) -> None:
-        """Force-flush all metric readers.
+        """Schedule a background flush of all metric readers.
 
-        Blocks until all buffered data points have been handed off to their
-        exporters or *timeout_millis* elapses.  Call this before the modular
-        input process exits to avoid dropping the last batch of metrics.
+        Returns promptly without waiting for an export attempt to finish.
+        Repeated calls while an export is active are coalesced.  At normal
+        process exit, solnlib gives its metric workers a single five-second
+        grace period for final export; the last metrics can be lost if it
+        expires.
 
         Prefer using :class:`StanzaObservabilityRecorder` as a context manager
         rather than calling this method directly — it calls
         :meth:`StanzaObservabilityRecorder.flush` on exit automatically.
 
         Args:
-            timeout_millis: Maximum time to wait for exporters to drain, in
-                milliseconds.  Defaults to 30 seconds.
+            timeout_millis: Budget forwarded to the background
+                ``MeterProvider.force_flush()`` call, in milliseconds.
+                The budget starts when that call begins; waiting for the
+                worker is not included. Readers and exporters may exceed
+                this budget. It is not a hard limit on export duration.
+                Defaults to 30 seconds.
         """
-        if self._provider is None:
+        if self._provider is None or self._flush_controller is None:
             return
         try:
-            self._provider.force_flush(timeout_millis=int(timeout_millis))
+            self._flush_controller.request_flush(timeout_millis)
         except Exception as error:
-            self._logger.info("Failed to flush metrics: %s", _safe_exception_str(error))
+            self._logger.info(
+                "Failed to schedule metrics flush: %s", _safe_exception_str(error)
+            )
 
 
 _INT64_MIN = -(2**63)
@@ -806,7 +838,8 @@ class StanzaObservabilityRecorder:
     **Best practices:**
 
     - Use as a context manager (``with`` statement) so that :meth:`flush` is
-      always called when the stanza collection loop exits, even on exceptions.
+      always scheduled when the stanza collection loop exits, even on
+      exceptions.  This does not wait for export completion.
     - Pass the same *modinput_type* string for all stanzas of the same input
       type.  The string should be lowercase, hyphenated, and stable across
       restarts (e.g. ``"event-hub"``).
@@ -1013,15 +1046,15 @@ class StanzaObservabilityRecorder:
             self._service.event_bytes_counter.add(byte_count, attributes=attrs)
 
     def flush(self) -> None:
-        """Force-flush all metric readers.
+        """Schedule a background flush of all metric readers.
 
-        Delegates to :meth:`ObservabilityService.flush` (which calls
-        ``MeterProvider.force_flush()`` internally).  Called automatically by
-        ``__exit__`` when the recorder is used as a context manager, so you
-        rarely need to call this directly.
+        Delegates to :meth:`ObservabilityService.flush`, which calls
+        ``MeterProvider.force_flush()`` on a daemon worker.  Called
+        automatically by ``__exit__`` when used as a context manager.  A
+        returned call means the attempt was scheduled, not completed.
 
         Call it explicitly only when you are not using the context manager and
-        need to guarantee delivery before the process exits::
+        want to request an export before the process exits::
 
             obs = StanzaObservabilityRecorder("my-input", logger, stanza_name)
             try:
@@ -1036,10 +1069,10 @@ class StanzaObservabilityRecorder:
         return self
 
     def __exit__(self, *_) -> bool:
-        """Flush all metric readers and allow exceptions to propagate.
+        """Schedule a flush and allow exceptions to propagate.
 
         Returns ``False`` so any exception raised inside the ``with`` block
-        is re-raised after flushing.
+        is re-raised after the flush has been scheduled.
         """
         self.flush()
         return False
