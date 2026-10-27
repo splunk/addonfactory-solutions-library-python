@@ -53,7 +53,7 @@ import threading
 import urllib.request
 from typing import Callable, ClassVar, Optional, Union
 from ._observability_flush import _register_controller
-from .splunkenv import _get_app_name_from_path, get_conf_stanzas
+from .splunkenv import _get_running_app_name, get_conf_stanzas
 from opentelemetry.metrics import Instrument, Meter
 from opentelemetry.sdk.metrics import MeterProvider, Counter, Histogram
 from opentelemetry.sdk.metrics.export import (
@@ -393,8 +393,9 @@ class ObservabilityService:
                 output.  Typically the caller's own module-level logger.
             ta_name: Add-on identifier, e.g. ``"Splunk_TA_myapp"``.  When
                 *None* the value is read from the ``[id]`` stanza of the
-                ``app.conf`` of the app that bundles solnlib (detected from
-                the install path, falling back to the app directory name).
+                ``app.conf`` of the running app (detected from the main
+                script's path, then solnlib's own path; falling back to the
+                app directory name).
                 Pass it explicitly when the add-on runs outside a standard
                 ``etc/apps/<app>`` layout or to avoid the ``app.conf`` lookup.
             ta_version: Add-on version string, e.g. ``"3.1.0"``.  When *None*
@@ -507,20 +508,21 @@ class ObservabilityService:
     def _read_ta_info(self) -> tuple[Optional[str], Optional[str]]:
         """Read the add-on name and version from the owning app's ``app.conf``.
 
-        The owning app is the one that bundles solnlib, detected from the
-        install path (``etc/apps/<app>/...``).  The lookup is always scoped to
-        that app: an unscoped ``app.conf`` merge can return another installed
-        add-on's ``[id]`` stanza.
+        The owning app is the one whose script is running
+        (``etc/apps/<app>/bin/...``), or failing that the one that bundles
+        solnlib.  The lookup is always scoped to that app: an unscoped
+        ``app.conf`` merge can return another installed add-on's ``[id]``
+        stanza.
 
         Returns a ``(ta_name, ta_version)`` tuple.  Both are ``None`` when the
         owning app cannot be detected or ``app.conf`` cannot be read; the
         version alone is ``None`` when ``[launcher] version`` is missing.
         """
-        app_name = _get_app_name_from_path()
+        app_name = _get_running_app_name()
         if not app_name:
             self._logger.info(
-                "Could not determine the add-on that bundles solnlib from its "
-                "install path; pass ta_name explicitly to enable telemetry"
+                "Could not determine the running add-on from the script or "
+                "solnlib path; pass ta_name explicitly to enable telemetry"
             )
             return None, None
         try:

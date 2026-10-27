@@ -766,7 +766,7 @@ class TestObservabilityService:
     def test_read_ta_info_returns_values(self, logger, monkeypatch):
         # Arrange
         monkeypatch.setattr(
-            "solnlib.observability._get_app_name_from_path", lambda: "my_ta"
+            "solnlib.observability._get_running_app_name", lambda: "my_ta"
         )
         monkeypatch.setattr(
             "solnlib.observability.get_conf_stanzas",
@@ -787,7 +787,7 @@ class TestObservabilityService:
     def test_read_ta_info_always_scoped_to_owning_app(self, logger, monkeypatch):
         # Arrange
         monkeypatch.setattr(
-            "solnlib.observability._get_app_name_from_path",
+            "solnlib.observability._get_running_app_name",
             lambda: "Splunk_TA_google-cloudplatform",
         )
         get_conf = MagicMock(
@@ -830,7 +830,7 @@ class TestObservabilityService:
             "solnlib.observability.get_conf_stanzas", fake_get_conf_stanzas
         )
         monkeypatch.setattr(
-            "solnlib.observability._get_app_name_from_path",
+            "solnlib.observability._get_running_app_name",
             lambda: "Splunk_TA_google-cloudplatform",
         )
         svc = _make_service(logger, monkeypatch)
@@ -840,7 +840,7 @@ class TestObservabilityService:
     def test_read_ta_info_missing_id_falls_back_to_app_dir(self, logger, monkeypatch):
         # Arrange
         monkeypatch.setattr(
-            "solnlib.observability._get_app_name_from_path", lambda: "Splunk_TA_aws"
+            "solnlib.observability._get_running_app_name", lambda: "Splunk_TA_aws"
         )
         monkeypatch.setattr(
             "solnlib.observability.get_conf_stanzas",
@@ -852,9 +852,7 @@ class TestObservabilityService:
 
     def test_read_ta_info_no_detectable_app_returns_none(self, logger, monkeypatch):
         # Arrange
-        monkeypatch.setattr(
-            "solnlib.observability._get_app_name_from_path", lambda: None
-        )
+        monkeypatch.setattr("solnlib.observability._get_running_app_name", lambda: None)
         get_conf = MagicMock()
         monkeypatch.setattr("solnlib.observability.get_conf_stanzas", get_conf)
         svc = _make_service(logger, monkeypatch)
@@ -869,9 +867,7 @@ class TestObservabilityService:
 
     def test_no_detectable_app_skips_telemetry(self, logger, monkeypatch):
         # Arrange
-        monkeypatch.setattr(
-            "solnlib.observability._get_app_name_from_path", lambda: None
-        )
+        monkeypatch.setattr("solnlib.observability._get_running_app_name", lambda: None)
         monkeypatch.setattr(
             "solnlib.observability.ObservabilityService._create_otlp_exporter",
             lambda self: None,
@@ -885,7 +881,7 @@ class TestObservabilityService:
     def test_read_ta_info_handles_exception(self, logger, monkeypatch):
         # Arrange
         monkeypatch.setattr(
-            "solnlib.observability._get_app_name_from_path", lambda: "my_ta"
+            "solnlib.observability._get_running_app_name", lambda: "my_ta"
         )
         monkeypatch.setattr(
             "solnlib.observability.ObservabilityService._create_otlp_exporter",
@@ -1621,7 +1617,7 @@ class TestLogLevelDowngrade:
             "solnlib.observability._safe_exception_str", lambda error: "SAFE"
         )
         monkeypatch.setattr(
-            "solnlib.observability._get_app_name_from_path", lambda: "my_ta"
+            "solnlib.observability._get_running_app_name", lambda: "my_ta"
         )
         monkeypatch.setattr(
             "solnlib.observability.ObservabilityService._create_otlp_exporter",
