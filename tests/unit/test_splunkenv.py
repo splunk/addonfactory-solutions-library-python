@@ -164,3 +164,25 @@ def test_splunkenv_used_outside_splunk_env():
             "server", "app", session_key="session_key"
         )
     assert exc_info.value.args[0] == "This module requires Splunk to be installed."
+
+
+@pytest.mark.parametrize(
+    "rel_path,expected",
+    [
+        ("etc/apps/Splunk_TA_aws/lib/solnlib/splunkenv.py", "Splunk_TA_aws"),
+        ("etc/apps/Splunk_TA_aws/bin/lib/solnlib/splunkenv.py", "Splunk_TA_aws"),
+        ("etc/peer-apps/Splunk_TA_aws/lib/solnlib/splunkenv.py", "Splunk_TA_aws"),
+        ("etc/slave-apps/Splunk_TA_aws/lib/solnlib/splunkenv.py", "Splunk_TA_aws"),
+        ("etc/apps/Splunk_TA_aws", "Splunk_TA_aws"),
+        ("etc/apps", None),
+        ("src/apps/Splunk_TA_aws/lib/solnlib/splunkenv.py", None),
+        ("checkout/solnlib/splunkenv.py", None),
+    ],
+)
+def test_get_app_name_from_path(tmp_path, rel_path, expected):
+    assert splunkenv._get_app_name_from_path(str(tmp_path / rel_path)) == expected
+
+
+def test_get_app_name_from_path_defaults_to_module_location():
+    # The repo checkout is not under etc/apps.
+    assert splunkenv._get_app_name_from_path() is None
