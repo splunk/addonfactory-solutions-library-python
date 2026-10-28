@@ -435,8 +435,8 @@ class ObservabilityService:
 
             if not ta_name:
                 raise ValueError(
-                    "ta_name could not be determined: pass it explicitly or ensure "
-                    "app.conf is readable via btool"
+                    "ta_name could not be determined: pass it explicitly or run "
+                    "the add-on from etc/apps/<app>"
                 )
 
             resource = Resource(
@@ -518,14 +518,14 @@ class ObservabilityService:
         owning app cannot be detected or ``app.conf`` cannot be read; the
         version alone is ``None`` when ``[launcher] version`` is missing.
         """
-        app_name = _get_running_app_name()
-        if not app_name:
-            self._logger.info(
-                "Could not determine the running add-on from the script or "
-                "solnlib path; pass ta_name explicitly to enable telemetry"
-            )
-            return None, None
         try:
+            app_name = _get_running_app_name()
+            if not app_name:
+                self._logger.info(
+                    "Could not determine the running add-on from the script "
+                    "or solnlib path; app.conf not read"
+                )
+                return None, None
             stanzas = get_conf_stanzas("app", app_name=app_name)
             ta_name = stanzas.get("id", {}).get("name") or app_name
             ta_version = stanzas.get("launcher", {}).get("version") or None

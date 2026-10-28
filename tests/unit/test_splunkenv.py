@@ -176,6 +176,9 @@ def test_splunkenv_used_outside_splunk_env():
         ("etc/apps/Splunk_TA_aws", "Splunk_TA_aws"),
         ("etc/apps", None),
         ("src/apps/Splunk_TA_aws/lib/solnlib/splunkenv.py", None),
+        ("etc/apps/Splunk_TA_aws/lib/pkg/etc/apps/inner/x.py", "Splunk_TA_aws"),
+        ("etc/deployment-apps/Splunk_TA_aws/bin/input.py", None),
+        ("etc/shcluster/apps/Splunk_TA_aws/bin/input.py", None),
         ("checkout/solnlib/splunkenv.py", None),
     ],
 )
@@ -221,6 +224,23 @@ def test_get_running_app_name_uses_argv_without_main_file(tmp_path, monkeypatch)
         splunkenv.sys, "argv", [str(tmp_path / "etc/apps/TA_argv/bin/input.py")]
     )
     assert splunkenv._get_running_app_name() == "TA_argv"
+
+
+def test_get_running_app_name_without_sys_argv(tmp_path, monkeypatch):
+    monkeypatch.delattr(splunkenv.__main__, "__file__", raising=False)
+    monkeypatch.delattr(splunkenv.sys, "argv")
+    monkeypatch.setattr(
+        splunkenv, "__file__", str(tmp_path / "etc/apps/TA_lib/lib/solnlib/x.py")
+    )
+    assert splunkenv._get_running_app_name() == "TA_lib"
+
+
+def test_get_running_app_name_survives_path_errors(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        splunkenv.__main__, "__file__", "relative/input.py", raising=False
+    )
+    monkeypatch.setattr(splunkenv.op, "abspath", mock.Mock(side_effect=OSError))
+    assert splunkenv._get_running_app_name() is None
 
 
 def test_get_running_app_name_falls_back_to_solnlib_path(tmp_path, monkeypatch):

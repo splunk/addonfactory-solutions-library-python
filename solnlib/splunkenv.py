@@ -96,10 +96,12 @@ def make_splunkhome_path(parts: Union[list, tuple]) -> str:
 
 
 def _is_splunk_etc_dir(path: Path) -> bool:
-    if path.name == ETC_LEAF:
+    if op.normcase(path.name) == ETC_LEAF:
         return True
     splunk_etc = os.environ.get("SPLUNK_ETC")
-    return bool(splunk_etc) and op.realpath(splunk_etc) == op.realpath(path)
+    return bool(splunk_etc) and op.normcase(op.realpath(splunk_etc)) == op.normcase(
+        op.realpath(path)
+    )
 
 
 def _get_app_name_from_path(path: str) -> Optional[str]:
@@ -116,12 +118,21 @@ def _get_app_name_from_path(path: str) -> Optional[str]:
     Returns:
         App name, or None if `path` is not inside a Splunk apps directory.
     """
-    # abspath, not resolve(): apps symlinked into etc/apps must keep their name.
-    absolute = Path(op.abspath(path))
-    for candidate in (absolute, *absolute.parents):
-        parent = candidate.parent
-        if parent.name in _APPS_DIRS and _is_splunk_etc_dir(parent.parent):
-            return candidate.name
+    # Not utils.get_appname_from_path: that one returns "-", ignores
+    # SPLUNK_ETC and slave-apps, and is public, so its behaviour is kept.
+    try:
+        # abspath, not resolve(): apps symlinked into etc/apps keep their name.
+        absolute = Path(op.abspath(path))
+        # Outermost match first: Splunk's etc/apps sits above anything an app
+        # vendors that happens to contain etc/apps.
+        for candidate in reversed((absolute, *absolute.parents)):
+            parent = candidate.parent
+            if op.normcase(parent.name) in _APPS_DIRS and _is_splunk_etc_dir(
+                parent.parent
+            ):
+                return candidate.name
+    except (OSError, ValueError):
+        pass
     return None
 
 
@@ -136,9 +147,8 @@ def _get_running_app_name() -> Optional[str]:
     Returns:
         App name, or None if neither path is inside a Splunk apps directory.
     """
-    main_path = getattr(__main__, "__file__", None) or (
-        sys.argv[0] if sys.argv else None
-    )
+    argv = getattr(sys, "argv", None)
+    main_path = getattr(__main__, "__file__", None) or (argv[0] if argv else None)
     return (main_path and _get_app_name_from_path(main_path)) or (
         _get_app_name_from_path(__file__)
     )

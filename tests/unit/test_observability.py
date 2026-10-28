@@ -878,6 +878,17 @@ class TestObservabilityService:
         assert svc._meter is None
         logger.warning.assert_not_called()
 
+    def test_read_ta_info_app_detection_error_returns_none(self, logger, monkeypatch):
+        monkeypatch.setattr(
+            "solnlib.observability._get_running_app_name",
+            MagicMock(side_effect=RuntimeError("boom")),
+        )
+        svc = _make_service(logger, monkeypatch)
+        logger.reset_mock()
+        assert svc._read_ta_info() == (None, None)
+        logger.info.assert_called()
+        logger.warning.assert_not_called()
+
     def test_read_ta_info_handles_exception(self, logger, monkeypatch):
         # Arrange
         monkeypatch.setattr(
