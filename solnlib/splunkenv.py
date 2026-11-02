@@ -19,9 +19,11 @@ import os
 import os.path as op
 import socket
 import subprocess
+import sys
 import json
 from configparser import ConfigParser
 from io import StringIO
+from pathlib import Path
 from typing import Optional, Union
 import __main__
 from solnlib._settings import use_btool
@@ -66,6 +68,7 @@ __all__ = [
 ETC_LEAF = "etc"
 APP_SYSTEM = "system"
 APP_HEC = "splunk_httpinput"
+_APPS_DIRS = ("apps", "peer-apps", "slave-apps")
 
 
 class SessionKeyNotFound(Exception):
@@ -90,6 +93,65 @@ def make_splunkhome_path(parts: Union[list, tuple]) -> str:
         ValueError: Escape from intended parent directories.
     """
     return msp(parts)
+
+
+def _is_splunk_etc_dir(path: Path) -> bool:
+    if op.normcase(path.name) == ETC_LEAF:
+        return True
+    splunk_etc = os.environ.get("SPLUNK_ETC")
+    return bool(splunk_etc) and op.normcase(op.realpath(splunk_etc)) == op.normcase(
+        op.realpath(path)
+    )
+
+
+def _get_app_name_from_path(path: str) -> Optional[str]:
+    """Return the name of the Splunk app that contains `path`.
+
+    The app is the directory directly under ``$SPLUNK_ETC/apps`` (or
+    ``peer-apps`` / ``slave-apps`` on indexer cluster peers). For example,
+    ``$SPLUNK_HOME/etc/apps/Splunk_TA_test/bin/input.py`` resolves to
+    ``"Splunk_TA_test"``.
+
+    Arguments:
+        path: File system path to inspect.
+
+    Returns:
+        App name, or None if `path` is not inside a Splunk apps directory.
+    """
+    # Not utils.get_appname_from_path: that one returns "-", ignores
+    # SPLUNK_ETC and slave-apps, and is public, so its behaviour is kept.
+    try:
+        # abspath, not resolve(): apps symlinked into etc/apps keep their name.
+        absolute = Path(op.abspath(path))
+        # Outermost match first: Splunk's etc/apps sits above anything an app
+        # vendors that happens to contain etc/apps.
+        for candidate in reversed((absolute, *absolute.parents)):
+            parent = candidate.parent
+            if op.normcase(parent.name) in _APPS_DIRS and _is_splunk_etc_dir(
+                parent.parent
+            ):
+                return candidate.name
+    except (OSError, ValueError):
+        pass
+    return None
+
+
+def _get_running_app_name() -> Optional[str]:
+    """Return the name of the Splunk app whose script is running.
+
+    Tries the main script first (modular inputs, alert actions and search
+    commands run from ``etc/apps/<app>/bin``; this path also keeps
+    symlinked app directories intact), then falls back to the app that
+    bundles solnlib.
+
+    Returns:
+        App name, or None if neither path is inside a Splunk apps directory.
+    """
+    argv = getattr(sys, "argv", None)
+    main_path = getattr(__main__, "__file__", None) or (argv[0] if argv else None)
+    return (main_path and _get_app_name_from_path(main_path)) or (
+        _get_app_name_from_path(__file__)
+    )
 
 
 def get_splunk_host_info(session_key: Optional[str] = None) -> tuple:
