@@ -53,7 +53,7 @@ import threading
 import urllib.request
 from typing import Callable, ClassVar, Optional, Union
 from ._observability_flush import _register_controller
-from .splunkenv import get_conf_stanzas
+from .splunkenv import _get_running_app_name, get_conf_stanzas
 from opentelemetry.metrics import Instrument, Meter
 from opentelemetry.sdk.metrics import MeterProvider, Counter, Histogram
 from opentelemetry.sdk.metrics.export import (
@@ -392,12 +392,14 @@ class ObservabilityService:
             logger: Python logger (or ``LoggerAdapter``) for all diagnostic
                 output.  Typically the caller's own module-level logger.
             ta_name: Add-on identifier, e.g. ``"Splunk_TA_myapp"``.  When
-                *None* the value is read from the ``[id]`` stanza of
-                ``app.conf`` via :func:`~solnlib.splunkenv.get_conf_stanzas`.
-                Pass it explicitly when the add-on runs outside a full Splunk
-                environment or to avoid the ``app.conf`` lookup.
+                *None* the value is read from the ``[id]`` stanza of the
+                ``app.conf`` of the running app (detected from the main
+                script's path, then solnlib's own path; falling back to the
+                app directory name).
+                Pass it explicitly when the add-on runs outside a standard
+                ``etc/apps/<app>`` layout or to avoid the ``app.conf`` lookup.
             ta_version: Add-on version string, e.g. ``"3.1.0"``.  When *None*
-                the value is read from the ``[launcher]`` stanza of
+                the value is read from the ``[launcher]`` stanza of the same
                 ``app.conf``.  Falls back to ``"unknown"`` if it cannot be
                 determined.
             extra_exporters: Optional list of additional
@@ -433,8 +435,8 @@ class ObservabilityService:
 
             if not ta_name:
                 raise ValueError(
-                    "ta_name could not be determined: pass it explicitly or ensure "
-                    "app.conf is readable via btool"
+                    "ta_name could not be determined: pass it explicitly or run "
+                    "the add-on from etc/apps/<app>"
                 )
 
             resource = Resource(
@@ -504,19 +506,29 @@ class ObservabilityService:
         )
 
     def _read_ta_info(self) -> tuple[Optional[str], Optional[str]]:
-        """Read the add-on name and version from ``app.conf``.
+        """Read the add-on name and version from the owning app's ``app.conf``.
 
-        Returns a ``(ta_name, ta_version)`` tuple.  Either value is
-        ``None`` when the corresponding key is missing or when
-        ``app.conf`` cannot be read (e.g. outside a Splunk environment).
+        The owning app is the one whose script is running
+        (``etc/apps/<app>/bin/...``), or failing that the one that bundles
+        solnlib.  The lookup is always scoped to that app: an unscoped
+        ``app.conf`` merge can return another installed add-on's ``[id]``
+        stanza.
+
+        Returns a ``(ta_name, ta_version)`` tuple.  Both are ``None`` when the
+        owning app cannot be detected or ``app.conf`` cannot be read; the
+        version alone is ``None`` when ``[launcher] version`` is missing.
         """
         try:
-            stanzas = get_conf_stanzas("app")
-            ta_name = stanzas.get("id", {}).get("name") or None
-            scoped_stanzas = (
-                get_conf_stanzas("app", app_name=ta_name) if ta_name else stanzas
-            )
-            ta_version = scoped_stanzas.get("launcher", {}).get("version") or None
+            app_name = _get_running_app_name()
+            if not app_name:
+                self._logger.info(
+                    "Could not determine the running add-on from the script "
+                    "or solnlib path; app.conf not read"
+                )
+                return None, None
+            stanzas = get_conf_stanzas("app", app_name=app_name)
+            ta_name = stanzas.get("id", {}).get("name") or app_name
+            ta_version = stanzas.get("launcher", {}).get("version") or None
             return ta_name, ta_version
         except Exception as error:
             self._logger.info(

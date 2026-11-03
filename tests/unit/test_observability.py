@@ -766,6 +766,9 @@ class TestObservabilityService:
     def test_read_ta_info_returns_values(self, logger, monkeypatch):
         # Arrange
         monkeypatch.setattr(
+            "solnlib.observability._get_running_app_name", lambda: "my_ta"
+        )
+        monkeypatch.setattr(
             "solnlib.observability.get_conf_stanzas",
             lambda conf, **kwargs: {
                 "id": {"name": "my_ta"},
@@ -781,8 +784,116 @@ class TestObservabilityService:
         # Assert
         assert svc._meter is not None
 
+    def test_read_ta_info_always_scoped_to_owning_app(self, logger, monkeypatch):
+        # Arrange
+        monkeypatch.setattr(
+            "solnlib.observability._get_running_app_name",
+            lambda: "Splunk_TA_google-cloudplatform",
+        )
+        get_conf = MagicMock(
+            return_value={
+                "id": {"name": "Splunk_TA_google-cloudplatform"},
+                "launcher": {"version": "5.0.0"},
+            }
+        )
+        monkeypatch.setattr("solnlib.observability.get_conf_stanzas", get_conf)
+        svc = _make_service(logger, monkeypatch)
+        # Act
+        result = svc._read_ta_info()
+        # Assert
+        assert result == ("Splunk_TA_google-cloudplatform", "5.0.0")
+        get_conf.assert_called_once_with(
+            "app", app_name="Splunk_TA_google-cloudplatform"
+        )
+
+    def test_read_ta_info_reports_owning_app_when_other_apps_installed(
+        self, logger, monkeypatch
+    ):
+        # Arrange: an unscoped lookup would return Splunk_TA_cyberark's [id].
+        apps = {
+            "Splunk_TA_cyberark": {
+                "id": {"name": "Splunk_TA_cyberark"},
+                "launcher": {"version": "1.2.0"},
+            },
+            "Splunk_TA_google-cloudplatform": {
+                "id": {"name": "Splunk_TA_google-cloudplatform"},
+                "launcher": {"version": "5.0.0"},
+            },
+        }
+
+        def fake_get_conf_stanzas(conf, app_name=None):
+            if app_name is None:
+                return apps["Splunk_TA_cyberark"]
+            return apps[app_name]
+
+        monkeypatch.setattr(
+            "solnlib.observability.get_conf_stanzas", fake_get_conf_stanzas
+        )
+        monkeypatch.setattr(
+            "solnlib.observability._get_running_app_name",
+            lambda: "Splunk_TA_google-cloudplatform",
+        )
+        svc = _make_service(logger, monkeypatch)
+        # Act / Assert
+        assert svc._read_ta_info() == ("Splunk_TA_google-cloudplatform", "5.0.0")
+
+    def test_read_ta_info_missing_id_falls_back_to_app_dir(self, logger, monkeypatch):
+        # Arrange
+        monkeypatch.setattr(
+            "solnlib.observability._get_running_app_name", lambda: "Splunk_TA_aws"
+        )
+        monkeypatch.setattr(
+            "solnlib.observability.get_conf_stanzas",
+            lambda conf, **kwargs: {"launcher": {"version": "7.0.0"}},
+        )
+        svc = _make_service(logger, monkeypatch)
+        # Act / Assert
+        assert svc._read_ta_info() == ("Splunk_TA_aws", "7.0.0")
+
+    def test_read_ta_info_no_detectable_app_returns_none(self, logger, monkeypatch):
+        # Arrange
+        monkeypatch.setattr("solnlib.observability._get_running_app_name", lambda: None)
+        get_conf = MagicMock()
+        monkeypatch.setattr("solnlib.observability.get_conf_stanzas", get_conf)
+        svc = _make_service(logger, monkeypatch)
+        logger.reset_mock()
+        # Act
+        result = svc._read_ta_info()
+        # Assert
+        assert result == (None, None)
+        get_conf.assert_not_called()
+        logger.info.assert_called()
+        logger.warning.assert_not_called()
+
+    def test_no_detectable_app_skips_telemetry(self, logger, monkeypatch):
+        # Arrange
+        monkeypatch.setattr("solnlib.observability._get_running_app_name", lambda: None)
+        monkeypatch.setattr(
+            "solnlib.observability.ObservabilityService._create_otlp_exporter",
+            lambda self: None,
+        )
+        # Act
+        svc = ObservabilityService(modinput_type="test-input", logger=logger)
+        # Assert
+        assert svc._meter is None
+        logger.warning.assert_not_called()
+
+    def test_read_ta_info_app_detection_error_returns_none(self, logger, monkeypatch):
+        monkeypatch.setattr(
+            "solnlib.observability._get_running_app_name",
+            MagicMock(side_effect=RuntimeError("boom")),
+        )
+        svc = _make_service(logger, monkeypatch)
+        logger.reset_mock()
+        assert svc._read_ta_info() == (None, None)
+        logger.info.assert_called()
+        logger.warning.assert_not_called()
+
     def test_read_ta_info_handles_exception(self, logger, monkeypatch):
         # Arrange
+        monkeypatch.setattr(
+            "solnlib.observability._get_running_app_name", lambda: "my_ta"
+        )
         monkeypatch.setattr(
             "solnlib.observability.ObservabilityService._create_otlp_exporter",
             lambda self: None,
@@ -1515,6 +1626,9 @@ class TestLogLevelDowngrade:
     def test_read_ta_info_exception_uses_safe_str(self, logger, monkeypatch):
         monkeypatch.setattr(
             "solnlib.observability._safe_exception_str", lambda error: "SAFE"
+        )
+        monkeypatch.setattr(
+            "solnlib.observability._get_running_app_name", lambda: "my_ta"
         )
         monkeypatch.setattr(
             "solnlib.observability.ObservabilityService._create_otlp_exporter",
