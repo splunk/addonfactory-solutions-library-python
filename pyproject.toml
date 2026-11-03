@@ -41,9 +41,18 @@ python = ">=3.9,<3.14"
 sortedcontainers = ">=2"
 defusedxml = ">=0.7"
 splunk-sdk = ">=2.0.2"
-opentelemetry-api = ">=1.39.1,<2"
-opentelemetry-sdk = ">=1.39.1,<2"
-opentelemetry-exporter-otlp-proto-grpc = ">=1.39.1,<2"
+opentelemetry-api = [
+    {version = ">=1.45.1,<2", python = ">=3.10"},
+    {version = ">=1.39.1,<2", python = "<3.10"},
+]
+opentelemetry-sdk = [
+    {version = ">=1.45.1,<2", python = ">=3.10"},
+    {version = ">=1.39.1,<2", python = "<3.10"},
+]
+opentelemetry-exporter-otlp-proto-grpc = [
+    {version = ">=1.45.1,<2", python = ">=3.10"},
+    {version = ">=1.39.1,<2", python = "<3.10"},
+]
 grpcio = ">=1.74.0"
 
 [tool.poetry.group.dev.dependencies]
