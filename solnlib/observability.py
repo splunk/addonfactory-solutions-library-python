@@ -54,6 +54,7 @@ import urllib.request
 from typing import Callable, ClassVar, Optional, Union
 from ._observability_flush import _register_controller
 from .splunkenv import _get_running_app_name, get_conf_stanzas
+from .utils import is_true
 from opentelemetry.metrics import Instrument, Meter
 from opentelemetry.sdk.metrics import MeterProvider, Counter, Histogram
 from opentelemetry.sdk.metrics.export import (
@@ -70,6 +71,7 @@ _Logger = Union[logging.Logger, logging.LoggerAdapter]
 _SPOTLIGHT_SIDECAR_NAME = "spotlight-collector"
 _SPOTLIGHT_SERVICE_NAME = "spotlight_telemetry"
 _SERVICE_NAMESPACE = "splunk.addon"
+_OTLP_PROBE_TIMEOUT_SECONDS = 2.0
 
 ATTR_MODINPUT_NAME = "splunk.modinput.name"
 
@@ -600,6 +602,88 @@ class ObservabilityService:
             )
             return None
 
+    def _is_spotlight_metrics_enabled(self) -> bool:
+        """Check ``server.conf`` that Spotlight accepts OTel metrics.
+
+        The IPC broker advertises the Spotlight port whenever the collector
+        sidecar runs, even when OTel metrics are switched off, so a
+        discovered port alone does not mean metrics can be sent. Export is
+        allowed only when all of these settings are true (missing keys use
+        the ``server.conf.spec`` defaults shown):
+
+        - ``[teleport_supervisor] enable_splunk_spotlight`` (default true):
+          the collector runs instead of in NO-OP mode.
+        - ``[spotlight] enable_otlp_metrics`` (default false): OTel metrics
+          instrumentation is enabled.
+        - ``[spotlight] enable_otlp_metrics_export`` (default true): OTel
+          metrics are sent to Spotlight.
+
+        Returns ``False`` when ``server.conf`` cannot be read.
+        """
+        try:
+            stanzas = get_conf_stanzas("server")
+        except Exception as error:
+            self._logger.info(
+                "Failed to read Spotlight settings from server.conf: %s",
+                _safe_exception_str(error),
+            )
+            return False
+
+        supervisor = stanzas.get("teleport_supervisor", {})
+        spotlight = stanzas.get("spotlight", {})
+        settings = (
+            (
+                "teleport_supervisor",
+                "enable_splunk_spotlight",
+                supervisor.get("enable_splunk_spotlight", "true"),
+            ),
+            (
+                "spotlight",
+                "enable_otlp_metrics",
+                spotlight.get("enable_otlp_metrics", "false"),
+            ),
+            (
+                "spotlight",
+                "enable_otlp_metrics_export",
+                spotlight.get("enable_otlp_metrics_export", "true"),
+            ),
+        )
+        for stanza, key, value in settings:
+            if not is_true(value):
+                self._logger.info(
+                    "Spotlight OTel metrics not enabled ([%s] %s = %s), "
+                    "OTLP export disabled",
+                    stanza,
+                    key,
+                    _sanitize_for_log(value),
+                )
+                return False
+        return True
+
+    def _is_otlp_endpoint_ready(self, grpc, endpoint: str, credentials) -> bool:
+        """Return whether a gRPC server accepts a TLS connection at *endpoint*.
+
+        Opens a short-lived channel with the Spotlight certificate and waits
+        up to ``_OTLP_PROBE_TIMEOUT_SECONDS`` for it to become ready. This
+        catches an advertised port that nothing listens on, or that does
+        not accept this certificate, before any metrics are exported.
+        """
+        channel = grpc.secure_channel(endpoint, credentials)
+        try:
+            grpc.channel_ready_future(channel).result(
+                timeout=_OTLP_PROBE_TIMEOUT_SECONDS
+            )
+            return True
+        except Exception as error:
+            self._logger.info(
+                "OTLP endpoint %s not reachable, OTLP export disabled: %s",
+                endpoint,
+                _safe_exception_repr(error),
+            )
+            return False
+        finally:
+            channel.close()
+
     def _resolve_otlp_port(self) -> Optional[str]:
         """Resolve the OTLP receiver port using a two-step lookup.
 
@@ -638,14 +722,25 @@ class ObservabilityService:
         Returns the configured exporter wrapped in ``_CircuitBreakerExporter``,
         or ``None`` when:
 
+        - Spotlight OTel metrics are not enabled in ``server.conf`` (see
+          :meth:`_is_spotlight_metrics_enabled`). Skipped when
+          ``SPOTLIGHT_OTEL_RECEIVER_PORT`` is set explicitly.
         - The OTLP port cannot be resolved (see :meth:`_resolve_otlp_port`).
         - The certificate file does not exist.
+        - No gRPC server accepts a TLS connection on the port (see
+          :meth:`_is_otlp_endpoint_ready`).
         - Any other exception occurs during exporter construction (including a
           missing ``grpcio`` package).
         """
         os.environ.setdefault("GRPC_VERBOSITY", "NONE")
 
         try:
+            if (
+                not os.environ.get("SPOTLIGHT_OTEL_RECEIVER_PORT")
+                and not self._is_spotlight_metrics_enabled()
+            ):
+                return None
+
             import grpc
             from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import (
                 OTLPMetricExporter,
@@ -689,6 +784,9 @@ class ObservabilityService:
                 server_cert = f.read()
 
             credentials = grpc.ssl_channel_credentials(root_certificates=server_cert)
+            if not self._is_otlp_endpoint_ready(grpc, endpoint, credentials):
+                return None
+
             exporter = OTLPMetricExporter(
                 endpoint=endpoint,
                 credentials=credentials,
