@@ -18,7 +18,6 @@ import context
 import conftest
 import os.path as op
 import sys
-
 import pytest
 
 from solnlib import user_access
@@ -26,7 +25,8 @@ from solnlib import user_access
 sys.path.insert(0, op.dirname(op.dirname(op.abspath(__file__))))
 
 
-def test_object_acl_manager():
+def test_object_acl_manager(monkeypatch):
+    conftest.mock_splunk(monkeypatch)
     session_key = context.get_session_key()
     oaclm = user_access.ObjectACLManager(
         "object_acls_collection",
@@ -183,7 +183,7 @@ def test_get_user_roles():
 
 
 def test_user_access(monkeypatch):
-    test_object_acl_manager()
+    test_object_acl_manager(monkeypatch)
     test_app_capability_manager()
     test_check_user_access(monkeypatch)
     test_get_current_username()

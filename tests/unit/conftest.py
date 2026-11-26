@@ -1,10 +1,22 @@
 import json
 import socket
+import sys
+import os.path as op
 from contextlib import closing
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from threading import Thread
+from unittest.mock import MagicMock
 
 import pytest
+
+
+cur_dir = op.dirname(op.abspath(__file__))
+
+mock_msp = MagicMock(return_value=op.sep.join([cur_dir, "data/mock_log"]))
+mock_bundle_paths = MagicMock()
+mock_bundle_paths.make_splunkhome_path = mock_msp
+
+sys.modules["splunk.clilib.bundle_paths"] = mock_bundle_paths
 
 
 @pytest.fixture(scope="session")
