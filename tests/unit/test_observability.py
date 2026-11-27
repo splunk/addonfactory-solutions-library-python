@@ -1413,6 +1413,12 @@ class TestObservabilityService:
         cert_path = tmp_path / "var/packages/data/spotlight-collector"
         cert_path.mkdir(parents=True)
         (cert_path / "server.crt").write_bytes(b"fake-cert")
+        # No collector listens on 4317; this test is about construction-time
+        # logging, so treat the endpoint as reachable.
+        monkeypatch.setattr(
+            "solnlib.observability.ObservabilityService._is_otlp_endpoint_ready",
+            lambda self, grpc, endpoint, credentials: True,
+        )
 
         svc = ObservabilityService.__new__(ObservabilityService)
         svc._logger = logger
@@ -2326,3 +2332,232 @@ class TestGrpcTlsHandshakeStderrSuppression:
 
         assert "Handshake failed" in control.stderr
         assert "Handshake failed" not in suppressed.stderr
+
+
+# ---------------------------------------------------------------------------
+# Spotlight availability checks (config gate + OTLP endpoint probe)
+# ---------------------------------------------------------------------------
+
+
+def _bare_service(logger):
+    svc = ObservabilityService.__new__(ObservabilityService)
+    svc._logger = logger
+    return svc
+
+
+def _server_conf(teleport_supervisor=None, spotlight=None):
+    stanzas = {"ipc_broker": {"port": "8194"}}
+    if teleport_supervisor is not None:
+        stanzas["teleport_supervisor"] = teleport_supervisor
+    if spotlight is not None:
+        stanzas["spotlight"] = spotlight
+    return stanzas
+
+
+class TestSpotlightMetricsEnabled:
+    @pytest.mark.parametrize(
+        "stanzas, expected",
+        [
+            # Splunk Enterprise defaults: OTel metrics are off.
+            (
+                _server_conf(
+                    {"enable_splunk_spotlight": "true"},
+                    {
+                        "enable_otlp_metrics": "false",
+                        "enable_otlp_metrics_export": "true",
+                    },
+                ),
+                False,
+            ),
+            # Keys missing entirely: spec default for enable_otlp_metrics is false.
+            (_server_conf(), False),
+            (
+                _server_conf(
+                    {"enable_splunk_spotlight": "true"},
+                    {"enable_otlp_metrics": "true", "enable_otlp_metrics_export": "1"},
+                ),
+                True,
+            ),
+            # Only enable_otlp_metrics set: the other two use their true defaults.
+            (_server_conf(spotlight={"enable_otlp_metrics": "true"}), True),
+            (
+                _server_conf(
+                    {"enable_splunk_spotlight": "false"},
+                    {"enable_otlp_metrics": "true"},
+                ),
+                False,
+            ),
+            (
+                _server_conf(
+                    spotlight={
+                        "enable_otlp_metrics": "true",
+                        "enable_otlp_metrics_export": "false",
+                    }
+                ),
+                False,
+            ),
+        ],
+    )
+    def test_settings(self, logger, monkeypatch, stanzas, expected):
+        monkeypatch.setattr(
+            "solnlib.observability.get_conf_stanzas", lambda conf: stanzas
+        )
+        assert _bare_service(logger)._is_spotlight_metrics_enabled() is expected
+
+    def test_logs_which_setting_disabled_export(self, logger, monkeypatch):
+        monkeypatch.setattr(
+            "solnlib.observability.get_conf_stanzas",
+            lambda conf: _server_conf(spotlight={"enable_otlp_metrics": "false"}),
+        )
+        _bare_service(logger)._is_spotlight_metrics_enabled()
+        args = logger.info.call_args.args
+        assert args[1:] == ("spotlight", "enable_otlp_metrics", "false")
+
+    def test_unreadable_server_conf_disables_export(self, logger, monkeypatch):
+        def boom(conf):
+            raise RuntimeError("btool failed")
+
+        monkeypatch.setattr("solnlib.observability.get_conf_stanzas", boom)
+        assert _bare_service(logger)._is_spotlight_metrics_enabled() is False
+
+    def test_create_exporter_skips_broker_when_metrics_disabled(
+        self, logger, monkeypatch
+    ):
+        monkeypatch.delenv("SPOTLIGHT_OTEL_RECEIVER_PORT", raising=False)
+        monkeypatch.setattr(
+            "solnlib.observability.get_conf_stanzas", lambda conf: _server_conf()
+        )
+        discover = MagicMock(return_value="35157")
+        monkeypatch.setattr(
+            "solnlib.observability.ObservabilityService._discover_otlp_port_via_ipc_broker",
+            discover,
+        )
+        assert ObservabilityService._create_otlp_exporter(_bare_service(logger)) is None
+        discover.assert_not_called()
+
+    def test_env_port_override_bypasses_config_check(
+        self, logger, monkeypatch, tmp_path
+    ):
+        monkeypatch.setenv("SPOTLIGHT_OTEL_RECEIVER_PORT", "4317")
+        monkeypatch.setenv("SPLUNK_HOME", str(tmp_path))
+        enabled = MagicMock(return_value=False)
+        monkeypatch.setattr(
+            "solnlib.observability.ObservabilityService._is_spotlight_metrics_enabled",
+            enabled,
+        )
+        # No cert, so construction still stops later; the gate must not run.
+        ObservabilityService._create_otlp_exporter(_bare_service(logger))
+        enabled.assert_not_called()
+
+
+class TestOtlpEndpointProbe:
+    @staticmethod
+    def _install_fake_otlp(monkeypatch, tmp_path, ready):
+        monkeypatch.setenv("SPOTLIGHT_OTEL_RECEIVER_PORT", "35157")
+        monkeypatch.setenv("SPLUNK_HOME", str(tmp_path))
+        cert_path = tmp_path / "var/packages/data/spotlight-collector"
+        cert_path.mkdir(parents=True)
+        (cert_path / "server.crt").write_bytes(b"fake-cert")
+        mock_grpc = MagicMock()
+        future = MagicMock()
+        if not ready:
+            future.result.side_effect = TimeoutError("not ready")
+        mock_grpc.channel_ready_future.return_value = future
+        monkeypatch.setitem(sys.modules, "grpc", mock_grpc)
+        exporter_cls = MagicMock()
+        otlp_module = MagicMock(OTLPMetricExporter=exporter_cls)
+        monkeypatch.setitem(
+            sys.modules,
+            "opentelemetry.exporter.otlp.proto.grpc.metric_exporter",
+            otlp_module,
+        )
+        return mock_grpc, exporter_cls
+
+    def test_unreachable_endpoint_skips_exporter(self, logger, monkeypatch, tmp_path):
+        mock_grpc, exporter_cls = self._install_fake_otlp(
+            monkeypatch, tmp_path, ready=False
+        )
+        result = ObservabilityService._create_otlp_exporter(_bare_service(logger))
+        assert result is None
+        exporter_cls.assert_not_called()
+        mock_grpc.secure_channel.return_value.close.assert_called_once()
+
+    def test_reachable_endpoint_builds_exporter(self, logger, monkeypatch, tmp_path):
+        mock_grpc, exporter_cls = self._install_fake_otlp(
+            monkeypatch, tmp_path, ready=True
+        )
+        result = ObservabilityService._create_otlp_exporter(_bare_service(logger))
+        from solnlib.observability import _CircuitBreakerExporter
+
+        assert isinstance(result, _CircuitBreakerExporter)
+        exporter_cls.assert_called_once()
+        mock_grpc.secure_channel.assert_called_once_with(
+            "localhost:35157", mock_grpc.ssl_channel_credentials.return_value
+        )
+        mock_grpc.channel_ready_future.return_value.result.assert_called_once_with(
+            timeout=2.0
+        )
+
+    def test_real_grpc_closed_port_is_not_ready(self, logger, monkeypatch):
+        import socket
+
+        import grpc
+
+        monkeypatch.setattr("solnlib.observability._OTLP_PROBE_TIMEOUT_SECONDS", 0.5)
+        with socket.socket() as sock:
+            sock.bind(("127.0.0.1", 0))
+            port = sock.getsockname()[1]
+        credentials = grpc.ssl_channel_credentials()
+        ready = _bare_service(logger)._is_otlp_endpoint_ready(
+            grpc, f"localhost:{port}", credentials
+        )
+        assert ready is False
+
+    @pytest.mark.skipif(
+        shutil.which("openssl") is None, reason="requires system openssl binary"
+    )
+    def test_real_grpc_tls_server_is_ready(self, logger, tmp_path):
+        from concurrent import futures
+
+        import grpc
+
+        key_path = tmp_path / "server.key"
+        crt_path = tmp_path / "server.crt"
+        subprocess.run(
+            [
+                "openssl",
+                "req",
+                "-x509",
+                "-newkey",
+                "rsa:2048",
+                "-keyout",
+                str(key_path),
+                "-out",
+                str(crt_path),
+                "-days",
+                "1",
+                "-nodes",
+                "-subj",
+                "/CN=localhost",
+                "-addext",
+                "subjectAltName=DNS:localhost,IP:127.0.0.1",
+            ],
+            check=True,
+            capture_output=True,
+        )
+        server = grpc.server(futures.ThreadPoolExecutor(max_workers=1))
+        server_creds = grpc.ssl_server_credentials(
+            [(key_path.read_bytes(), crt_path.read_bytes())]
+        )
+        port = server.add_secure_port("localhost:0", server_creds)
+        server.start()
+        try:
+            credentials = grpc.ssl_channel_credentials(
+                root_certificates=crt_path.read_bytes()
+            )
+            ready = _bare_service(logger)._is_otlp_endpoint_ready(
+                grpc, f"localhost:{port}", credentials
+            )
+        finally:
+            server.stop(0)
+        assert ready is True
